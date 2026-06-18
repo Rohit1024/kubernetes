@@ -59,3 +59,6 @@ The portal is organized into 10 structured lessons:
 8. **[Lesson 8: Resource Limits, Probes & Graceful Shutdown](docs/lessons/0008-resources-probes-graceful-shutdown.md)** — Optimize resource requests, configure probes, and handle terminations gracefully.
 9. **[Lesson 9: Capstone Project](docs/lessons/0009-capstone-project.md)** — Deploy a multi-tier, highly-available application with external ingress.
 10. **[Lesson 10: Helm Package Manager](docs/lessons/0010-helm-package-manager.md)** — Package, parameterize, and deploy repeatable Kubernetes workloads.
+
+## Create your own lessons with Agent Teach
+
