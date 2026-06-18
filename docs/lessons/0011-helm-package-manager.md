@@ -177,4 +177,4 @@ Read the official [Helm Quickstart Guide](https://helm.sh/docs/intro/quickstart/
 ---
 **Got stuck or have a question?** Ask in chat, and we'll walk through helm templating or troubleshooting templates together!
 
-[← Lesson 10: Capstone Project](./0010-capstone-project.md) | [Home →](../index.md)
+[← Lesson 10: Capstone Project](./0010-capstone-project.md) | [Lesson 12: CI/CD with GitHub Actions & GKE →](./0012-github-actions-cicd-gke.md)

@@ -33,6 +33,8 @@ Welcome to the lessons section. Here, you will learn the core concepts and archi
     - Deploying a complete, highly-available multi-tier web application.
 11. **[Lesson 11: Helm Package Manager](0011-helm-package-manager.md)**
     - Packaging, parameterizing, and versioning repeatable Kubernetes manifest sets.
+12. **[Lesson 12: CI/CD with GitHub Actions & GKE](0012-github-actions-cicd-gke.md)**
+    - Automating GKE deployments using GitHub Actions, Workload Identity Federation (WIF), and DNS-based kubeconfig credentials.
 
 ---
 
