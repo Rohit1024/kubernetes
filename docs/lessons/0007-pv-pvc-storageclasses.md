@@ -164,4 +164,4 @@ Correct! The Retain policy preserves the storage volume, requiring an administra
 
 ---
 
-[← Lesson 5](./0005-ingress-gke-load-balancing.md) | [Lesson 7: Advanced Networking: Kubernetes Gateway API & GKE GatewayClass →](./0007-gke-gateway-api.md)
+[← Lesson 6: Ingress & GKE Load Balancing](./0006-ingress-gke-load-balancing.md) | [Lesson 8: GKE Gateway API →](./0008-gke-gateway-api.md)

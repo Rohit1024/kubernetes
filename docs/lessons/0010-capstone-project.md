@@ -246,4 +246,4 @@ Correct! OOMKilled (Exit Code 137) means the app hit its hard memory limit. Incr
 
 ---
 
-[← Lesson 8](./0008-resources-probes-graceful-shutdown.md) | [Lesson 10: Helm Package Manager & Core Open Source Charts →](./0010-helm-package-manager.md)
+[← Lesson 9: Pod Lifecycle, Resource Allocation, and Health Probes](./0009-resources-probes-graceful-shutdown.md) | [Lesson 11: Helm Package Manager →](./0011-helm-package-manager.md)

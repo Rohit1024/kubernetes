@@ -182,4 +182,4 @@ Correct! Customizations to individual services (like CDN, Cloud Armor, health ch
 
 ---
 
-[← Lesson 4](./0004-stateless-stateful-secrets-gcp.md) | [Lesson 6: Persistent Volumes, PVCs & StorageClasses →](./0006-pv-pvc-storageclasses.md)
+[← Lesson 5: Stateless/Stateful App Configuration & Secrets](./0005-stateless-stateful-secrets-gcp.md) | [Lesson 7: Persistent Volumes, PVCs & StorageClasses →](./0007-pv-pvc-storageclasses.md)

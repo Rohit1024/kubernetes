@@ -12,7 +12,7 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/lessons/0010-helm-package-manager/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/lessons/0011-helm-package-manager/">
       
       
       
@@ -312,6 +312,77 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../debugging/" class="md-nav__link ">
+              
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-bug" viewBox="0 0 24 24"><path d="M12 20v-9M14 7a4 4 0 0 1 4 4v3a6 6 0 0 1-12 0v-3a4 4 0 0 1 4-4zM14.12 3.88 16 2"/><path d="M21 21a4 4 0 0 0-3.81-4M21 5a4 4 0 0 1-3.55 3.97M22 13h-4M3 21a4 4 0 0 1 3.81-4M3 5a4 4 0 0 0 3.55 3.97M6 13H2M8 2l1.88 1.88M9 7.13V6a3 3 0 1 1 6 0v1.13"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Debugging
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Debugging
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../cheatsheet/" class="md-nav__link">
         
@@ -578,10 +649,12 @@
 <h1 id="lesson-10-helm-package-manager-core-open-source-charts">Lesson 10: Helm Package Manager &amp; Core Open Source Charts<a class="headerlink" href="#lesson-10-helm-package-manager-core-open-source-charts" title="Permanent link">&para;</a></h1>
 <h2 id="1-why-helm-the-kubernetes-package-manager">1. Why Helm? The Kubernetes Package Manager<a class="headerlink" href="#1-why-helm-the-kubernetes-package-manager" title="Permanent link">&para;</a></h2>
 <p>Managing Kubernetes applications via plain YAML manifests scales poorly. If you need to deploy the same application across Dev, Staging, and Production environments, you end up duplicating manifests or using tools like Kustomize. But if you want to version, package, and share pre-configured applications, you need <strong>Helm</strong>.</p>
-<p>Helm acts as the package manager for Kubernetes (analogous to <code>apt</code> for Ubuntu or <code>npm</code> for Node.js). It introduces three core concepts:
-- <strong>Chart:</strong> A bundle of pre-configured Kubernetes resource templates.
-- <strong>Release:</strong> A specific running instance of a Chart in a Kubernetes cluster. You can install the same Chart multiple times, and each install gets its own Release name.
-- <strong>Values:</strong> Configuration parameters that are injected into your templates, allowing you to customize the deployment without editing the templates themselves.</p>
+<p>Helm acts as the package manager for Kubernetes (analogous to <code>apt</code> for Ubuntu or <code>npm</code> for Node.js). It introduces three core concepts:</p>
+<ul>
+<li><strong>Chart:</strong> A bundle of pre-configured Kubernetes resource templates.</li>
+<li><strong>Release:</strong> A specific running instance of a Chart in a Kubernetes cluster. You can install the same Chart multiple times, and each install gets its own Release name.</li>
+<li><strong>Values:</strong> Configuration parameters that are injected into your templates, allowing you to customize the deployment without editing the templates themselves.</li>
+</ul>
 <div class="admonition note">
 <p class="admonition-title">Analogy: Charts and Releases</p>
 <p>Think of a Helm Chart as a class definition, and a Release as an object instance created from that class. The <code>values.yaml</code> file holds the constructor arguments.</p>
@@ -737,7 +810,7 @@
 <p>Read the official <a href="https://helm.sh/docs/intro/quickstart/">Helm Quickstart Guide</a> and explore charts on <a href="https://artifacthub.io/">Artifact Hub</a>.</p>
 <hr />
 <p><strong>Got stuck or have a question?</strong> Ask in chat, and we'll walk through helm templating or troubleshooting templates together!</p>
-<p><a href=".././0009-capstone-project/">← Lesson 9</a> | <a href="../../">Home →</a></p>
+<p><a href=".././0010-capstone-project/">← Lesson 10: Capstone Project</a> | <a href="../../">Home →</a></p>
 
 
 

@@ -4,6 +4,7 @@
 Managing Kubernetes applications via plain YAML manifests scales poorly. If you need to deploy the same application across Dev, Staging, and Production environments, you end up duplicating manifests or using tools like Kustomize. But if you want to version, package, and share pre-configured applications, you need **Helm**.
 
 Helm acts as the package manager for Kubernetes (analogous to `apt` for Ubuntu or `npm` for Node.js). It introduces three core concepts:
+
 - **Chart:** A bundle of pre-configured Kubernetes resource templates.
 - **Release:** A specific running instance of a Chart in a Kubernetes cluster. You can install the same Chart multiple times, and each install gets its own Release name.
 - **Values:** Configuration parameters that are injected into your templates, allowing you to customize the deployment without editing the templates themselves.
@@ -176,4 +177,4 @@ Read the official [Helm Quickstart Guide](https://helm.sh/docs/intro/quickstart/
 ---
 **Got stuck or have a question?** Ask in chat, and we'll walk through helm templating or troubleshooting templates together!
 
-[← Lesson 9](./0009-capstone-project.md) | [Home →](../index.md)
+[← Lesson 10: Capstone Project](./0010-capstone-project.md) | [Home →](../index.md)

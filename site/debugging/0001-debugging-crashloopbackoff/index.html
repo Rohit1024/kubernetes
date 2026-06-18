@@ -12,34 +12,32 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/references/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/debugging/0001-debugging-crashloopbackoff/">
       
-      
-        <link rel="prev" href="../cheatsheet/">
       
       
       
         
       
       
-      <link rel="icon" href="../images/favicon.png">
+      <link rel="icon" href="../../images/favicon.png">
       <meta name="generator" content="zensical-0.0.45">
     
     
       
-        <title>References - Learn Kubernetes</title>
+        <title>Debugging: Troubleshooting CrashLoopBackOff - Learn Kubernetes</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.fba56155.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.fba56155.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -58,7 +56,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -83,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#references" class="md-skip">
+        <a href="#debugging-troubleshooting-crashloopbackoff" class="md-skip">
           Skip to content
         </a>
       
@@ -99,7 +97,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="Learn Kubernetes" class="md-header__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
+    <a href="../.." title="Learn Kubernetes" class="md-header__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
       
   
   <svg viewBox="0 0 722.8 702"><path style="fill:#326ce5;fill-opacity:1;stroke:#fff;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" d="M365 185a47 46 0 0 0-18 4L103 306a47 46 0 0 0-25 32L18 600a47 46 0 0 0 6 35 47 46 0 0 0 3 4l169 210a47 46 0 0 0 36 18h271a47 46 0 0 0 37-18l169-210a47 46 0 0 0 9-39l-60-263a47 46 0 0 0-26-31L388 189a47 46 0 0 0-23-4z" transform="translate(-6 -175)"/><path d="M368 274c-8 0-15 7-15 16v4l2 14 2 27c-1 3-3 6-5 7v7a190 190 0 0 0-122 58l-6-3c-2 0-5 1-8-1l-20-18-10-10-3-3c-3-2-7-4-10-4-5 0-9 2-12 5-5 7-3 16 4 22l3 3 12 7 22 15c2 2 3 7 3 8l5 5c-26 37-37 84-30 131l-6 2c-2 2-4 6-7 7l-26 4-14 1-4 1c-9 2-14 10-13 18 2 8 11 12 19 11h1v-1h4l13-5c9-4 17-7 25-8l9 3 6-1c15 45 45 82 84 105l-2 7c1 2 2 5 1 8l-13 24-8 11-2 4c-4 8-1 18 6 21 8 4 17 0 20-8l2-4 5-13c3-10 6-20 11-27l6-3 3-6a189 189 0 0 0 135 1l4 5c2 1 5 2 7 5l10 24 4 14 2 4c4 8 13 11 20 8 8-4 10-13 7-21l-2-4-8-12c-6-8-10-15-13-23-1-4 0-6 1-8l-2-6c40-24 70-62 84-106l6 1c2-2 4-4 8-3 8 1 16 4 26 7l13 5 4 1c9 2 17-3 19-10 2-8-4-16-12-18l-5-1-14-1c-10-1-18-2-26-5-3-1-5-5-6-6l-6-2a189 189 0 0 0-31-131l6-5c0-3 0-5 2-8 6-6 13-10 22-16l12-7 4-2c7-6 8-16 3-22s-15-7-22-1l-3 2-10 11c-7 7-13 13-19 17-3 2-7 2-9 1l-6 4c-31-33-75-54-121-58v-7c-2-2-5-3-5-7-1-8 0-16 1-27l2-14v-4c0-9-6-16-14-16zm-19 113-4 77a13 13 0 0 1-21 10l-63-44a151 151 0 0 1 88-43zm37 0c33 5 64 20 88 43l-63 44a13 13 0 0 1-21-10zm-148 71 58 52a13 13 0 0 1-5 22l-74 22c-4-35 4-68 21-96zm259 0a153 153 0 0 1 22 95l-74-21a13 13 0 0 1-5-22h-1l58-52zm-141 56h23l15 18-5 23-21 10-21-10-6-23zm75 62h3l77 13c-12 32-33 59-61 77l-30-72a13 13 0 0 1 11-18zm-128 1a13 13 0 0 1 12 18l-29 71c-27-18-49-44-61-77l76-12h2zm64 31c2-1 4 0 6 1 3 1 5 3 6 5l38 68a154 154 0 0 1-98-1l37-67c3-4 7-6 11-6z" style="font-size:medium;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000;fill:#fff;fill-opacity:1;stroke:#fff;stroke-width:.25;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;font-family:Sans;-inkscape-font-specification:Sans" transform="translate(-6 -175)"/></svg>
@@ -119,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              References
+              Debugging: Troubleshooting CrashLoopBackOff
             
           </span>
         </div>
@@ -198,7 +196,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="Learn Kubernetes" class="md-nav__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
+    <a href="../.." title="Learn Kubernetes" class="md-nav__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
       
   
   <svg viewBox="0 0 722.8 702"><path style="fill:#326ce5;fill-opacity:1;stroke:#fff;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" d="M365 185a47 46 0 0 0-18 4L103 306a47 46 0 0 0-25 32L18 600a47 46 0 0 0 6 35 47 46 0 0 0 3 4l169 210a47 46 0 0 0 36 18h271a47 46 0 0 0 37-18l169-210a47 46 0 0 0 9-39l-60-263a47 46 0 0 0-26-31L388 189a47 46 0 0 0-23-4z" transform="translate(-6 -175)"/><path d="M368 274c-8 0-15 7-15 16v4l2 14 2 27c-1 3-3 6-5 7v7a190 190 0 0 0-122 58l-6-3c-2 0-5 1-8-1l-20-18-10-10-3-3c-3-2-7-4-10-4-5 0-9 2-12 5-5 7-3 16 4 22l3 3 12 7 22 15c2 2 3 7 3 8l5 5c-26 37-37 84-30 131l-6 2c-2 2-4 6-7 7l-26 4-14 1-4 1c-9 2-14 10-13 18 2 8 11 12 19 11h1v-1h4l13-5c9-4 17-7 25-8l9 3 6-1c15 45 45 82 84 105l-2 7c1 2 2 5 1 8l-13 24-8 11-2 4c-4 8-1 18 6 21 8 4 17 0 20-8l2-4 5-13c3-10 6-20 11-27l6-3 3-6a189 189 0 0 0 135 1l4 5c2 1 5 2 7 5l10 24 4 14 2 4c4 8 13 11 20 8 8-4 10-13 7-21l-2-4-8-12c-6-8-10-15-13-23-1-4 0-6 1-8l-2-6c40-24 70-62 84-106l6 1c2-2 4-4 8-3 8 1 16 4 26 7l13 5 4 1c9 2 17-3 19-10 2-8-4-16-12-18l-5-1-14-1c-10-1-18-2-26-5-3-1-5-5-6-6l-6-2a189 189 0 0 0-31-131l6-5c0-3 0-5 2-8 6-6 13-10 22-16l12-7 4-2c7-6 8-16 3-22s-15-7-22-1l-3 2-10 11c-7 7-13 13-19 17-3 2-7 2-9 1l-6 4c-31-33-75-54-121-58v-7c-2-2-5-3-5-7-1-8 0-16 1-27l2-14v-4c0-9-6-16-14-16zm-19 113-4 77a13 13 0 0 1-21 10l-63-44a151 151 0 0 1 88-43zm37 0c33 5 64 20 88 43l-63 44a13 13 0 0 1-21-10zm-148 71 58 52a13 13 0 0 1-5 22l-74 22c-4-35 4-68 21-96zm259 0a153 153 0 0 1 22 95l-74-21a13 13 0 0 1-5-22h-1l58-52zm-141 56h23l15 18-5 23-21 10-21-10-6-23zm75 62h3l77 13c-12 32-33 59-61 77l-30-72a13 13 0 0 1 11-18zm-128 1a13 13 0 0 1 12 18l-29 71c-27-18-49-44-61-77l76-12h2zm64 31c2-1 4 0 6 1 3 1 5 3 6 5l38 68a154 154 0 0 1-98-1l37-67c3-4 7-6 11-6z" style="font-size:medium;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000;fill:#fff;fill-opacity:1;stroke:#fff;stroke-width:.25;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;font-family:Sans;-inkscape-font-specification:Sans" transform="translate(-6 -175)"/></svg>
@@ -216,7 +214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -269,7 +267,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../lessons/" class="md-nav__link ">
+            <a href="../../lessons/" class="md-nav__link ">
               
   
   
@@ -340,7 +338,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../debugging/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -386,7 +384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cheatsheet/" class="md-nav__link">
+      <a href="../../cheatsheet/" class="md-nav__link">
         
   
   
@@ -411,38 +409,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-  
-  <span class="md-ellipsis">
-    
-  
-  References
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../references/" class="md-nav__link">
         
   
   
@@ -459,82 +429,6 @@
   
 
       </a>
-      
-        
-
-
-<nav class="md-nav md-nav--secondary" aria-label="On this page">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      On this page
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#learning-ecosystem-map" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Learning Ecosystem Map
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#official-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Official Resources
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#local-development-tools" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Local Development Tools
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#clients-cluster-visualizers" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Clients &amp; Cluster Visualizers
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#additional-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Additional Resources
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -580,10 +474,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#learning-ecosystem-map" class="md-nav__link">
+  <a href="#1-what-is-crashloopbackoff" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Learning Ecosystem Map
+        1. What is CrashLoopBackOff?
       </span>
     </span>
   </a>
@@ -591,10 +485,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#official-resources" class="md-nav__link">
+  <a href="#2-the-3-step-diagnostic-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Official Resources
+        2. The 3-Step Diagnostic Workflow
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The 3-Step Diagnostic Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-a-identify-the-failing-pod" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step A: Identify the failing Pod
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-b-inspect-pod-lifecycle-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step B: Inspect Pod Lifecycle &amp; Events
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-c-retrieve-the-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step C: Retrieve the Logs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-common-root-causes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Common Root Causes
       </span>
     </span>
   </a>
@@ -602,35 +546,80 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#local-development-tools" class="md-nav__link">
+  <a href="#hands-on-lab-deploy-resolve-a-broken-pod" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Local Development Tools
+        Hands-on Lab: Deploy &amp; Resolve a Broken Pod
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hands-on Lab: Deploy &amp; Resolve a Broken Pod">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-deploy-the-broken-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 1: Deploy the broken container
       </span>
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#clients-cluster-visualizers" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#step-2-run-diagnostic-steps" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Clients &amp; Cluster Visualizers
+        Step 2: Run diagnostic steps
       </span>
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#additional-resources" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#step-3-clean-up" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Additional Resources
+        Step 3: Clean up
       </span>
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-your-knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Test Your Knowledge
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Your Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-which-command-retrieves-the-logs-of-the-container-instance-that-crashed-right-before-the-current-restart-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Which command retrieves the logs of the container instance that crashed right before the current restart loop?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -657,43 +646,110 @@
                 
                   
 
-<h1 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h1>
-<p>A collection of external links, documentation, and tools to assist you with Kubernetes.</p>
-<h3 id="learning-ecosystem-map">Learning Ecosystem Map<a class="headerlink" href="#learning-ecosystem-map" title="Permanent link">&para;</a></h3>
-<pre class="mermaid"><code>graph TD
-    Lessons[Lessons: Core Concepts &amp; Practice Labs] --&gt;|Reinforces commands| Cheatsheet[kubectl Cheatsheet: Debugging Commands]
-    Lessons --&gt;|Deepens research| References[References: Official Spec Docs &amp; Communities]
-    Cheatsheet --&gt;|Troubleshoots issues| References</code></pre>
-<h2 id="official-resources">Official Resources<a class="headerlink" href="#official-resources" title="Permanent link">&para;</a></h2>
+<h1 id="debugging-troubleshooting-crashloopbackoff">Debugging: Troubleshooting CrashLoopBackOff<a class="headerlink" href="#debugging-troubleshooting-crashloopbackoff" title="Permanent link">&para;</a></h1>
+<p>One of the most frequent errors encountered when running workloads in a Kubernetes cluster is <strong><code>CrashLoopBackOff</code></strong>. This guide covers what the status actually means, how to run the diagnostic sequence, and how to fix the underlying issues.</p>
+<hr />
+<h2 id="1-what-is-crashloopbackoff">1. What is CrashLoopBackOff?<a class="headerlink" href="#1-what-is-crashloopbackoff" title="Permanent link">&para;</a></h2>
+<p><code>CrashLoopBackOff</code> is <strong>not</strong> an error code returned by your application. It is a status message from Kubernetes indicating that:</p>
+<ol>
+<li>The container started.</li>
+<li>The container exited or crashed.</li>
+<li>The cluster tried to restart it (due to its <code>restartPolicy</code>).</li>
+<li>The container crashed again.</li>
+<li>Kubernetes enters a <strong>backoff</strong> loop, waiting before trying to start the container again.</li>
+</ol>
+<p>To prevent overloading the host node with infinite reboot loops, Kubernetes delays restarts exponentially: 10 seconds, 20 seconds, 40 seconds, up to a maximum delay of <strong>5 minutes</strong>.</p>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; PodCreated
+    PodCreated --&gt; ContainerStarting : Start
+    ContainerStarting --&gt; ContainerRunning : Running
+    ContainerRunning --&gt; ContainerCrashed : Exits/Crashes
+    ContainerCrashed --&gt; WaitingBackoff : Backoff delay
+    WaitingBackoff --&gt; ContainerStarting : Retry restart
+    ContainerRunning --&gt; [*] : Successful Job exit (0)</code></pre>
+<hr />
+<h2 id="2-the-3-step-diagnostic-workflow">2. The 3-Step Diagnostic Workflow<a class="headerlink" href="#2-the-3-step-diagnostic-workflow" title="Permanent link">&para;</a></h2>
+<p>When a Pod exhibits <code>CrashLoopBackOff</code>, execute this command sequence in your terminal to pinpoint the root cause:</p>
+<h3 id="step-a-identify-the-failing-pod">Step A: Identify the failing Pod<a class="headerlink" href="#step-a-identify-the-failing-pod" title="Permanent link">&para;</a></h3>
+<p>List the pods in your namespace and check the <code>STATUS</code> and <code>RESTARTS</code> count:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+</span></code></pre></div></p>
+<h3 id="step-b-inspect-pod-lifecycle-events">Step B: Inspect Pod Lifecycle &amp; Events<a class="headerlink" href="#step-b-inspect-pod-lifecycle-events" title="Permanent link">&para;</a></h3>
+<p>Look at the metadata, state changes, and events of the Pod:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>&lt;pod-name&gt;
+</span></code></pre></div>
+Scroll to the <strong>Events</strong> section at the bottom. Check the <strong>State</strong> of the container, paying close attention to:</p>
 <ul>
-<li><strong><a href="https://kubernetes.io/docs/">Kubernetes Official Documentation</a></strong> - The ultimate guide and reference source.</li>
-<li><strong><a href="https://kubernetes.io/docs/reference/kubernetes-api/">Kubernetes API Reference</a></strong> - Complete specification of the Kubernetes API resources.</li>
-<li><strong><a href="https://kubernetes.io/blog/">Kubernetes Blog</a></strong> - Latest updates, releases, and articles from the community.</li>
+<li><strong>Exit Code:</strong> A non-zero exit code (e.g. <code>1</code>, <code>137</code>, <code>139</code>) indicates the app crashed.</li>
+<li><strong>Reason:</strong> Look for <code>OOMKilled</code> or <code>Error</code>.</li>
+</ul>
+<h3 id="step-c-retrieve-the-logs">Step C: Retrieve the Logs<a class="headerlink" href="#step-c-retrieve-the-logs" title="Permanent link">&para;</a></h3>
+<p>If the app crashed, check its standard stdout/stderr logs.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Get logs of the currently starting container</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>&lt;pod-name&gt;
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># CRUCIAL: Retrieve logs from the previous instance that actually crashed</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--previous
+</span></code></pre></div>
+<em>Tip: Standard <code>kubectl logs</code> only shows logs for the current container execution. If it has just restarted and is waiting, the logs may be blank. Passing the <code>--previous</code> flag gets logs from the crashed container before it was rebooted.</em></p>
+<hr />
+<h2 id="3-common-root-causes">3. Common Root Causes<a class="headerlink" href="#3-common-root-causes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Exit Code 1 / 255 (Application Error):</strong> Missing environment variables, database connection failures, incorrect startup flags, or syntax errors.</li>
+<li><strong>Exit Code 137 (OOMKilled):</strong> The container consumed more memory than allowed by its <code>limits.memory</code> resource boundaries and was terminated by the OS kernel.</li>
+<li><strong>Exit Code 0 (Completed too quickly):</strong> The container ran a quick task (like a shell script) and finished. Kubernetes expects web servers/APIs to run indefinitely, so it interprets quick completion as a crash and restarts it. Keep the main process foregrounded!</li>
 </ul>
 <hr />
-<h2 id="local-development-tools">Local Development Tools<a class="headerlink" href="#local-development-tools" title="Permanent link">&para;</a></h2>
-<p>For learning and testing Kubernetes locally, you can use these light-weight Kubernetes distributions:</p>
-<ul>
-<li><strong><a href="https://minikube.sigs.k8s.io/">Minikube</a></strong> - Runs a single-node Kubernetes cluster inside a VM or container on your local machine.</li>
-<li><strong><a href="https://kind.sigs.k8s.io/">Kind (Kubernetes in Docker)</a></strong> - Runs local Kubernetes clusters using Docker container "nodes".</li>
-<li><strong><a href="https://k3s.io/">K3s</a></strong> - Highly available, certified Kubernetes distribution designed for production workloads in resource-constrained, remote, IoT, or edge environments.</li>
-</ul>
+<h2 id="hands-on-lab-deploy-resolve-a-broken-pod">Hands-on Lab: Deploy &amp; Resolve a Broken Pod<a class="headerlink" href="#hands-on-lab-deploy-resolve-a-broken-pod" title="Permanent link">&para;</a></h2>
+<p>Let's deploy a container deliberately configured to crash, diagnose it, and patch it.</p>
+<h3 id="step-1-deploy-the-broken-container">Step 1: Deploy the broken container<a class="headerlink" href="#step-1-deploy-the-broken-container" title="Permanent link">&para;</a></h3>
+<p>Save the following configuration to <code>broken-pod.yaml</code> and apply it:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug-challenge-pod</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-app</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Booting</span><span class="nv"> </span><span class="s">up</span><span class="nv"> </span><span class="s">service...&#39;;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">3;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">&#39;Error:</span><span class="nv"> </span><span class="s">DB_PASSWORD</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">found!&#39;;</span><span class="nv"> </span><span class="s">exit</span><span class="nv"> </span><span class="s">1;&quot;</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>broken-pod.yaml
+</span></code></pre></div>
+<h3 id="step-2-run-diagnostic-steps">Step 2: Run diagnostic steps<a class="headerlink" href="#step-2-run-diagnostic-steps" title="Permanent link">&para;</a></h3>
+<p>Monitor the status until it enters <code>CrashLoopBackOff</code>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-w
+</span></code></pre></div>
+Run <code>kubectl describe</code> to see the exit code:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>debug-challenge-pod
+</span></code></pre></div>
+Retrieve the error message from the crashed container logs:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>debug-challenge-pod<span class="w"> </span>--previous
+</span></code></pre></div>
+You should see: <code>Error: DB_PASSWORD not found!</code>.</p>
+<h3 id="step-3-clean-up">Step 3: Clean up<a class="headerlink" href="#step-3-clean-up" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>-f<span class="w"> </span>broken-pod.yaml
+</span></code></pre></div>
 <hr />
-<h2 id="clients-cluster-visualizers">Clients &amp; Cluster Visualizers<a class="headerlink" href="#clients-cluster-visualizers" title="Permanent link">&para;</a></h2>
-<p>Tools to help you explore and manage your cluster without typing every <code>kubectl</code> command manually:</p>
-<ul>
-<li><strong><a href="https://k9scli.io/">k9s</a></strong> - A terminal-based UI to interact with your Kubernetes clusters.</li>
-<li><strong><a href="https://k8slens.dev/">Lens</a></strong> - A powerful desktop IDE for Kubernetes clusters, providing real-time visualization and metrics.</li>
+<h2 id="test-your-knowledge">Test Your Knowledge<a class="headerlink" href="#test-your-knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="1-which-command-retrieves-the-logs-of-the-container-instance-that-crashed-right-before-the-current-restart-loop">1. Which command retrieves the logs of the container instance that crashed right before the current restart loop?<a class="headerlink" href="#1-which-command-retrieves-the-logs-of-the-container-instance-that-crashed-right-before-the-current-restart-loop" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> <code>kubectl logs &lt;pod&gt; --all</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> <code>kubectl logs &lt;pod&gt; --previous</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> <code>kubectl describe pod &lt;pod&gt;</code></li>
 </ul>
-<div class="admonition info">
-<p class="admonition-title">Highly Recommended</p>
-<p>For terminal lovers, <strong><a href="https://k9scli.io/">k9s</a></strong> is highly recommended as it is fast, keyboard-driven, and provides real-time information on pod status and logs.</p>
-</div>
+<details>
+<summary><b>Answer & Explanation</b></summary>
+
+**Correct Answer:** B
+
+**Explanation:** The `--previous` flag fetches stdout/stderr output from the container that actually crashed, which is key to finding application runtime errors.
+</details>
+
 <hr />
-<h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><a href="resources/">Kubernetes Resources</a></strong>: Additional knowledge and wisdom sources (GKE docs, VMware Academy, CNCF slack, subreddit).</li>
-</ul>
+<p><a href="../../cheatsheet/">← Cheatsheets Index</a> | <a href=".././0002-dns-networking-troubleshooting/">DNS &amp; Network Troubleshooting →</a></p>
 
 
 
@@ -731,28 +787,6 @@
       
         <footer class="md-footer">
   
-    
-      
-      <nav class="md-footer__inner md-grid" aria-label="Footer" >
-        
-          
-          <a href="../cheatsheet/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Cheatsheet">
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
-            </div>
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              <div class="md-ellipsis">
-                Cheatsheet
-              </div>
-            </div>
-          </a>
-        
-        
-      </nav>
     
   
   <div class="md-footer-meta md-typeset">
@@ -801,10 +835,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["announce.dismiss","content.action.edit","content.action.view","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.expand","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["announce.dismiss","content.action.edit","content.action.view","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.expand","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
     
     
-      <script src="../assets/javascripts/bundle.6e5f0216.min.js"></script>
+      <script src="../../assets/javascripts/bundle.6e5f0216.min.js"></script>
       
     
   </body>

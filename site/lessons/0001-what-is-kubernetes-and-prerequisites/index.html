@@ -12,7 +12,7 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/lessons/0001-pod-anatomy-and-crashloopbackoff/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/lessons/0001-what-is-kubernetes-and-prerequisites/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>Lesson 0001: Pod Anatomy & Debugging CrashLoopBackOff - Learn Kubernetes</title>
+        <title>Lesson 0001: Introduction to Kubernetes & Prerequisites - Learn Kubernetes</title>
       
     
     
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#lesson-0001-pod-anatomy-debugging-crashloopbackoff" class="md-skip">
+        <a href="#lesson-0001-introduction-to-kubernetes-prerequisites" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lesson 0001: Pod Anatomy &amp; Debugging CrashLoopBackOff
+              Lesson 0001: Introduction to Kubernetes &amp; Prerequisites
             
           </span>
         </div>
@@ -312,6 +312,77 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../debugging/" class="md-nav__link ">
+              
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-bug" viewBox="0 0 24 24"><path d="M12 20v-9M14 7a4 4 0 0 1 4 4v3a6 6 0 0 1-12 0v-3a4 4 0 0 1 4-4zM14.12 3.88 16 2"/><path d="M21 21a4 4 0 0 0-3.81-4M21 5a4 4 0 0 1-3.55 3.97M22 13h-4M3 21a4 4 0 0 1 3.81-4M3 5a4 4 0 0 0 3.55 3.97M6 13H2M8 2l1.88 1.88M9 7.13V6a3 3 0 1 1 6 0v1.13"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Debugging
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Debugging
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../cheatsheet/" class="md-nav__link">
         
@@ -403,22 +474,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-what-is-a-pod" class="md-nav__link">
+  <a href="#1-what-is-kubernetes" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        1. What is a Pod?
+        1. What is Kubernetes?
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. What is a Pod?">
+    <nav class="md-nav" aria-label="1. What is Kubernetes?">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pod-anatomy-diagram" class="md-nav__link">
+  <a href="#the-containerization-shift" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Pod Anatomy Diagram
+        The Containerization Shift
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-value-propositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Core Value Propositions:
       </span>
     </span>
   </a>
@@ -431,33 +513,61 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-demystifying-crashloopbackoff" class="md-nav__link">
+  <a href="#2-kubernetes-high-level-architecture" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        2. Demystifying CrashLoopBackOff
+        2. Kubernetes High-Level Architecture
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="2. Kubernetes High-Level Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-control-plane-the-brain" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The Control Plane (The Brain)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worker-nodes-the-muscle" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Worker Nodes (The Muscle)
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-the-3-step-debugging-workflow" class="md-nav__link">
+  <a href="#3-learning-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        3. The 3-Step Debugging Workflow
+        3. Learning Prerequisites
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="3. The 3-Step Debugging Workflow">
+    <nav class="md-nav" aria-label="3. Learning Prerequisites">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#step-a-find-the-broken-pod" class="md-nav__link">
+  <a href="#a-docker-container-basics" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Step A: Find the broken pod
+        A. Docker &amp; Container Basics
       </span>
     </span>
   </a>
@@ -465,10 +575,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-b-inspect-the-lifecycle-events" class="md-nav__link">
+  <a href="#b-basic-networking-concepts" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Step B: Inspect the lifecycle events
+        B. Basic Networking Concepts
       </span>
     </span>
   </a>
@@ -476,10 +586,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-c-read-the-previous-logs" class="md-nav__link">
+  <a href="#c-command-line-cli-familiarity" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Step C: Read the previous logs
+        C. Command Line (CLI) Familiarity
       </span>
     </span>
   </a>
@@ -504,10 +614,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-which-command-outputs-the-events-indicating-why-a-pod-failed-to-start" class="md-nav__link">
+  <a href="#1-which-component-in-the-kubernetes-control-plane-is-responsible-for-selecting-the-worker-node-that-will-host-a-new-container-workload" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        1. Which command outputs the events indicating why a pod failed to start?
+        1. Which component in the Kubernetes control plane is responsible for selecting the worker node that will host a new container workload?
       </span>
     </span>
   </a>
@@ -515,10 +625,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-if-a-pod-is-restarting-due-to-crashloopbackoff-how-do-you-see-the-crash-reason" class="md-nav__link">
+  <a href="#2-what-is-the-database-used-by-the-control-plane-to-store-the-absolute-state-and-configuration-of-the-cluster" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        2. If a Pod is restarting due to CrashLoopBackOff, how do you see the crash reason?
+        2. What is the database used by the Control Plane to store the absolute state and configuration of the cluster?
       </span>
     </span>
   </a>
@@ -527,28 +637,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interactive-win-hands-on-exercise" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Interactive Win: Hands-on Exercise
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recommended-resource" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Recommended Resource
-      </span>
-    </span>
-  </a>
   
 </li>
       
@@ -575,106 +663,125 @@
                 
                   
 
-<h1 id="lesson-0001-pod-anatomy-debugging-crashloopbackoff">Lesson 0001: Pod Anatomy &amp; Debugging CrashLoopBackOff<a class="headerlink" href="#lesson-0001-pod-anatomy-debugging-crashloopbackoff" title="Permanent link">&para;</a></h1>
-<h2 id="1-what-is-a-pod">1. What is a Pod?<a class="headerlink" href="#1-what-is-a-pod" title="Permanent link">&para;</a></h2>
-<p>A  <strong>Pod</strong>  is the smallest deployable unit in Kubernetes. Unlike Docker where you manage individual containers directly, Kubernetes manages Pods, which act as a wrapper around one or more containers.</p>
-<p>Containers inside the same Pod share:</p>
-<ul>
-<li><strong>Network Namespace:</strong>  They share an IP address and port space. They can talk to each other via <code>localhost</code>.</li>
-<li><strong>Storage Volumes:</strong>  You can mount shared storage to be accessed by multiple containers in the same Pod.</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Analogy: Pods vs. Servers</p>
-<p>Think of a Pod as a physical server or VM. The containers inside it are separate processes running on that server. They share the host resource boundaries.</p>
-</div>
-<h3 id="pod-anatomy-diagram">Pod Anatomy Diagram<a class="headerlink" href="#pod-anatomy-diagram" title="Permanent link">&para;</a></h3>
-<pre class="mermaid"><code>graph TD
-    subgraph Pod ["Pod (Shared IP: 10.244.0.15)"]
-        subgraph SharedNet ["Network Namespace"]
-            Port80["Port 80"]
-            Port3000["Port 3000"]
-        end
-        subgraph SharedVol ["Storage Volume (Shared /data)"]
-            VolMount["/data"]
-        end
-        App["Container A: App"] --&gt; Port3000
-        App --&gt; VolMount
-        Proxy["Container B: Proxy"] --&gt; Port80
-        Proxy --&gt; VolMount
-    end</code></pre>
-<h2 id="2-demystifying-crashloopbackoff">2. Demystifying CrashLoopBackOff<a class="headerlink" href="#2-demystifying-crashloopbackoff" title="Permanent link">&para;</a></h2>
-<p>One of the most common issues you will face in your job is a Pod status showing <code>CrashLoopBackOff</code>. This is  <strong>not</strong>  an error code from your container. It is Kubernetes telling you:</p>
-<blockquote>
-<p>"I started your container, but it exited or crashed. I tried restarting it, but it crashed again. I am now waiting before trying again to avoid overloading the node."</p>
-</blockquote>
-<p>The time Kubernetes waits between restarts (the backoff delay) increases exponentially (10s, 20s, 40s, up to a limit of 5 minutes).</p>
-<h2 id="3-the-3-step-debugging-workflow">3. The 3-Step Debugging Workflow<a class="headerlink" href="#3-the-3-step-debugging-workflow" title="Permanent link">&para;</a></h2>
-<p>When a pod crashes, use the following sequence in your terminal:</p>
-<h3 id="step-a-find-the-broken-pod">Step A: Find the broken pod<a class="headerlink" href="#step-a-find-the-broken-pod" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods
-</span></code></pre></div>
-<h3 id="step-b-inspect-the-lifecycle-events">Step B: Inspect the lifecycle events<a class="headerlink" href="#step-b-inspect-the-lifecycle-events" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>&lt;pod-name&gt;
-</span></code></pre></div>
-<p>Look at the  <strong>Events</strong>  section at the bottom. Check the <code>Exit Code</code> in the container status. If the exit code is non-zero (e.g., 1 or 137), your application crashed.</p>
-<h3 id="step-c-read-the-previous-logs">Step C: Read the previous logs<a class="headerlink" href="#step-c-read-the-previous-logs" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--previous
-</span></code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Key Tip: Inspecting Previous Runs</p>
-<p>Standard <code>kubectl logs</code> shows the logs of the <em>current</em> container run. Since the container crashed and restarted, the current run might be empty or just starting up. Passing <code>--previous</code> retrieves the logs of the run that actually crashed.</p>
-</div>
-<h2 id="test-your-knowledge">Test Your Knowledge<a class="headerlink" href="#test-your-knowledge" title="Permanent link">&para;</a></h2>
-<h3 id="1-which-command-outputs-the-events-indicating-why-a-pod-failed-to-start">1. Which command outputs the events indicating why a pod failed to start?<a class="headerlink" href="#1-which-command-outputs-the-events-indicating-why-a-pod-failed-to-start" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> kubectl describe pod web</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> kubectl retrieve pod web</li>
-</ul>
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** A
-
-Correct! "kubectl describe pod web" displays configuration and event history for the pod. "retrieve" is not a valid kubectl command.
-</details>
-
-<h3 id="2-if-a-pod-is-restarting-due-to-crashloopbackoff-how-do-you-see-the-crash-reason">2. If a Pod is restarting due to CrashLoopBackOff, how do you see the crash reason?<a class="headerlink" href="#2-if-a-pod-is-restarting-due-to-crashloopbackoff-how-do-you-see-the-crash-reason" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> kubectl logs pod --previous</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> kubectl logs pod --tracking</li>
-</ul>
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** A
-
-Correct! "--previous" retrieves logs from the previous instance of the container, allowing you to see the crash details. "--tracking" is invalid.
-</details>
-
-<h2 id="interactive-win-hands-on-exercise">Interactive Win: Hands-on Exercise<a class="headerlink" href="#interactive-win-hands-on-exercise" title="Permanent link">&para;</a></h2>
-<p>Let's create a broken pod in your GKE cluster and debug it using your new skills.</p>
-<p><strong>Step 1:</strong>  Save the following YAML to a file named <code>broken-pod.yaml</code> in your workspace:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">challenge-pod</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-container</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine:latest</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">&#39;Starting</span><span class="nv"> </span><span class="s">server...&#39;;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">3;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">&#39;Fatal</span><span class="nv"> </span><span class="s">Error:</span><span class="nv"> </span><span class="s">DB_PASSWORD</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">set!&#39;;</span><span class="nv"> </span><span class="s">exit</span><span class="nv"> </span><span class="s">1;&quot;</span>
-</span></code></pre></div>
-<p><strong>Step 2:</strong>  Apply the file to your GKE cluster:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>broken-pod.yaml
-</span></code></pre></div>
-<p><strong>Step 3:</strong>  Use <code>kubectl get pods</code>, <code>kubectl describe pod challenge-pod</code>, and <code>kubectl logs challenge-pod --previous</code> to discover why it crashed.</p>
-<h2 id="recommended-resource">Recommended Resource<a class="headerlink" href="#recommended-resource" title="Permanent link">&para;</a></h2>
-<p>Read the official guide on <a href="https://kubernetes.io/docs/tasks/debug/debug-application/determine-reason-pod-failure/">Determining the Reason for Pod Failure</a> in the Kubernetes Documentation.</p>
-<p><strong>Got stuck or have a question?</strong>  Just type your question or share your terminal error in our chat, and we'll troubleshoot it together!</p>
+<h1 id="lesson-0001-introduction-to-kubernetes-prerequisites">Lesson 0001: Introduction to Kubernetes &amp; Prerequisites<a class="headerlink" href="#lesson-0001-introduction-to-kubernetes-prerequisites" title="Permanent link">&para;</a></h1>
+<p>Before diving into deploying containerized workloads, it is essential to understand what container orchestration is, why Kubernetes has become the industry standard, and the conceptual baseline required to learn it.</p>
 <hr />
-<p><a href="../../">← Home</a> | <a href=".././0002-node-scheduling-deployment-strategies-autoscaling/">Lesson 2: Node Scheduling &amp; Deployments →</a></p>
+<h2 id="1-what-is-kubernetes">1. What is Kubernetes?<a class="headerlink" href="#1-what-is-kubernetes" title="Permanent link">&para;</a></h2>
+<p><strong>Kubernetes</strong> (often abbreviated as <strong>K8s</strong>, replacing the 8 letters between "K" and "s") is an open-source container orchestration engine. It automates the deployment, scaling, management, and networking of containerized applications.</p>
+<h3 id="the-containerization-shift">The Containerization Shift<a class="headerlink" href="#the-containerization-shift" title="Permanent link">&para;</a></h3>
+<p>In traditional hosting, apps ran directly on virtual or physical servers. If an app crashed or needed more resources, you had to manage the virtual machine. Containers (like Docker) isolated applications from the underlying host OS. However, managing hundreds of containers across multiple servers manually is impossible. </p>
+<p>This is where Kubernetes fits: it acts as a cluster manager, coordinating which host runs which container.</p>
+<pre class="mermaid"><code>graph LR
+    User([User Request]) --&gt; LB[Load Balancer]
+    LB --&gt; Node1[Worker Node 1]
+    LB --&gt; Node2[Worker Node 2]
+    subgraph Node1
+        PodA[App Container A]
+        PodB[App Container B]
+    end
+    subgraph Node2
+        PodC[App Container A replica]
+        PodD[App Container C]
+    end</code></pre>
+<h3 id="core-value-propositions">Core Value Propositions:<a class="headerlink" href="#core-value-propositions" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>High Availability (Self-Healing):</strong> If a container crashes, K8s automatically restarts it. If a host node dies, K8s reschedules its containers onto healthy nodes.</li>
+<li><strong>Horizontal Scaling:</strong> Scales container replicas up or down dynamically based on CPU/Memory usage or manual commands.</li>
+<li><strong>Service Discovery &amp; Load Balancing:</strong> Gives containers their own IP addresses and a single DNS name for a set of containers, load-balancing traffic between them.</li>
+<li><strong>Automated Rollouts/Rollbacks:</strong> Deploys new application versions progressively while monitoring health, rolling back automatically if failures occur.</li>
+</ul>
+<hr />
+<h2 id="2-kubernetes-high-level-architecture">2. Kubernetes High-Level Architecture<a class="headerlink" href="#2-kubernetes-high-level-architecture" title="Permanent link">&para;</a></h2>
+<p>A Kubernetes cluster is divided into two main parts: the <strong>Control Plane</strong> and the <strong>Worker Nodes</strong>.</p>
+<pre class="mermaid"><code>graph TD
+    subgraph ControlPlane ["Control Plane (Manager)"]
+        APIServer["kube-apiserver"]
+        Etcd["etcd (Key-Value Database)"]
+        Scheduler["kube-scheduler"]
+        Controller["kube-controller-manager"]
+
+        APIServer --- Etcd
+        APIServer --- Scheduler
+        APIServer --- Controller
+    end
+
+    subgraph WorkerNode ["Worker Node (Runner)"]
+        Kubelet["kubelet"]
+        Proxy["kube-proxy"]
+        Runtime["Container Runtime (containerd)"]
+
+        Kubelet --- Runtime
+    end
+
+    APIServer &lt;--&gt;|Communicates via HTTPS| Kubelet</code></pre>
+<h3 id="the-control-plane-the-brain">The Control Plane (The Brain)<a class="headerlink" href="#the-control-plane-the-brain" title="Permanent link">&para;</a></h3>
+<p>Responsible for maintaining the desired state of the cluster:</p>
+<ul>
+<li><strong><code>kube-apiserver</code>:</strong> The entry point for all administrative requests (via <code>kubectl</code> or API calls).</li>
+<li><strong><code>etcd</code>:</strong> A distributed key-value store that serves as the single source of truth for cluster state.</li>
+<li><strong><code>kube-scheduler</code>:</strong> Watches for newly created Pods and assigns them to worker nodes based on resource availability.</li>
+<li><strong><code>kube-controller-manager</code>:</strong> Runs daemon controllers that regulate cluster state (e.g., node status, replica count).</li>
+</ul>
+<h3 id="worker-nodes-the-muscle">Worker Nodes (The Muscle)<a class="headerlink" href="#worker-nodes-the-muscle" title="Permanent link">&para;</a></h3>
+<p>Responsible for running the containerized workloads:</p>
+<ul>
+<li><strong><code>kubelet</code>:</strong> An agent that runs on each node, ensuring that containers are running and healthy inside their Pods.</li>
+<li><strong><code>kube-proxy</code>:</strong> A network proxy that maintains network rules on nodes, enabling service-to-service communication.</li>
+<li><strong>Container Runtime:</strong> The software responsible for running containers (e.g., <code>containerd</code> or Docker).</li>
+</ul>
+<hr />
+<h2 id="3-learning-prerequisites">3. Learning Prerequisites<a class="headerlink" href="#3-learning-prerequisites" title="Permanent link">&para;</a></h2>
+<p>To successfully learn Kubernetes, you should be comfortable with the following foundational concepts:</p>
+<h3 id="a-docker-container-basics">A. Docker &amp; Container Basics<a class="headerlink" href="#a-docker-container-basics" title="Permanent link">&para;</a></h3>
+<p>You should know how to package apps into containers.</p>
+<ul>
+<li><strong>Prerequisite check:</strong> Can you write a basic <code>Dockerfile</code>? Do you know the difference between an image (read-only blueprint) and a container (running instance)? Can you run multi-container setups locally using <code>docker-compose</code>?</li>
+<li><em>Recommended read:</em> <a href="https://docs.docker.com/get-started/">Docker Get Started Guide</a>.</li>
+</ul>
+<h3 id="b-basic-networking-concepts">B. Basic Networking Concepts<a class="headerlink" href="#b-basic-networking-concepts" title="Permanent link">&para;</a></h3>
+<p>K8s handles complex networking automatically, but you must know:</p>
+<ul>
+<li><strong>IP Addresses &amp; Ports:</strong> How processes bind to ports and communicate.</li>
+<li><strong>DNS (Domain Name System):</strong> Resolving hostnames to IP addresses.</li>
+<li><strong>HTTP Protocols:</strong> Request headers, status codes (2xx, 3xx, 4xx, 5xx).</li>
+</ul>
+<h3 id="c-command-line-cli-familiarity">C. Command Line (CLI) Familiarity<a class="headerlink" href="#c-command-line-cli-familiarity" title="Permanent link">&para;</a></h3>
+<p>Most interactions with Kubernetes happen via <code>kubectl</code> (the command-line interface).</p>
+<ul>
+<li>You should be comfortable running terminal commands, navigating directories, and editing text files (YAML/JSON formatting).</li>
+</ul>
+<hr />
+<h2 id="test-your-knowledge">Test Your Knowledge<a class="headerlink" href="#test-your-knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="1-which-component-in-the-kubernetes-control-plane-is-responsible-for-selecting-the-worker-node-that-will-host-a-new-container-workload">1. Which component in the Kubernetes control plane is responsible for selecting the worker node that will host a new container workload?<a class="headerlink" href="#1-which-component-in-the-kubernetes-control-plane-is-responsible-for-selecting-the-worker-node-that-will-host-a-new-container-workload" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> kube-controller-manager</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> kube-scheduler</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> etcd</li>
+</ul>
+<details>
+<summary><b>Answer & Explanation</b></summary>
+
+**Correct Answer:** B
+
+**Explanation:** The scheduler watches for Pods with no node assigned, and selects the best node for them based on resource requests and scheduling taints/tolerations.
+</details>
+
+<h3 id="2-what-is-the-database-used-by-the-control-plane-to-store-the-absolute-state-and-configuration-of-the-cluster">2. What is the database used by the Control Plane to store the absolute state and configuration of the cluster?<a class="headerlink" href="#2-what-is-the-database-used-by-the-control-plane-to-store-the-absolute-state-and-configuration-of-the-cluster" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> PostgreSQL</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> Redis</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> etcd</li>
+</ul>
+<details>
+<summary><b>Answer & Explanation</b></summary>
+
+**Correct Answer:** C
+
+**Explanation:** `etcd` is a highly-available, distributed key-value store used exclusively by Kubernetes to persist all cluster configuration and state.
+</details>
+
+<hr />
+<p><a href="../../">← Home</a> | <a href=".././0002-pod-anatomy/">Lesson 2: Pod Anatomy &amp; Configuration →</a></p>
 
 
 
@@ -683,6 +790,9 @@ Correct! "--previous" retrieves logs from the previous instance of the container
 
 
 
+
+  
+  
 
 
 

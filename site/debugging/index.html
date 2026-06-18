@@ -12,13 +12,13 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/cheatsheet/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/debugging/">
       
       
-        <link rel="prev" href="../debugging/">
+        <link rel="prev" href="../lessons/">
       
       
-        <link rel="next" href="../references/">
+        <link rel="next" href="../cheatsheet/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Cheatsheets - Learn Kubernetes</title>
+        <title>Debugging Workloads & Networking - Learn Kubernetes</title>
       
     
     
@@ -85,7 +85,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cheatsheets" class="md-skip">
+        <a href="#debugging-workloads-networking" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Cheatsheets
+              Debugging Workloads &amp; Networking
             
           </span>
         </div>
@@ -314,6 +314,8 @@
       
   
   
+    
+  
   
   
     
@@ -332,17 +334,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../debugging/" class="md-nav__link ">
+            <a href="././" class="md-nav__link md-nav__link--active">
               
   
   
@@ -362,7 +362,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -385,19 +385,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      
-      
-      
-        
-      
-      
-      <a href="././" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../cheatsheet/" class="md-nav__link">
         
   
   
@@ -414,7 +405,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -464,6 +454,11 @@
                       
                     
                     
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
                   
                   <div class="md-sidebar__inner">
                     
@@ -475,6 +470,25 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostic-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Diagnostic Guides
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -492,17 +506,73 @@
   
 
 
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="./.." class="md-path__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="././" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    Debugging
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
               
               <article class="md-content__inner md-typeset">
                 
                   
 
-<h1 id="cheatsheets">Cheatsheets<a class="headerlink" href="#cheatsheets" title="Permanent link">&para;</a></h1>
-<p>A list of available Kubernetes cheatsheets.</p>
-<ul>
-<li><strong><a href="kubectl-debugging-cheat-sheet/">kubectl Debugging Cheat Sheet</a></strong>: A visual walkthrough and command reference for diagnosing workload issues.</li>
-<li><strong><a href="image-pull-debugging-cheat-sheet/">Image Pull &amp; Verification Debugging Cheat Sheet</a></strong>: A diagnostic guide for ImagePullBackOff, RegistryUnavailable, and validation errors.</li>
-</ul>
+<h1 id="debugging-workloads-networking">Debugging Workloads &amp; Networking<a class="headerlink" href="#debugging-workloads-networking" title="Permanent link">&para;</a></h1>
+<p>Welcome to the debugging section. When applications fail to boot, crash, or fail to communicate inside the cluster, use these step-by-step diagnostic playbooks to isolate and fix the root causes.</p>
+<h2 id="diagnostic-guides">Diagnostic Guides<a class="headerlink" href="#diagnostic-guides" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong><a href="0001-debugging-crashloopbackoff/">Troubleshooting CrashLoopBackOff</a></strong></li>
+<li>What the status means, how to check container exit codes, and retrieving previous logs.</li>
+<li><strong><a href="0002-dns-networking-troubleshooting/">Troubleshooting DNS &amp; Service Routing</a></strong></li>
+<li>Checking service endpoints, resolving CoreDNS service names, bypassing service routing, and checking network policies.</li>
+</ol>
+<hr />
+<p><a href="../">← Home</a></p>
 
 
 
@@ -545,7 +615,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../debugging/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Debugging Workloads &amp;amp; Networking">
+          <a href="../lessons/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Lessons">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
@@ -555,20 +625,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Debugging Workloads &amp; Networking
+                Lessons
               </div>
             </div>
           </a>
         
         
           
-          <a href="../references/" class="md-footer__link md-footer__link--next" aria-label="Next: References">
+          <a href="../cheatsheet/" class="md-footer__link md-footer__link--next" aria-label="Next: Cheatsheet">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                References
+                Cheatsheet
               </div>
             </div>
             <div class="md-footer__button md-icon">

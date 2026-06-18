@@ -1,57 +1,74 @@
-# Lesson 0003: Service-to-Service Communication & DNS Troubleshooting
+---
+icon: lucide/network
+---
+
+# Lesson 0004: Service-to-Service Communication & DNS
+
+Kubernetes Pods are ephemeral. If a Pod is rescheduled, it receives a new IP address. Because Pod IPs are unpredictable and continually changing, client Pods cannot connect to them directly. 
+
+Kubernetes solves this with **Services**: a logical abstraction that groups replica Pods and exposes them under a single, stable IP and DNS name.
+
+---
 
 ## 1. How Cluster Services Communicate
 
-In Kubernetes, Pods are ephemeral—they die and get recreated with new IP addresses. You cannot hardcode Pod IPs for communication.
-
-Instead, we use  **Services** . A Service provides a single, stable IP address (the  **ClusterIP** ) and a DNS name that automatically load-balances traffic across matching healthy Pods.
+A Service uses selector labels to match and identify target Pods. It exposes a single, virtual IP address inside the cluster (the **ClusterIP**). Requests sent to this IP are load-balanced across the matching healthy Pods using local node iptables/IPVS rules managed by `kube-proxy`.
 
 ### DNS Resolution Mechanics
+Every cluster runs an internal DNS service (usually **CoreDNS**). When a container attempts to connect to a hostname, CoreDNS resolves it.
 
-Every Kubernetes cluster runs an internal DNS service (usually  **CoreDNS** ). When a Pod attempts to resolve a domain, CoreDNS answers with the ClusterIP of the target Service. The naming convention is:
+The fully qualified domain name (FQDN) for a Service is structured as:
+`[service-name].[namespace].svc.cluster.local`
 
-`<service-name>.<namespace>.svc.cluster.local`
-
-!!! note "Namespace Shortcut"
-    If both Pods are in the **same namespace**, you can omit the suffix and simply connect using `http://<service-name>:<port>`.
-
-### DNS & Service Routing Workflow
+* **Same Namespace Shortcut:** If Pod A and Service B are in the same namespace, you can simply use the Service name (e.g., `http://backend-service:[port]`).
+* **Cross-Namespace Connection:** If they are in different namespaces, you must append the namespace (e.g., `http://backend-service.prod.svc.cluster.local`).
 
 ```mermaid
 graph TD
-    Client["Client Pod"] -->|1. DNS Query: backend-service| DNS["CoreDNS"]
-    DNS -->|2. Returns ClusterIP: 10.96.0.45| Client
-    Client -->|3. TCP request to 10.96.0.45| KP["kube-proxy / iptables"]
-    KP -->|4. Load Balances (IP Translation)| Pod1["Backend Pod 1: 10.244.1.3"]
-    KP -->|or 4.| Pod2["Backend Pod 2: 10.244.2.4"]
+    Client[Client Pod] -->|1. DNS Lookup: backend-service| DNS[CoreDNS]
+    DNS -->|2. Resolves to ClusterIP: 10.96.0.45| Client
+    Client -->|3. Sends TCP traffic| KubeProxy[kube-proxy Routing]
+    KubeProxy -->|4. Load Balances traffic| Pod1[Backend Pod 1: 10.244.1.3]
+    KubeProxy -->|or 4.| Pod2[Backend Pod 2: 10.244.2.4]
 ```
 
-## 2. Code Sample: Frontend connecting to Backend
+---
 
-Here is how a frontend application connects to a backend database/API service internally.
+## 2. Kubernetes Service Types
 
-### Backend Deployment & Service Manifest
+Kubernetes offers different types of Services depending on how you want to expose them:
 
+1. **`ClusterIP` (Default):** Exposes the Service on an internal IP. It is only reachable from within the cluster.
+2. **`NodePort`:** Exposes the Service on each Node's IP at a static port (in the range `30000-32767`). You can connect to it from outside the cluster at `<NodeIP>:<NodePort>`.
+3. **`LoadBalancer`:** Integrates with cloud provider load balancers (like Google Cloud Load Balancing) to expose the Service externally with a dedicated public IP address.
+4. **`ExternalName`:** Maps the Service to a DNS name outside the cluster (e.g. an external database) by returning a CNAME record.
+
+---
+
+## 3. Code Example: Frontend to Backend Routing
+
+Here is the manifest setup for exposing a backend deployment via a Service and connecting to it from a frontend Pod.
+
+### Backend Manifest (`backend.yaml`)
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-api
-  namespace: default
+  name: backend-app
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: api-server
+      app: backend-api
   template:
     metadata:
       labels:
-        app: api-server
+        app: backend-api
     spec:
       containers:
       - name: api
         image: hashicorp/http-echo:latest
-        args: ["-text", "Hello from the Backend API!"]
+        args: ["-text", "Response from Backend API"]
         ports:
         - containerPort: 5678
 
@@ -60,188 +77,82 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend-service
-  namespace: default
 spec:
   type: ClusterIP
   selector:
-    app: api-server # Must match the Pod labels in the deployment
+    app: backend-api # Must match the Pod labels in the deployment
   ports:
-  - port: 80           # The port the service exposes inside the cluster
-    targetPort: 5678    # The port the container actually listens on
+  - port: 80         # Port clients target on the Service
+    targetPort: 5678 # Port the container process actually listens on
 ```
 
-### Frontend Application Code Configuration
-
-The frontend application container configuration would point to the backend service via environment variables:
-
+### Frontend Connection Manifest (`frontend.yaml`)
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-web
+  name: frontend-client
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: web-ui
+      app: web-client
   template:
     metadata:
       labels:
-        app: web-ui
+        app: web-client
     spec:
       containers:
-      - name: web
+      - name: client
         image: curlimages/curl:latest
         command: ["/bin/sh", "-c"]
+        # Connects to 'backend-service' DNS on port 80
         args:
-        - "while true; do curl -s http://backend-service:80; sleep 5; done"
+        - "while true; do curl -s http://backend-service:80; sleep 10; done"
 ```
 
-## 3. Common Pitfalls to Avoid
+---
 
-!!! warning "1. Port vs. TargetPort Confusion"
-    * `port`: The port numbers clients use to call the Service.
-    * `targetPort`: The port the container application listens on (matches `containerPort`).
+## 4. Key Concepts to Remember
 
-    If they do not align correctly, requests will result in connection timeouts or refused connections.
+!!! warning "Port vs. TargetPort"
+    * **`port`:** The port number client containers use to send traffic to the Service.
+    * **`targetPort`:** The port number the container application listens on (e.g. `containerPort` in the container spec).
+    If these are mismatched, connections to the Service will time out or be refused.
 
-!!! warning "2. Incorrect Selectors"
-    If the Service's `spec.selector` does not perfectly match the labels in the Pod's `template.metadata.labels`, the Service will have no target endpoints.
+!!! warning "Selectors and Labels"
+    If the Service's `selector` labels do not match the Pod's labels exactly, no Pods will register with the Service, leaving the Service endpoint pool empty.
 
-!!! warning "3. Pod Readiness"
-    If a Pod has a `readinessProbe` configured and it fails, Kubernetes excludes that Pod from the Service's Endpoints pool. No traffic will reach it.
-
-## 4. Step-by-Step Connectivity & DNS Troubleshooting Flow
-
-When you get a timeout or "Host not found" error, execute these diagnostics in order:
-
-### Step A: Verify Service Endpoints
-
-Does the service actually point to any running Pods? Run:
-
-```bash
-kubectl get endpoints backend-service
-```
-
-If the `ENDPOINTS` column is empty or says `<none>`, check your selectors or Pod health statuses.
-
-### Step B: Test DNS Resolution
-
-Run a temporary container inside the cluster to check if the DNS system can resolve the service name:
-
-```bash
-kubectl run dns-test -it --image=radial/busyboxplus:curl --rm --restart=Never
-```
-
-Once inside the prompt, run:
-
-```bash
-nslookup backend-service
-# Or if in a different namespace:
-nslookup backend-service.default.svc.cluster.local
-```
-
-If DNS fails, CoreDNS is likely failing or overwhelmed. Check CoreDNS logs:
-
-```bash
-kubectl logs -n kube-system -l k8s-app=kube-dns
-```
-
-### Step C: Bypass Service and Test Direct Pod IP
-
-Find one of the pod IPs directly:
-
-```bash
-kubectl get pods -o wide
-```
-
-Then, from your test container, try to curl that Pod IP directly: `curl http://<pod-ip>:5678`.
-    If this works but the Service name does not, the issue lies in the Service configuration (e.g. port mismatch) or Kube-Proxy routing.
-
-### Step D: Check Network Policies
-
-If you get a connection timeout but DNS resolved successfully, check if there is an active `NetworkPolicy` blocking ingress traffic to your backend pods:
-
-```bash
-kubectl get networkpolicies -A
-```
+---
 
 ## Test Your Knowledge
 
-### 1. If you configure a Service with `port: 8080` and `targetPort: 3000`, which port should client pods use when sending HTTP requests to the Service?
+### 1. If you run a Pod and a Service in the 'default' namespace, and you want to connect to a Service named 'database' in the 'prod' namespace, which FQDN should you use?
+- [ ] **A.** database
+- [ ] **B.** database.prod
+- [ ] **C.** database.prod.svc.cluster.local
 
-- [ ] **A.** Port 3000
-- [ ] **B.** Port 8080
+<details>
+<summary><b>Answer & Explanation</b></summary>
+
+**Correct Answer:** C
+
+**Explanation:** Since the client Pod is in a different namespace, it must specify the target namespace in the connection hostname. The full FQDN format is required: `database.prod.svc.cluster.local`.
+</details>
+
+### 2. What happens to a Service if all matching Pods fail their readiness checks?
+- [ ] **A.** The Service is deleted by the control plane.
+- [ ] **B.** The Service remains active, but its endpoints pool becomes empty and requests to the Service fail.
+- [ ] **C.** The Service redirects traffic to CoreDNS.
 
 <details>
 <summary><b>Answer & Explanation</b></summary>
 
 **Correct Answer:** B
 
-Correct! Clients talk to the service using the "port" value. The service then forwards traffic to the pods on "targetPort".
+**Explanation:** If Pods fail readiness checks, they are temporarily removed from the Service's endpoints list. The Service still exists, but has no healthy backends to route traffic to, resulting in connection timeouts.
 </details>
-
-### 2. If 'kubectl get endpoints my-service' returns '', what is the most likely cause?
-
-- [ ] **A.** The CoreDNS server is down.
-- [ ] **B.** The service selector does not match the labels on any running pods.
-- [ ] **C.** The client Pod is in a different namespace.
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-Correct! If there are no endpoints, it means the service has failed to locate any pods matching its selector labels.
-</details>
-
-## Hands-on Troubleshooting Challenge
-
-Let's simulate a broken connection scenario in your cluster and fix it.
-
-**Step 1:**  Apply the broken setup:
-
-```yaml
-# Save as broken-service.yaml and apply:
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: app-backend
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: app-backend
-  template:
-    metadata:
-      labels:
-        app: app-backend
-    spec:
-      containers:
-      - name: echo
-        image: hashicorp/http-echo
-        args: ["-text", "Hello World"]
-        ports:
-        - containerPort: 5678
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: app-service
-spec:
-  selector:
-    app: app-backend-wrong-label # Look closely!
-  ports:
-  - port: 80
-    targetPort: 5678
-```
-
-**Step 2:**  Troubleshoot the deployment by checking endpoints:
-
-`kubectl get endpoints app-service`
-
-Observe that it has no targets. Fix the selector in the YAML file and re-apply it, then verify that the endpoint registers.
 
 ---
 
-[← Lesson 2](./0002-node-scheduling-deployment-strategies-autoscaling.md) | [Lesson 4: Stateless vs. Stateful Workloads →](./0004-stateless-stateful-secrets-gcp.md)
+[← Lesson 3: Node Scheduling](./0003-node-scheduling-deployment-strategies-autoscaling.md) | [Lesson 5: Stateless vs. Stateful Workloads →](./0005-stateless-stateful-secrets-gcp.md)

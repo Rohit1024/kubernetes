@@ -258,4 +258,4 @@ spec:
 
 ---
 
-[← Lesson 1](./0001-pod-anatomy-and-crashloopbackoff.md) | [Lesson 3: Service-to-Service Communication →](./0003-service-communication-dns-troubleshooting.md)
+[← Lesson 2: Pod Anatomy & Configuration](./0002-pod-anatomy.md) | [Lesson 4: Service-to-Service Communication & DNS →](./0004-service-communication.md)

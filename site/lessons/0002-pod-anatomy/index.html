@@ -12,7 +12,7 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/references/resources/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/lessons/0002-pod-anatomy/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>Kubernetes Resources - Learn Kubernetes</title>
+        <title>Lesson 0002: Pod Anatomy & Configuration - Learn Kubernetes</title>
       
     
     
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubernetes-resources" class="md-skip">
+        <a href="#lesson-0002-pod-anatomy-configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Kubernetes Resources
+              Lesson 0002: Pod Anatomy &amp; Configuration
             
           </span>
         </div>
@@ -267,7 +267,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../lessons/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -412,7 +412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../references/" class="md-nav__link">
         
   
   
@@ -474,10 +474,105 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#knowledge" class="md-nav__link">
+  <a href="#1-what-is-a-pod" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Knowledge
+        1. What is a Pod?
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. What is a Pod?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-not-run-containers-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why not run containers directly?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-resource-sharing-inside-a-pod" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Resource Sharing inside a Pod
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Resource Sharing inside a Pod">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-network-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        A. Network Namespace
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-storage-volumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        B. Storage Volumes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-multi-container-pod-sidecar-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. The Multi-Container Pod (Sidecar Pattern)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The Multi-Container Pod (Sidecar Pattern)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Common Use Cases:
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-pod-lifecycle-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Pod Lifecycle States
       </span>
     </span>
   </a>
@@ -485,13 +580,52 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wisdom-communities" class="md-nav__link">
+  <a href="#hands-on-exercise-deploy-a-multi-container-pod" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Wisdom (Communities)
+        Hands-on Exercise: Deploy a Multi-Container Pod
       </span>
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-your-knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Test Your Knowledge
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Your Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-how-do-two-containers-running-in-the-same-pod-communicate-with-each-other" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. How do two containers running in the same Pod communicate with each other?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-if-a-worker-node-loses-power-and-shuts-down-what-happens-to-the-status-of-the-pods-running-on-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. If a worker node loses power and shuts down, what happens to the status of the Pods running on it?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -518,25 +652,162 @@
                 
                   
 
-<h1 id="kubernetes-resources">Kubernetes Resources<a class="headerlink" href="#kubernetes-resources" title="Permanent link">&para;</a></h1>
-<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h1 id="lesson-0002-pod-anatomy-configuration">Lesson 0002: Pod Anatomy &amp; Configuration<a class="headerlink" href="#lesson-0002-pod-anatomy-configuration" title="Permanent link">&para;</a></h1>
+<p>The fundamental unit of execution in Kubernetes is the <strong>Pod</strong>. In this lesson, we will explore Pod architecture, why Kubernetes uses Pods instead of bare containers, how multi-container Pods share resources, and the lifecycles of Pod workloads.</p>
+<hr />
+<h2 id="1-what-is-a-pod">1. What is a Pod?<a class="headerlink" href="#1-what-is-a-pod" title="Permanent link">&para;</a></h2>
+<p>A <strong>Pod</strong> is the smallest deployable computing unit you can create and manage in Kubernetes. </p>
+<p>Unlike standard container engines (like Docker) where you run individual containers directly, Kubernetes wraps one or more containers into a single abstraction called a Pod.</p>
+<h3 id="why-not-run-containers-directly">Why not run containers directly?<a class="headerlink" href="#why-not-run-containers-directly" title="Permanent link">&para;</a></h3>
+<p>Containers are isolated environments. However, in real-world applications, processes often need to work closely together. A Pod provides a way to group tightly coupled containers and run them on the same host, sharing network and storage boundaries.</p>
+<pre class="mermaid"><code>graph TD
+    subgraph Pod ["Pod Namespace (Shared IP: 10.244.0.15)"]
+        subgraph SharedNet ["Network Namespace (localhost)"]
+            Port80["Port 80 (App)"]
+            Port8080["Port 8080 (Sidecar)"]
+        end
+        subgraph SharedVol ["Storage Volume (Shared /var/log)"]
+            VolMount["/var/log"]
+        end
+        AppContainer["Container 1: Web App"] --&gt; Port80
+        AppContainer --&gt; VolMount
+        SidecarContainer["Container 2: Log Agent"] --&gt; Port8080
+        SidecarContainer --&gt; VolMount
+    end</code></pre>
+<hr />
+<h2 id="2-resource-sharing-inside-a-pod">2. Resource Sharing inside a Pod<a class="headerlink" href="#2-resource-sharing-inside-a-pod" title="Permanent link">&para;</a></h2>
+<p>All containers inside a Pod are guaranteed to run on the <strong>same physical or virtual worker node</strong>. They share:</p>
+<h3 id="a-network-namespace">A. Network Namespace<a class="headerlink" href="#a-network-namespace" title="Permanent link">&para;</a></h3>
+<p>Containers in a Pod share the same network IP address and port space. </p>
 <ul>
-<li><a href="https://kubernetes.io/docs/">Official Kubernetes Documentation</a>
-  The ultimate reference source for all API components, YAML schemas, and core concepts. Use for: standard manifest templates, troubleshooting steps, and kubectl CLI references.</li>
-<li><a href="https://cloud.google.com/kubernetes-engine/docs">Google Kubernetes Engine (GKE) Documentation</a>
-  Comprehensive guide for running K8s workload components specifically on Google Cloud. Use for: GKE load balancing, storage classes, and node scaling.</li>
-<li><a href="https://kubernetes.academy/">Kubernetes Academy by VMware</a>
-  Free, structured video courses explaining containers, Pods, Deployments, and networking fundamentals. Use for: architectural visual explanations.</li>
-<li><a href="https://killercoda.com/">Killercoda Kubernetes Playgrounds</a>
-  Interactive web-based terminal environments for practicing K8s. Use for: testing commands quickly when away from a real cluster.</li>
+<li>They can communicate with each other using <strong><code>localhost</code></strong> (e.g. the app container talks to a sidecar container on <code>localhost:8080</code>).</li>
+<li>Containers must not bind to the same port, or they will collide.</li>
+<li>External traffic hits the Pod IP first, which is then mapped to the correct container port.</li>
 </ul>
-<h2 id="wisdom-communities">Wisdom (Communities)<a class="headerlink" href="#wisdom-communities" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="https://reddit.com/r/kubernetes">r/kubernetes Subreddit</a>
-  High-signal community of platform engineers and developers sharing real-world setups, troubleshooting tips, and post-mortems. Use for: debugging obscure issues and comparing deployment patterns.</li>
-<li><a href="https://slack.cncf.io/">CNCF Slack Workspace</a>
-  Official CNCF Slack containing #kubernetes-users and #gke channels where core developers and users help each other in real-time. Use for: asking specific setup questions.</li>
+<h3 id="b-storage-volumes">B. Storage Volumes<a class="headerlink" href="#b-storage-volumes" title="Permanent link">&para;</a></h3>
+<p>You can define one or more storage volumes at the Pod level, which can then be mounted into any of the containers inside the Pod. This allows containers to share files easily.</p>
+<hr />
+<h2 id="3-the-multi-container-pod-sidecar-pattern">3. The Multi-Container Pod (Sidecar Pattern)<a class="headerlink" href="#3-the-multi-container-pod-sidecar-pattern" title="Permanent link">&para;</a></h2>
+<p>While most Pods contain a single container, running multiple containers is a common design pattern. The helper container is often called a <strong>Sidecar</strong>.</p>
+<h3 id="common-use-cases">Common Use Cases:<a class="headerlink" href="#common-use-cases" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Log Forwarders:</strong> A helper container reads logs written by the main application to a shared volume and ships them to a central system (e.g. Elasticsearch or Cloud Logging).</li>
+<li><strong>Proxies/Adapters:</strong> A sidecar intercepts incoming traffic, performs authentication/security checks, and routes it to the main container.</li>
+<li><strong>Config Watchers:</strong> A sidecar detects configurations changes in a remote repository and signals the main application to reload.</li>
+</ol>
+<hr />
+<h2 id="4-pod-lifecycle-states">4. Pod Lifecycle States<a class="headerlink" href="#4-pod-lifecycle-states" title="Permanent link">&para;</a></h2>
+<p>As a Pod runs, its health is categorized into several phases:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Phase</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Pending</strong></td>
+<td style="text-align: left;">The Pod manifest has been accepted by the cluster, but the scheduler is finding a node, or the container images are downloading.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Running</strong></td>
+<td style="text-align: left;">The Pod has been bound to a node, and all containers have been created. At least one container is currently starting or running.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Succeeded</strong></td>
+<td style="text-align: left;">All containers in the Pod have terminated successfully (exit code 0) and will not be restarted (common for Jobs).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Failed</strong></td>
+<td style="text-align: left;">All containers have terminated, and at least one container has terminated in failure (non-zero exit code).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Unknown</strong></td>
+<td style="text-align: left;">The state cannot be obtained, typically due to a communication failure between the control plane and the node's kubelet.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="hands-on-exercise-deploy-a-multi-container-pod">Hands-on Exercise: Deploy a Multi-Container Pod<a class="headerlink" href="#hands-on-exercise-deploy-a-multi-container-pod" title="Permanent link">&para;</a></h2>
+<p>Let's deploy a Pod that demonstrates storage sharing between a main web server container (Nginx) and a sidecar container that writes content.</p>
+<p><strong>Step 1:</strong> Save the following manifest to <code>multi-container-pod.yaml</code>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-volume-demo</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">multi-container</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="c1"># Define the shared volume at the Pod level</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-data</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">emptyDir</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span><span class="w"> </span><span class="c1"># Temporary empty directory sharing the node&#39;s disk</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span><span class="c1"># Container 1: The Main Web Server</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web-server</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx:alpine</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">volumeMounts</span><span class="p">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-data</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/share/nginx/html</span><span class="w"> </span><span class="c1"># Nginx reads static files here</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">  </span><span class="c1"># Container 2: The Sidecar Writer</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">content-writer</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpine</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">    </span><span class="nt">args</span><span class="p">:</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">      </span><span class="no">while true; do</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">        </span><span class="no">echo &quot;Hello from the content-writer sidecar container! Time: $(date)&quot; &gt; /data/index.html;</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">        </span><span class="no">sleep 10;</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">      </span><span class="no">done</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">    </span><span class="nt">volumeMounts</span><span class="p">:</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-data</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="w">      </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/data</span><span class="w"> </span><span class="c1"># Mounts to write files</span>
+</span></code></pre></div>
+<p><strong>Step 2:</strong> Apply the Pod:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>multi-container-pod.yaml
+</span></code></pre></div></p>
+<p><strong>Step 3:</strong> Access the web page served by Nginx to verify it reads the sidecar's written files:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Port-forward the Pod port to your local machine</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>shared-volume-demo<span class="w"> </span><span class="m">8080</span>:80
+</span></code></pre></div>
+Open your browser and navigate to <a href="http://localhost:8080">http://localhost:8080</a> to see the message.</p>
+<hr />
+<h2 id="test-your-knowledge">Test Your Knowledge<a class="headerlink" href="#test-your-knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="1-how-do-two-containers-running-in-the-same-pod-communicate-with-each-other">1. How do two containers running in the same Pod communicate with each other?<a class="headerlink" href="#1-how-do-two-containers-running-in-the-same-pod-communicate-with-each-other" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> By sending requests to the cluster's API Server.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> Using the Node's public IP address.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> Via localhost, using different ports.</li>
 </ul>
+<details>
+<summary><b>Answer & Explanation</b></summary>
+
+**Correct Answer:** C
+
+**Explanation:** Containers in the same Pod share the network namespace and can communicate directly over `localhost` using separate port numbers.
+</details>
+
+<h3 id="2-if-a-worker-node-loses-power-and-shuts-down-what-happens-to-the-status-of-the-pods-running-on-it">2. If a worker node loses power and shuts down, what happens to the status of the Pods running on it?<a class="headerlink" href="#2-if-a-worker-node-loses-power-and-shuts-down-what-happens-to-the-status-of-the-pods-running-on-it" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> They transition to the Failed state.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> They transition to the Unknown state.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> They automatically migrate to another node instantly.</li>
+</ul>
+<details>
+<summary><b>Answer & Explanation</b></summary>
+
+**Correct Answer:** B
+
+**Explanation:** If the kubelet on the node stops communicating with the control plane, the Pods' phase transitions to `Unknown`. The controllers will reschedule new instances on healthy nodes after a timeout.
+</details>
+
+<hr />
+<p><a href=".././0001-what-is-kubernetes-and-prerequisites/">← Lesson 1: Intro to Kubernetes</a> | <a href=".././0003-node-scheduling-deployment-strategies-autoscaling/">Lesson 3: Node Scheduling &amp; Deployments →</a></p>
 
 
 
@@ -545,6 +816,9 @@
 
 
 
+
+  
+  
 
 
 

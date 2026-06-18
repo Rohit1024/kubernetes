@@ -13,6 +13,9 @@ Whether you're a developer, DevOps engineer, or system administrator, you'll fin
 ### :memo: [Lessons](lessons/index.md)
 Start here to learn about core concepts. We cover everything from the control plane architecture to individual resources like Pods, Deployments, and Services.
 
+### :beetle: [Debugging](debugging/index.md)
+Step-by-step diagnostic workflows for solving cluster issues such as crashing containers, network/DNS blocks, and validation failures.
+
 ### :zap: [Cheatsheet](cheatsheet/index.md)
 A quick, command-focused guide to `kubectl`. Learn how to create resources, debug running containers, check logs, and manage namespaces efficiently.
 

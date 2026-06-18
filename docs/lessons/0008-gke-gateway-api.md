@@ -188,4 +188,4 @@ Correct! gke-l7-rilb represents GKE L7 Regional Internal Load Balancing.
 
 ---
 
-[← Lesson 6](./0006-pv-pvc-storageclasses.md) | [Lesson 8: Compute Management & Lifecycle →](./0008-resources-probes-graceful-shutdown.md)
+[← Lesson 7: Persistent Volumes, PVCs & StorageClasses](./0007-pv-pvc-storageclasses.md) | [Lesson 9: Pod Lifecycle, Resource Allocation, and Health Probes →](./0009-resources-probes-graceful-shutdown.md)

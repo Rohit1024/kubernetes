@@ -12,7 +12,7 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/lessons/0008-resources-probes-graceful-shutdown/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/debugging/0002-dns-networking-troubleshooting/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>Lesson 8: Compute Management & Lifecycle: Resource Management, Health Probes, & Graceful Shutdown - Learn Kubernetes</title>
+        <title>Debugging: Troubleshooting DNS & Service Routing - Learn Kubernetes</title>
       
     
     
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#lesson-8-compute-management-lifecycle-resource-management-health-probes-graceful-shutdown" class="md-skip">
+        <a href="#debugging-troubleshooting-dns-service-routing" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lesson 8: Compute Management &amp; Lifecycle: Resource Management, Health Probes, &amp; Graceful Shutdown
+              Debugging: Troubleshooting DNS &amp; Service Routing
             
           </span>
         </div>
@@ -267,7 +267,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../lessons/" class="md-nav__link ">
               
   
   
@@ -293,6 +293,77 @@
             
   
   Lessons
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-bug" viewBox="0 0 24 24"><path d="M12 20v-9M14 7a4 4 0 0 1 4 4v3a6 6 0 0 1-12 0v-3a4 4 0 0 1 4-4zM14.12 3.88 16 2"/><path d="M21 21a4 4 0 0 0-3.81-4M21 5a4 4 0 0 1-3.55 3.97M22 13h-4M3 21a4 4 0 0 1 3.81-4M3 5a4 4 0 0 0 3.55 3.97M6 13H2M8 2l1.88 1.88M9 7.13V6a3 3 0 1 1 6 0v1.13"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Debugging
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Debugging
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
@@ -403,22 +474,33 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-cpu-memory-requests-vs-limits" class="md-nav__link">
+  <a href="#1-diagnostic-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        1. CPU &amp; Memory: Requests vs. Limits
+        1. Diagnostic workflow
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. CPU &amp; Memory: Requests vs. Limits">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-troubleshooting-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Troubleshooting Steps
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Troubleshooting Steps">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cpu-compressible-resource" class="md-nav__link">
+  <a href="#step-1-verify-service-endpoints" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        CPU (Compressible Resource)
+        Step 1: Verify Service Endpoints
       </span>
     </span>
   </a>
@@ -426,10 +508,43 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#memory-incompressible-resource" class="md-nav__link">
+  <a href="#step-2-test-dns-resolution" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Memory (Incompressible Resource)
+        Step 2: Test DNS Resolution
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-check-coredns-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 3: Check CoreDNS Health
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-bypass-the-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 4: Bypass the Service
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-check-network-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 5: Check Network Policies
       </span>
     </span>
   </a>
@@ -442,22 +557,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-app-health-checks-the-three-probes" class="md-nav__link">
+  <a href="#hands-on-lab-fix-a-broken-service-selector" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        2. App Health Checks: The Three Probes
+        Hands-on Lab: Fix a Broken Service Selector
       </span>
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="2. App Health Checks: The Three Probes">
+    <nav class="md-nav" aria-label="Hands-on Lab: Fix a Broken Service Selector">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#probes-lifecycle-diagram" class="md-nav__link">
+  <a href="#step-1-deploy-the-broken-setup" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Probes Lifecycle Diagram
+        Step 1: Deploy the broken setup
       </span>
     </span>
   </a>
@@ -465,10 +580,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#a-startup-probe" class="md-nav__link">
+  <a href="#step-2-diagnosing-the-endpoint-mismatch" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        A. Startup Probe
+        Step 2: Diagnosing the endpoint mismatch
       </span>
     </span>
   </a>
@@ -476,10 +591,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#b-liveness-probe" class="md-nav__link">
+  <a href="#step-3-fix-the-service-selector" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        B. Liveness Probe
+        Step 3: Fix the Service Selector
       </span>
     </span>
   </a>
@@ -487,49 +602,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#c-readiness-probe" class="md-nav__link">
+  <a href="#step-4-clean-up" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        C. Readiness Probe
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-graceful-shutdown-zero-downtime-rollouts" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        3. Graceful Shutdown &amp; Zero-Downtime Rollouts
-      </span>
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Graceful Shutdown &amp; Zero-Downtime Rollouts">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-shutdown-lifecycle-flow" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        The Shutdown Lifecycle Flow:
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fixing-the-race-with-a-prestop-hook" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Fixing the Race with a preStop Hook
+        Step 4: Clean up
       </span>
     </span>
   </a>
@@ -554,21 +630,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-what-happens-to-a-container-that-exceeds-its-allocated-memory-limit" class="md-nav__link">
+  <a href="#1-if-kubectl-get-endpoints-web-service-returns-which-command-helps-you-inspect-the-current-labels-applied-to-your-running-pods" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        1. What happens to a container that exceeds its allocated Memory Limit?
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-if-your-application-takes-2-minutes-to-initialize-on-startup-but-needs-quick-liveness-checking-once-running-what-is-the-best-probe-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        2. If your application takes 2 minutes to initialize on startup, but needs quick liveness checking once running, what is the best probe strategy?
+        1. If 'kubectl get endpoints web-service' returns '<none>', which command helps you inspect the current labels applied to your running pods?
       </span>
     </span>
   </a>
@@ -603,122 +668,138 @@
                 
                   
 
-<h1 id="lesson-8-compute-management-lifecycle-resource-management-health-probes-graceful-shutdown">Lesson 8: Compute Management &amp; Lifecycle: Resource Management, Health Probes, &amp; Graceful Shutdown<a class="headerlink" href="#lesson-8-compute-management-lifecycle-resource-management-health-probes-graceful-shutdown" title="Permanent link">&para;</a></h1>
-<h2 id="1-cpu-memory-requests-vs-limits">1. CPU &amp; Memory: Requests vs. Limits<a class="headerlink" href="#1-cpu-memory-requests-vs-limits" title="Permanent link">&para;</a></h2>
-<p>When running applications in production GKE clusters, you must specify how much CPU and memory they require. This is done via <strong>Requests</strong> and <strong>Limits</strong> inside the container definition:</p>
-<ul>
-<li><strong>Requests (Scheduling):</strong>  The minimum amount of CPU/Memory guaranteed to the container. The Kubernetes scheduler uses this value to find a Node with enough available resources to host the Pod.</li>
-<li><strong>Limits (Enforcement):</strong>  The maximum ceiling of CPU/Memory the container is allowed to consume.</li>
-</ul>
-<h3 id="cpu-compressible-resource">CPU (Compressible Resource)<a class="headerlink" href="#cpu-compressible-resource" title="Permanent link">&para;</a></h3>
-<p>Measured in cores or millicores (e.g., <code>500m</code> = 0.5 cores). If a container goes over its CPU limit, it is <strong>throttled</strong> (slowed down), but it is  <strong>not</strong>  terminated.</p>
-<h3 id="memory-incompressible-resource">Memory (Incompressible Resource)<a class="headerlink" href="#memory-incompressible-resource" title="Permanent link">&para;</a></h3>
-<p>Measured in bytes (typically Mi/Gi, e.g., <code>256Mi</code>, <code>2Gi</code>). If a container exceeds its memory limit, the Linux kernel terminates the process, causing Kubernetes to flag the container as  <strong>OOMKilled</strong>  (Out of Memory, Exit Code 137).</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>resources:
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  requests:
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    memory: &quot;256Mi&quot;
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    cpu: &quot;200m&quot;
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  limits:
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    memory: &quot;512Mi&quot;
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    cpu: &quot;500m&quot;
-</span></code></pre></div>
-<h2 id="2-app-health-checks-the-three-probes">2. App Health Checks: The Three Probes<a class="headerlink" href="#2-app-health-checks-the-three-probes" title="Permanent link">&para;</a></h2>
-<p>Kubernetes uses <strong>Probes</strong> to monitor container health and react accordingly. All probes support HTTP checks, TCP checks, or CLI Exec commands:</p>
-<h3 id="probes-lifecycle-diagram">Probes Lifecycle Diagram<a class="headerlink" href="#probes-lifecycle-diagram" title="Permanent link">&para;</a></h3>
+<h1 id="debugging-troubleshooting-dns-service-routing">Debugging: Troubleshooting DNS &amp; Service Routing<a class="headerlink" href="#debugging-troubleshooting-dns-service-routing" title="Permanent link">&para;</a></h1>
+<p>If a client container fails to connect to another workload within a cluster using its service name, the issue is typically a Service misconfiguration, DNS failure, or a network policy block. </p>
+<p>This guide provides a systematic workflow to diagnose and resolve service connection errors.</p>
+<hr />
+<h2 id="1-diagnostic-workflow">1. Diagnostic workflow<a class="headerlink" href="#1-diagnostic-workflow" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>graph TD
-    Start["Container Starts"] --&gt; Startup{"Startup Probe passes?"}
-    Startup --&gt;|No| Restart["Kill &amp; Restart Container"]
-    Startup --&gt;|Yes| Liveness{"Liveness Probe passes?"}
-    Liveness --&gt;|No| Restart
-    Liveness --&gt;|Yes| Readiness{"Readiness Probe passes?"}
-    Readiness --&gt;|No| RemoveEndpoint["Remove Pod IP from Service Endpoints"]
-    Readiness --&gt;|Yes| AddEndpoint["Route Traffic to Pod IP"]</code></pre>
-<h3 id="a-startup-probe">A. Startup Probe<a class="headerlink" href="#a-startup-probe" title="Permanent link">&para;</a></h3>
-<p>Used for slow-starting applications. It tells Kubernetes to delay the liveness and readiness checks until the container is fully initialized. If this fails, the container is restarted.</p>
-<h3 id="b-liveness-probe">B. Liveness Probe<a class="headerlink" href="#b-liveness-probe" title="Permanent link">&para;</a></h3>
-<p>Determines if a container is alive and running properly. If it fails, Kubernetes kills the container and restarts it according to its <code>restartPolicy</code>.</p>
-<h3 id="c-readiness-probe">C. Readiness Probe<a class="headerlink" href="#c-readiness-probe" title="Permanent link">&para;</a></h3>
-<p>Determines if a container is ready to accept incoming user network traffic. If it fails, the Pod is removed from the Service's Endpoints pool, ensuring no users see a 502/503 error.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Example probe configuration inside container spec
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>startupProbe:
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  httpGet:
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    path: /initialize
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    port: 8080
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  failureThreshold: 30
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  periodSeconds: 10 # Wait up to 300s (30 * 10) for slow start
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>livenessProbe:
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  httpGet:
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    path: /healthz
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    port: 8080
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>  initialDelaySeconds: 15
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>  periodSeconds: 20
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>readinessProbe:
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>  httpGet:
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    path: /ready
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    port: 8080
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>  initialDelaySeconds: 5
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>  periodSeconds: 10
+    Start[Connection Timeout or Name Not Resolved] --&gt; Step1["1. Check Endpoints: 'kubectl get endpoints'"]
+    Step1 --&gt;|Empty / None| FixLabels["Fix Service selector or Pod labels"]
+    Step1 --&gt;|IP list present| Step2["2. Test DNS Resolution: 'nslookup' from pod"]
+
+    Step2 --&gt;|Name not resolved| CheckDNS["3. Check CoreDNS Pods &amp; Logs"]
+    Step2 --&gt;|Resolved to ClusterIP| Step4["4. Bypass Service: Connect directly to Pod IP"]
+
+    Step4 --&gt;|Works| CheckPorts["Fix Service Port / targetPort configuration"]
+    Step4 --&gt;|Fails| CheckNet["5. Check NetworkPolicies / Firewall Rules"]</code></pre>
+<hr />
+<h2 id="2-troubleshooting-steps">2. Troubleshooting Steps<a class="headerlink" href="#2-troubleshooting-steps" title="Permanent link">&para;</a></h2>
+<h3 id="step-1-verify-service-endpoints">Step 1: Verify Service Endpoints<a class="headerlink" href="#step-1-verify-service-endpoints" title="Permanent link">&para;</a></h3>
+<p>Ensure the Service is successfully pointing to healthy Pods. If the Service cannot find any Pods matching its selector, it will have no endpoints.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>endpoints<span class="w"> </span>&lt;service-name&gt;
 </span></code></pre></div>
-<h2 id="3-graceful-shutdown-zero-downtime-rollouts">3. Graceful Shutdown &amp; Zero-Downtime Rollouts<a class="headerlink" href="#3-graceful-shutdown-zero-downtime-rollouts" title="Permanent link">&para;</a></h2>
-<p>When you trigger a rolling deployment update (e.g., updating a container image), Kubernetes kills old Pods and spawns new ones. To achieve <strong>zero-downtime</strong>, Pods must terminate gracefully:</p>
-<h3 id="the-shutdown-lifecycle-flow">The Shutdown Lifecycle Flow:<a class="headerlink" href="#the-shutdown-lifecycle-flow" title="Permanent link">&para;</a></h3>
-<ol>
-<li>The Pod status transitions to <code>Terminating</code>.</li>
-<li>The Endpoint controller removes the Pod's IP from all Services and Cloud Load Balancers.</li>
-<li>The <strong>preStop Lifecycle Hook</strong> (if defined) executes.</li>
-<li>The container is sent a <code>SIGTERM</code> signal telling it to stop accepting new requests and finish existing ones.</li>
-<li>Kubernetes waits for the duration of <code>terminationGracePeriodSeconds</code> (default: 30 seconds).</li>
-<li>If the container is still running after the grace period, it is forcibly killed with a <code>SIGKILL</code> signal.</li>
-</ol>
-<div class="admonition warning">
-<p class="admonition-title">The Race Condition</p>
-<p>There is a slight latency between when a Pod is marked for termination and when routers/load-balancers actually stop sending traffic to it. If your app exits immediately on SIGTERM, users might get connection failures.</p>
-</div>
-<h3 id="fixing-the-race-with-a-prestop-hook">Fixing the Race with a preStop Hook<a class="headerlink" href="#fixing-the-race-with-a-prestop-hook" title="Permanent link">&para;</a></h3>
-<p>Adding a short sleep in the <code>preStop</code> hook gives network routers enough time to withdraw the Pod's IP before the application process stops:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">terminationGracePeriodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">40</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web-app</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-web-app:v1.1</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">lifecycle</span><span class="p">:</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">preStop</span><span class="p">:</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="nt">exec</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;sleep</span><span class="nv"> </span><span class="s">15&quot;</span><span class="p p-Indicator">]</span>
+* <strong>If it says <code>&lt;none&gt;</code> or is empty:</strong> The selector in the Service's <code>spec.selector</code> does not match the labels in the Pod's <code>metadata.labels</code>, or the Pods are not in a <code>Running</code> and <code>Ready</code> state (failing readiness probes).</p>
+<h3 id="step-2-test-dns-resolution">Step 2: Test DNS Resolution<a class="headerlink" href="#step-2-test-dns-resolution" title="Permanent link">&para;</a></h3>
+<p>Deploy a temporary test container inside the cluster to check if DNS is functioning.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Launch a curl-enabled test pod</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>run<span class="w"> </span>net-test<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span>--image<span class="o">=</span>radial/busyboxplus:curl<span class="w"> </span>--restart<span class="o">=</span>Never
 </span></code></pre></div>
+Once inside the shell, test DNS resolution:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Resolve local service</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>nslookup<span class="w"> </span>&lt;service-name&gt;
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Resolve cross-namespace service</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>nslookup<span class="w"> </span>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local
+</span></code></pre></div></p>
+<h3 id="step-3-check-coredns-health">Step 3: Check CoreDNS Health<a class="headerlink" href="#step-3-check-coredns-health" title="Permanent link">&para;</a></h3>
+<p>If <code>nslookup</code> fails completely, the cluster's internal DNS daemon (CoreDNS) may be down or experiencing issues.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Verify CoreDNS pods are running</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>-l<span class="w"> </span>k8s-app<span class="o">=</span>kube-dns
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Inspect CoreDNS logs</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>-l<span class="w"> </span>k8s-app<span class="o">=</span>kube-dns
+</span></code></pre></div></p>
+<h3 id="step-4-bypass-the-service">Step 4: Bypass the Service<a class="headerlink" href="#step-4-bypass-the-service" title="Permanent link">&para;</a></h3>
+<p>Retrieve the raw IP of one of the backend Pods:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-o<span class="w"> </span>wide
+</span></code></pre></div>
+From your test container, try connecting to the Pod IP directly (e.g. <code>curl http://&lt;pod-ip&gt;:&lt;container-port&gt;</code>).</p>
+<ul>
+<li><strong>If direct connection works but Service fails:</strong> You have a port mismatch in your Service definition (<code>port</code> vs <code>targetPort</code>).</li>
+<li><strong>If direct connection fails:</strong> The containerized application is not running on that port, has crashed, or is blocked by network policies.</li>
+</ul>
+<h3 id="step-5-check-network-policies">Step 5: Check Network Policies<a class="headerlink" href="#step-5-check-network-policies" title="Permanent link">&para;</a></h3>
+<p>Network Policies act as firewalls inside the cluster. Check if there are active policies blocking ingress or egress communication:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>networkpolicies<span class="w"> </span>-A
+</span></code></pre></div></p>
+<hr />
+<h2 id="hands-on-lab-fix-a-broken-service-selector">Hands-on Lab: Fix a Broken Service Selector<a class="headerlink" href="#hands-on-lab-fix-a-broken-service-selector" title="Permanent link">&para;</a></h2>
+<p>Let's simulate a broken connection scenario caused by mismatched labels, diagnose it, and patch it.</p>
+<h3 id="step-1-deploy-the-broken-setup">Step 1: Deploy the broken setup<a class="headerlink" href="#step-1-deploy-the-broken-setup" title="Permanent link">&para;</a></h3>
+<p>Save the following configuration to <code>broken-service.yaml</code> and apply it:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">billing-api</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">billing-backend</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">billing-backend</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">web</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hashicorp/http-echo</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;-text&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;Billing</span><span class="nv"> </span><span class="s">API</span><span class="nv"> </span><span class="s">Active&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5678</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="nn">---</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">billing-service</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">billing-wrong-label</span><span class="w"> </span><span class="c1"># Label mismatch!</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a><span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a><span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5678</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>broken-service.yaml
+</span></code></pre></div>
+<h3 id="step-2-diagnosing-the-endpoint-mismatch">Step 2: Diagnosing the endpoint mismatch<a class="headerlink" href="#step-2-diagnosing-the-endpoint-mismatch" title="Permanent link">&para;</a></h3>
+<p>Check the endpoints for the service:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>endpoints<span class="w"> </span>billing-service
+</span></code></pre></div>
+Notice the <code>ENDPOINTS</code> output is empty.</p>
+<h3 id="step-3-fix-the-service-selector">Step 3: Fix the Service Selector<a class="headerlink" href="#step-3-fix-the-service-selector" title="Permanent link">&para;</a></h3>
+<p>Edit the service inside <code>broken-service.yaml</code> to fix the selector:
+<div class="language-diff highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="gd">-   app: billing-wrong-label</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="gi">+   app: billing-backend</span>
+</span></code></pre></div>
+Apply the fix:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>broken-service.yaml
+</span></code></pre></div>
+Verify endpoints are now populated:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>endpoints<span class="w"> </span>billing-service
+</span></code></pre></div>
+You should now see the Pod IP registered.</p>
+<h3 id="step-4-clean-up">Step 4: Clean up<a class="headerlink" href="#step-4-clean-up" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>-f<span class="w"> </span>broken-service.yaml
+</span></code></pre></div>
+<hr />
 <h2 id="test-your-knowledge">Test Your Knowledge<a class="headerlink" href="#test-your-knowledge" title="Permanent link">&para;</a></h2>
-<h3 id="1-what-happens-to-a-container-that-exceeds-its-allocated-memory-limit">1. What happens to a container that exceeds its allocated Memory Limit?<a class="headerlink" href="#1-what-happens-to-a-container-that-exceeds-its-allocated-memory-limit" title="Permanent link">&para;</a></h3>
+<h3 id="1-if-kubectl-get-endpoints-web-service-returns-which-command-helps-you-inspect-the-current-labels-applied-to-your-running-pods">1. If 'kubectl get endpoints web-service' returns '<none>', which command helps you inspect the current labels applied to your running pods?<a class="headerlink" href="#1-if-kubectl-get-endpoints-web-service-returns-which-command-helps-you-inspect-the-current-labels-applied-to-your-running-pods" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> It is throttled and slowed down but remains running.</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> It is immediately terminated by the kernel with Exit Code 137 (OOMKilled).</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> It triggers the HPA to immediately add more nodes.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> <code>kubectl get pods --show-labels</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> <code>kubectl describe service web-service</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> <code>kubectl get pods -o json</code></li>
 </ul>
 <details>
 <summary><b>Answer & Explanation</b></summary>
 
-**Correct Answer:** B
+**Correct Answer:** A
 
-Correct! Memory is an incompressible resource, so reaching the limit results in an immediate Out-Of-Memory (OOM) termination (Exit Code 137).
-</details>
-
-<h3 id="2-if-your-application-takes-2-minutes-to-initialize-on-startup-but-needs-quick-liveness-checking-once-running-what-is-the-best-probe-strategy">2. If your application takes 2 minutes to initialize on startup, but needs quick liveness checking once running, what is the best probe strategy?<a class="headerlink" href="#2-if-your-application-takes-2-minutes-to-initialize-on-startup-but-needs-quick-liveness-checking-once-running-what-is-the-best-probe-strategy" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> Set a high <code>initialDelaySeconds</code> on the Liveness Probe.</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> Configure a <code>Startup Probe</code> with a high failure threshold to protect the container during startup, alongside a standard Liveness Probe.</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> Disable all probes and let GKE manage health checks outside the cluster.</li>
-</ul>
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-Correct! The Startup Probe runs first and disables liveness and readiness checks until it succeeds, preventing the container from getting stuck in a crash loop before it can finish loading.
+**Explanation:** The `--show-labels` flag displays all active key-value labels attached to each Pod, allowing you to easily cross-reference them with the Service selector.
 </details>
 
 <hr />
-<p><a href=".././0007-gke-gateway-api/">← Lesson 7</a> | <a href=".././0009-capstone-project/">Lesson 9: Capstone Exercise: Multi-Tier Application Workflow →</a></p>
+<p><a href=".././0001-debugging-crashloopbackoff/">← CrashLoopBackOff Troubleshooting</a> | <a href="../../cheatsheet/">Cheatsheets Index</a></p>
 
 
 
@@ -727,6 +808,9 @@ Correct! The Startup Probe runs first and disables liveness and readiness checks
 
 
 
+
+  
+  
 
 
 

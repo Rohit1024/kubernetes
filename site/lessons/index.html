@@ -18,7 +18,7 @@
         <link rel="prev" href="./..">
       
       
-        <link rel="next" href="../cheatsheet/">
+        <link rel="next" href="../debugging/">
       
       
         
@@ -316,6 +316,77 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../debugging/" class="md-nav__link ">
+              
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-bug" viewBox="0 0 24 24"><path d="M12 20v-9M14 7a4 4 0 0 1 4 4v3a6 6 0 0 1-12 0v-3a4 4 0 0 1 4-4zM14.12 3.88 16 2"/><path d="M21 21a4 4 0 0 0-3.81-4M21 5a4 4 0 0 1-3.55 3.97M22 13h-4M3 21a4 4 0 0 1 3.81-4M3 5a4 4 0 0 0 3.55 3.97M6 13H2M8 2l1.88 1.88M9 7.13V6a3 3 0 1 1 6 0v1.13"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+  Debugging
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Debugging
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../cheatsheet/" class="md-nav__link">
         
@@ -495,50 +566,56 @@
 <p>Welcome to the lessons section. Here, you will learn the core concepts and architecture of Kubernetes step by step.</p>
 <h2 id="lesson-outline">Lesson Outline<a class="headerlink" href="#lesson-outline" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong><a href="0001-pod-anatomy-and-crashloopbackoff/">Lesson 1: Pod Anatomy &amp; CrashLoopBackOff</a></strong><ul>
-<li>Understanding control plane vs. worker node components.</li>
-<li>Diagnosing why a container repeatedly crashes.</li>
+<li><strong><a href="0001-what-is-kubernetes-and-prerequisites/">Lesson 1: Introduction to Kubernetes &amp; Prerequisites</a></strong><ul>
+<li>Understanding container orchestration and high-level control plane vs worker node architecture.</li>
+<li>Prerequisites: Docker, terminal commands, container network concepts.</li>
 </ul>
 </li>
-<li><strong><a href="0002-node-scheduling-deployment-strategies-autoscaling/">Lesson 2: Node Scheduling, Deployment Strategies &amp; Autoscaling</a></strong><ul>
-<li>Labels, selectors, and scheduling decisions.</li>
-<li>Rolling updates vs. Recreate strategies.</li>
+<li><strong><a href="0002-pod-anatomy/">Lesson 2: Pod Anatomy &amp; Configuration</a></strong><ul>
+<li>How containers share network namespaces (localhost) and storage volumes inside a Pod.</li>
+<li>Implementing the sidecar design pattern and understanding Pod lifecycle phases.</li>
 </ul>
 </li>
-<li><strong><a href="0003-service-communication-dns-troubleshooting/">Lesson 3: Service Communication, DNS &amp; Troubleshooting</a></strong><ul>
-<li>Service discovery and core DNS.</li>
-<li>Internal cluster networking.</li>
+<li><strong><a href="0003-node-scheduling-deployment-strategies-autoscaling/">Lesson 3: Node Scheduling, Deployment Strategies &amp; Autoscaling</a></strong><ul>
+<li>Labels, selectors, taints, and scheduling decisions.</li>
+<li>Deployments (RollingUpdate vs Recreate) and horizontal pod auto-scaling.</li>
 </ul>
 </li>
-<li><strong><a href="0004-stateless-stateful-secrets-gcp/">Lesson 4: Stateless/Stateful App Configuration &amp; Secrets</a></strong><ul>
-<li>Environment variables, ConfigMaps, and Secrets.</li>
+<li><strong><a href="0004-service-communication/">Lesson 4: Service-to-Service Communication &amp; DNS</a></strong><ul>
+<li>Internal service discovery, Service types (ClusterIP, NodePort, LoadBalancer), CoreDNS resolution.</li>
 </ul>
 </li>
-<li><strong><a href="0005-ingress-gke-load-balancing/">Lesson 5: Ingress &amp; GKE Load Balancing</a></strong><ul>
-<li>Routing HTTP/HTTPS traffic to services.</li>
+<li><strong><a href="0005-stateless-stateful-secrets-gcp/">Lesson 5: Stateless/Stateful App Configuration &amp; Secrets</a></strong><ul>
+<li>Mounting configurations using ConfigMaps, managing sensitive Secrets, GKE credential sync.</li>
 </ul>
 </li>
-<li><strong><a href="0006-pv-pvc-storageclasses/">Lesson 6: Persistent Volumes, PVCs &amp; StorageClasses</a></strong><ul>
-<li>Dynamic provisioning and storage options.</li>
+<li><strong><a href="0006-ingress-gke-load-balancing/">Lesson 6: Ingress &amp; GKE Load Balancing</a></strong><ul>
+<li>Using Ingress controllers to route external HTTP/HTTPS traffic to backend cluster services.</li>
 </ul>
 </li>
-<li><strong><a href="0007-gke-gateway-api/">Lesson 7: GKE Gateway API</a></strong><ul>
-<li>Modern routing and multi-tenant traffic management.</li>
+<li><strong><a href="0007-pv-pvc-storageclasses/">Lesson 7: Persistent Volumes, PVCs &amp; StorageClasses</a></strong><ul>
+<li>Requesting storage dynamically with StorageClasses and mounting Persistent Volumes.</li>
 </ul>
 </li>
-<li><strong><a href="0008-resources-probes-graceful-shutdown/">Lesson 8: Resource Limits, Probes &amp; Graceful Shutdown</a></strong><ul>
-<li>CPU/Memory requests, limits, and health checks.</li>
+<li><strong><a href="0008-gke-gateway-api/">Lesson 8: GKE Gateway API</a></strong><ul>
+<li>Advanced traffic routing, path-based matching, and multi-tenant Gateway configuration.</li>
 </ul>
 </li>
-<li><strong><a href="0009-capstone-project/">Lesson 9: Capstone Project</a></strong><ul>
-<li>Deploying a complete multi-tier application.</li>
+<li><strong><a href="0009-resources-probes-graceful-shutdown/">Lesson 9: Pod Lifecycle, Resource Allocation, and Health Probes</a></strong><ul>
+<li>Tuning CPU/Memory requests/limits, configuring liveness/readiness/startup probes, implementing preStop graceful shutdown.</li>
 </ul>
 </li>
-<li><strong><a href="0010-helm-package-manager/">Lesson 10: Helm Package Manager</a></strong><ul>
-<li>Packaging and deploying complex Kubernetes apps.</li>
+<li><strong><a href="0010-capstone-project/">Lesson 10: Capstone Project</a></strong><ul>
+<li>Deploying a complete, highly-available multi-tier web application.</li>
+</ul>
+</li>
+<li><strong><a href="0011-helm-package-manager/">Lesson 11: Helm Package Manager</a></strong><ul>
+<li>Packaging, parameterizing, and versioning repeatable Kubernetes manifest sets.</li>
 </ul>
 </li>
 </ol>
+<hr />
+<p><a href="../">← Home</a></p>
 
 
 
@@ -598,13 +675,13 @@
         
         
           
-          <a href="../cheatsheet/" class="md-footer__link md-footer__link--next" aria-label="Next: Cheatsheet">
+          <a href="../debugging/" class="md-footer__link md-footer__link--next" aria-label="Next: Debugging Workloads &amp;amp; Networking">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Cheatsheet
+                Debugging Workloads &amp; Networking
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -220,4 +220,4 @@ Correct! The Secrets Store CSI Driver (specifically with the Google Cloud provid
 
 ---
 
-[← Lesson 3](./0003-service-communication-dns-troubleshooting.md) | [Lesson 5: Ingress & GKE Load Balancing →](./0005-ingress-gke-load-balancing.md)
+[← Lesson 4: Service-to-Service Communication & DNS](./0004-service-communication.md) | [Lesson 6: Ingress & GKE Load Balancing →](./0006-ingress-gke-load-balancing.md)
