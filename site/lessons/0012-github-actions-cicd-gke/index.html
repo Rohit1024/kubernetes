@@ -676,9 +676,11 @@
 </span></code></pre></div>
 <h3 id="what-does-use_dns_based_endpoint-true-do">What does <code>use_dns_based_endpoint: true</code> do?<a class="headerlink" href="#what-does-use_dns_based_endpoint-true-do" title="Permanent link">&para;</a></h3>
 <p>By default, the credentials tool configures <code>kubectl</code> to connect to the cluster control plane using its direct IP address. Setting <code>use_dns_based_endpoint: true</code> forces the connection to target GKE's modern <strong>DNS-based endpoints</strong> (e.g. <code>*.gke.gcloud.dev</code>).</p>
-<p>This is essential because:
-* <strong>TLS Verification:</strong> It ensures connection certificates align correctly with Google-managed DNS hostnames, preventing hostname validation issues.
-* <strong>Private Clusters:</strong> Private clusters often route external administrative connections strictly through private cloud DNS or load-balanced domain name records.</p>
+<p>This is essential because:</p>
+<ul>
+<li><strong>TLS Verification:</strong> It ensures connection certificates align correctly with Google-managed DNS hostnames, preventing hostname validation issues.</li>
+<li><strong>Private Clusters:</strong> Private clusters often route external administrative connections strictly through private cloud DNS or load-balanced domain name records.</li>
+</ul>
 <hr />
 <h2 id="3-complete-github-actions-workflow-example">3. Complete GitHub Actions Workflow Example<a class="headerlink" href="#3-complete-github-actions-workflow-example" title="Permanent link">&para;</a></h2>
 <p>Save the following YAML file to your GitHub repository at <code>.github/workflows/deploy.yaml</code> to configure the deployment pipeline.</p>

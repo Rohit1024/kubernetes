@@ -48,8 +48,9 @@ Once authenticated, the GitHub Actions runner needs a `kubeconfig` file to conne
 By default, the credentials tool configures `kubectl` to connect to the cluster control plane using its direct IP address. Setting `use_dns_based_endpoint: true` forces the connection to target GKE's modern **DNS-based endpoints** (e.g. `*.gke.gcloud.dev`).
 
 This is essential because:
-* **TLS Verification:** It ensures connection certificates align correctly with Google-managed DNS hostnames, preventing hostname validation issues.
-* **Private Clusters:** Private clusters often route external administrative connections strictly through private cloud DNS or load-balanced domain name records.
+
+- **TLS Verification:** It ensures connection certificates align correctly with Google-managed DNS hostnames, preventing hostname validation issues.
+- **Private Clusters:** Private clusters often route external administrative connections strictly through private cloud DNS or load-balanced domain name records.
 
 ---
 
