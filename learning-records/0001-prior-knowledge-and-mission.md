@@ -1,0 +1,3 @@
+# Established Prior Knowledge and Mission
+
+Prior knowledge was established: the user has written Dockerfiles and run docker-compose, possesses basic networking conceptual knowledge, has interacted with basic `kubectl` commands, and has access to a GKE cluster. The mission was set to focus on job-ready Kubernetes component deployment and rapid troubleshooting (especially `CrashLoopBackOff`), while explicitly excluding cluster creation, service meshes, and custom code implementation. This grounds the learning plan in hands-on GKE application workflows and establishes our ZPD starting line at Pod architecture and debugging rather than basic CLI commands.
