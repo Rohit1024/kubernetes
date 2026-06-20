@@ -1,4 +1,4 @@
-# Lesson 6: Storage & State Management: Persistent Volumes & StorageClasses on GKE
+# Lesson 0007: Storage & State Management: Persistent Volumes & StorageClasses on GKE
 
 ## Introduction to Kubernetes Storage
 

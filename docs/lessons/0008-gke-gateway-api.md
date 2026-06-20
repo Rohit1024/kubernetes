@@ -1,4 +1,4 @@
-# Lesson 7: Advanced Networking: Kubernetes Gateway API & GKE GatewayClass
+# Lesson 0008: Advanced Networking: Kubernetes Gateway API & GKE GatewayClass
 
 ## What is the Gateway API?
 

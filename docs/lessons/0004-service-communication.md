@@ -45,11 +45,13 @@ Kubernetes offers different types of Services depending on how you want to expos
 
 ---
 
-## 3. Code Example: Frontend to Backend Routing
+## 3. Code Examples: Service Types in Action
 
-Here is the manifest setup for exposing a backend deployment via a Service and connecting to it from a frontend Pod.
+Below are the manifest configurations and explanations for each of the four Kubernetes Service types.
 
-### Backend Manifest (`backend.yaml`)
+### Common Backend Deployment (`backend-deployment.yaml`)
+To demonstrate how these services connect to an application, we use a simple backend deployment:
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -71,8 +73,16 @@ spec:
         args: ["-text", "Response from Backend API"]
         ports:
         - containerPort: 5678
+```
 
 ---
+
+### Type 1: `ClusterIP` Service (Default)
+Exposes the Service on an internal IP address. It is only accessible from within the cluster (e.g., frontend pod connecting to backend pod).
+
+**Manifest Setup (`service-clusterip.yaml` & `frontend.yaml`):**
+
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -86,7 +96,6 @@ spec:
     targetPort: 5678 # Port the container process actually listens on
 ```
 
-### Frontend Connection Manifest (`frontend.yaml`)
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -106,10 +115,79 @@ spec:
       - name: client
         image: curlimages/curl:latest
         command: ["/bin/sh", "-c"]
-        # Connects to 'backend-service' DNS on port 80
+        # Connects to 'backend-service' DNS name on port 80
         args:
         - "while true; do curl -s http://backend-service:80; sleep 10; done"
 ```
+
+---
+
+### Type 2: `NodePort` Service
+Exposes the Service on each Node's IP address at a static port (in the range `30000-32767`). Traffic sent to `<NodeIP>:<NodePort>` is automatically routed to the target Pods.
+
+**Manifest Setup (`service-nodeport.yaml`):**
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-nodeport-service
+spec:
+  type: NodePort
+  selector:
+    app: backend-api
+  ports:
+  - port: 80         # Port clients target inside the cluster
+    targetPort: 5678 # Port the container process listens on
+    nodePort: 30080  # Optional: Static port exposed on all Nodes. If omitted, a random port in range 30000-32767 is assigned.
+```
+
+> [!NOTE]
+> You can connect to it from outside the cluster at `<AnyNodePublicIP>:30080`.
+
+---
+
+### Type 3: `LoadBalancer` Service
+Integrates with cloud provider load balancers (like Google Cloud Load Balancing on GKE) to expose the Service externally with a dedicated public IP address.
+
+**Manifest Setup (`service-loadbalancer.yaml`):**
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-loadbalancer-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: backend-api
+  ports:
+  - port: 80         # Port exposed on the external load balancer
+    targetPort: 5678 # Port the container process listens on
+```
+
+> [!TIP]
+> After applying this service, running `kubectl get svc` will show an `EXTERNAL-IP` once provisioned by the cloud provider. You can reach the service externally at `http://<EXTERNAL-IP>:80`.
+
+---
+
+### Type 4: `ExternalName` Service
+Maps the Service to a DNS name outside the cluster (e.g. an external database) by returning a CNAME record. It does not use selectors or select pods.
+
+**Manifest Setup (`service-externalname.yaml`):**
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-db-service
+spec:
+  type: ExternalName
+  externalName: prod-db.example.com # CoreDNS returns a CNAME record pointing here
+```
+
+> [!NOTE]
+> This is useful when you want workloads inside the cluster to refer to an external database using a stable local alias (`external-db-service`), allowing you to change the external endpoint later without updating application configurations.
 
 ---
 

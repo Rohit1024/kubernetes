@@ -1,4 +1,4 @@
-# Lesson 0002: Advanced Deployments, Node Scheduling & Autoscaling
+# Lesson 0003: Advanced Deployments, Node Scheduling & Autoscaling
 
 ## 1. Only Deploy on Certain Nodes (Node Scheduling)
 

@@ -1,4 +1,4 @@
-# Lesson 0004: Stateless vs. Stateful Workloads & Secrets Management
+# Lesson 0005: Stateless vs. Stateful Workloads & Secrets Management
 
 ## 1. Stateless vs. Stateful Workloads
 

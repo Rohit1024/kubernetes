@@ -1,4 +1,4 @@
-# Lesson 5: Networking & Routing: Ingress & GKE Load Balancing
+# Lesson 0006: Networking & Routing: Ingress & GKE Load Balancing
 
 ## Understanding External Traffic Options
 

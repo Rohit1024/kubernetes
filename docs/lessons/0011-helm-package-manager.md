@@ -1,4 +1,4 @@
-# Lesson 10: Helm Package Manager & Core Open Source Charts
+# Lesson 0011: Helm Package Manager & Core Open Source Charts
 
 ## 1. Why Helm? The Kubernetes Package Manager
 Managing Kubernetes applications via plain YAML manifests scales poorly. If you need to deploy the same application across Dev, Staging, and Production environments, you end up duplicating manifests or using tools like Kustomize. But if you want to version, package, and share pre-configured applications, you need **Helm**.

@@ -1,4 +1,4 @@
-# Lesson 9: Capstone Exercise: Multi-Tier Application Workflow (Capstone)
+# Lesson 0010: Capstone Exercise: Multi-Tier Application Workflow (Capstone)
 
 ## Introduction
 

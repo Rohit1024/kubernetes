@@ -2,7 +2,7 @@
 icon: lucide/shield-check
 ---
 
-# Lesson 0008: Pod Lifecycle, Resource Allocation, and Health Probes
+# Lesson 0009: Pod Lifecycle, Resource Allocation, and Health Probes
 
 In a production Kubernetes environment, containers are dynamic and ephemeral. To run workloads reliably at scale, the cluster needs to know two things:
 
