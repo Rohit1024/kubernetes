@@ -142,8 +142,8 @@ spec:
     nodePort: 30080  # Optional: Static port exposed on all Nodes. If omitted, a random port in range 30000-32767 is assigned.
 ```
 
-> [!NOTE]
-> You can connect to it from outside the cluster at `<AnyNodePublicIP>:30080`.
+!!! note "External Access"
+    You can connect to it from outside the cluster at `<AnyNodePublicIP>:30080`.
 
 ---
 
@@ -166,8 +166,8 @@ spec:
     targetPort: 5678 # Port the container process listens on
 ```
 
-> [!TIP]
-> After applying this service, running `kubectl get svc` will show an `EXTERNAL-IP` once provisioned by the cloud provider. You can reach the service externally at `http://<EXTERNAL-IP>:80`.
+!!! tip "Provisioning Public IP"
+    After applying this service, running `kubectl get svc` will show an `EXTERNAL-IP` once provisioned by the cloud provider. You can reach the service externally at `http://<EXTERNAL-IP>:80`.
 
 ---
 
@@ -186,8 +186,8 @@ spec:
   externalName: prod-db.example.com # CoreDNS returns a CNAME record pointing here
 ```
 
-> [!NOTE]
-> This is useful when you want workloads inside the cluster to refer to an external database using a stable local alias (`external-db-service`), allowing you to change the external endpoint later without updating application configurations.
+!!! note "Internal Redirection Alias"
+    This is useful when you want workloads inside the cluster to refer to an external database using a stable local alias (`external-db-service`), allowing you to change the external endpoint later without updating application configurations.
 
 ---
 
