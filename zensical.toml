@@ -52,6 +52,9 @@ nav = [
   { "Debugging" = [
      "debugging/index.md"
   ]},
+  { "Interview Questions" = [
+     "interview/index.md"
+  ]},
   { "Cheatsheet" = "cheatsheet/index.md" },
   { "References" = "references/index.md" }
 ]

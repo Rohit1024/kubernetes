@@ -16,6 +16,9 @@ Start here to learn about core concepts. We cover everything from the control pl
 ### :beetle: [Debugging](debugging/index.md)
 Step-by-step diagnostic workflows for solving cluster issues such as crashing containers, network/DNS blocks, and validation failures.
 
+### :question: [Interview Questions](interview/index.md)
+Tricky, real-world Kubernetes troubleshooting scenarios that frequently appear in advanced engineering interviews.
+
 ### :zap: [Cheatsheet](cheatsheet/index.md)
 A quick, command-focused guide to `kubectl`. Learn how to create resources, debug running containers, check logs, and manage namespaces efficiently.
 
