@@ -51,8 +51,8 @@ graph TD
     Readiness -->|No| RemoveEndpoint["Remove Pod IP from Service Endpoints"]
     Readiness -->|Yes| AddEndpoint["Route Traffic to Pod IP"]
 
-    style Restart fill:#f9d5d5,stroke:#c0392b,stroke-width:2px;
-    style AddEndpoint fill:#d4edda,stroke:#28a745,stroke-width:2px;
+    style Restart fill:none,stroke:#ff4d4f,stroke-width:2px;
+    style AddEndpoint fill:none,stroke:#52c41a,stroke-width:2px;
 ```
 
 ### 1. Startup Probe

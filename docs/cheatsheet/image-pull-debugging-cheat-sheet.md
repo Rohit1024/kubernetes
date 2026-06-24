@@ -30,7 +30,7 @@ graph TD
     Inspect -->|Corrupt / Incompatible Format| ErrInspect[ImageInspectError]
     Inspect -->|Success| Run[Container Starts Running]
 
-    classDef error fill:#f9d5d5,stroke:#c0392b,stroke-width:2px;
+    classDef error fill:none,stroke:#ff4d4f,stroke-width:2px;
     class ErrInvalid,ErrReg,ErrPull,ErrSig,ErrInspect error;
 ```
 
