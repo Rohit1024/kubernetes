@@ -35,6 +35,8 @@ Welcome to the lessons section. Here, you will learn the core concepts and archi
     - Packaging, parameterizing, and versioning repeatable Kubernetes manifest sets.
 12. **[Lesson 12: CI/CD with GitHub Actions & GKE](0012-github-actions-cicd-gke.md)**
     - Automating GKE deployments using GitHub Actions, Workload Identity Federation (WIF), and DNS-based kubeconfig credentials.
+13. **[Lesson 13: Zero-Downtime Cluster Upgrades](0013-zero-downtime-cluster-upgrades.md)**
+    - Upgrading control plane and worker nodes without downtime using Surge Upgrades, PDBs, and graceful termination.
 
 ---
 

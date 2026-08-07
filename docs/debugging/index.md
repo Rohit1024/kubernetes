@@ -17,6 +17,9 @@ Welcome to the debugging section. When applications fail to boot, crash, or fail
 3. **[Troubleshooting ImagePullBackOff](0003-debugging-imagepullbackoff.md)**
    : Diagnosing image pull failures, verifying tags, authentication, and network issues.
 
+4. **[Troubleshooting Database Connectivity](0004-database-connectivity-gke.md)**
+   : Diagnosing app-to-database connection failures, checking DNS, firewalls, Workload Identity, and the Cloud SQL Auth Proxy.
+
 ---
 
 [← Home](../index.md)

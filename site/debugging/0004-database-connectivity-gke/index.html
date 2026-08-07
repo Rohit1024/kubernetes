@@ -12,36 +12,32 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/lessons/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/debugging/0004-database-connectivity-gke/">
       
       
-        <link rel="prev" href="./..">
-      
-      
-        <link rel="next" href="../debugging/">
       
       
         
       
       
-      <link rel="icon" href="../images/favicon.png">
+      <link rel="icon" href="../../images/favicon.png">
       <meta name="generator" content="zensical-0.0.45">
     
     
       
-        <title>Lessons - Learn Kubernetes</title>
+        <title>Debugging Database Connectivity from GKE - Learn Kubernetes</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.fba56155.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.fba56155.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -60,7 +56,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -85,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#lessons" class="md-skip">
+        <a href="#debugging-database-connectivity-from-gke" class="md-skip">
           Skip to content
         </a>
       
@@ -101,7 +97,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="Learn Kubernetes" class="md-header__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
+    <a href="../.." title="Learn Kubernetes" class="md-header__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
       
   
   <svg viewBox="0 0 722.8 702"><path style="fill:#326ce5;fill-opacity:1;stroke:#fff;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" d="M365 185a47 46 0 0 0-18 4L103 306a47 46 0 0 0-25 32L18 600a47 46 0 0 0 6 35 47 46 0 0 0 3 4l169 210a47 46 0 0 0 36 18h271a47 46 0 0 0 37-18l169-210a47 46 0 0 0 9-39l-60-263a47 46 0 0 0-26-31L388 189a47 46 0 0 0-23-4z" transform="translate(-6 -175)"/><path d="M368 274c-8 0-15 7-15 16v4l2 14 2 27c-1 3-3 6-5 7v7a190 190 0 0 0-122 58l-6-3c-2 0-5 1-8-1l-20-18-10-10-3-3c-3-2-7-4-10-4-5 0-9 2-12 5-5 7-3 16 4 22l3 3 12 7 22 15c2 2 3 7 3 8l5 5c-26 37-37 84-30 131l-6 2c-2 2-4 6-7 7l-26 4-14 1-4 1c-9 2-14 10-13 18 2 8 11 12 19 11h1v-1h4l13-5c9-4 17-7 25-8l9 3 6-1c15 45 45 82 84 105l-2 7c1 2 2 5 1 8l-13 24-8 11-2 4c-4 8-1 18 6 21 8 4 17 0 20-8l2-4 5-13c3-10 6-20 11-27l6-3 3-6a189 189 0 0 0 135 1l4 5c2 1 5 2 7 5l10 24 4 14 2 4c4 8 13 11 20 8 8-4 10-13 7-21l-2-4-8-12c-6-8-10-15-13-23-1-4 0-6 1-8l-2-6c40-24 70-62 84-106l6 1c2-2 4-4 8-3 8 1 16 4 26 7l13 5 4 1c9 2 17-3 19-10 2-8-4-16-12-18l-5-1-14-1c-10-1-18-2-26-5-3-1-5-5-6-6l-6-2a189 189 0 0 0-31-131l6-5c0-3 0-5 2-8 6-6 13-10 22-16l12-7 4-2c7-6 8-16 3-22s-15-7-22-1l-3 2-10 11c-7 7-13 13-19 17-3 2-7 2-9 1l-6 4c-31-33-75-54-121-58v-7c-2-2-5-3-5-7-1-8 0-16 1-27l2-14v-4c0-9-6-16-14-16zm-19 113-4 77a13 13 0 0 1-21 10l-63-44a151 151 0 0 1 88-43zm37 0c33 5 64 20 88 43l-63 44a13 13 0 0 1-21-10zm-148 71 58 52a13 13 0 0 1-5 22l-74 22c-4-35 4-68 21-96zm259 0a153 153 0 0 1 22 95l-74-21a13 13 0 0 1-5-22h-1l58-52zm-141 56h23l15 18-5 23-21 10-21-10-6-23zm75 62h3l77 13c-12 32-33 59-61 77l-30-72a13 13 0 0 1 11-18zm-128 1a13 13 0 0 1 12 18l-29 71c-27-18-49-44-61-77l76-12h2zm64 31c2-1 4 0 6 1 3 1 5 3 6 5l38 68a154 154 0 0 1-98-1l37-67c3-4 7-6 11-6z" style="font-size:medium;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000;fill:#fff;fill-opacity:1;stroke:#fff;stroke-width:.25;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;font-family:Sans;-inkscape-font-specification:Sans" transform="translate(-6 -175)"/></svg>
@@ -121,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lessons
+              Debugging Database Connectivity from GKE
             
           </span>
         </div>
@@ -200,7 +196,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="Learn Kubernetes" class="md-nav__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
+    <a href="../.." title="Learn Kubernetes" class="md-nav__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
       
   
   <svg viewBox="0 0 722.8 702"><path style="fill:#326ce5;fill-opacity:1;stroke:#fff;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" d="M365 185a47 46 0 0 0-18 4L103 306a47 46 0 0 0-25 32L18 600a47 46 0 0 0 6 35 47 46 0 0 0 3 4l169 210a47 46 0 0 0 36 18h271a47 46 0 0 0 37-18l169-210a47 46 0 0 0 9-39l-60-263a47 46 0 0 0-26-31L388 189a47 46 0 0 0-23-4z" transform="translate(-6 -175)"/><path d="M368 274c-8 0-15 7-15 16v4l2 14 2 27c-1 3-3 6-5 7v7a190 190 0 0 0-122 58l-6-3c-2 0-5 1-8-1l-20-18-10-10-3-3c-3-2-7-4-10-4-5 0-9 2-12 5-5 7-3 16 4 22l3 3 12 7 22 15c2 2 3 7 3 8l5 5c-26 37-37 84-30 131l-6 2c-2 2-4 6-7 7l-26 4-14 1-4 1c-9 2-14 10-13 18 2 8 11 12 19 11h1v-1h4l13-5c9-4 17-7 25-8l9 3 6-1c15 45 45 82 84 105l-2 7c1 2 2 5 1 8l-13 24-8 11-2 4c-4 8-1 18 6 21 8 4 17 0 20-8l2-4 5-13c3-10 6-20 11-27l6-3 3-6a189 189 0 0 0 135 1l4 5c2 1 5 2 7 5l10 24 4 14 2 4c4 8 13 11 20 8 8-4 10-13 7-21l-2-4-8-12c-6-8-10-15-13-23-1-4 0-6 1-8l-2-6c40-24 70-62 84-106l6 1c2-2 4-4 8-3 8 1 16 4 26 7l13 5 4 1c9 2 17-3 19-10 2-8-4-16-12-18l-5-1-14-1c-10-1-18-2-26-5-3-1-5-5-6-6l-6-2a189 189 0 0 0-31-131l6-5c0-3 0-5 2-8 6-6 13-10 22-16l12-7 4-2c7-6 8-16 3-22s-15-7-22-1l-3 2-10 11c-7 7-13 13-19 17-3 2-7 2-9 1l-6 4c-31-33-75-54-121-58v-7c-2-2-5-3-5-7-1-8 0-16 1-27l2-14v-4c0-9-6-16-14-16zm-19 113-4 77a13 13 0 0 1-21 10l-63-44a151 151 0 0 1 88-43zm37 0c33 5 64 20 88 43l-63 44a13 13 0 0 1-21-10zm-148 71 58 52a13 13 0 0 1-5 22l-74 22c-4-35 4-68 21-96zm259 0a153 153 0 0 1 22 95l-74-21a13 13 0 0 1-5-22h-1l58-52zm-141 56h23l15 18-5 23-21 10-21-10-6-23zm75 62h3l77 13c-12 32-33 59-61 77l-30-72a13 13 0 0 1 11-18zm-128 1a13 13 0 0 1 12 18l-29 71c-27-18-49-44-61-77l76-12h2zm64 31c2-1 4 0 6 1 3 1 5 3 6 5l38 68a154 154 0 0 1-98-1l37-67c3-4 7-6 11-6z" style="font-size:medium;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000;fill:#fff;fill-opacity:1;stroke:#fff;stroke-width:.25;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;font-family:Sans;-inkscape-font-specification:Sans" transform="translate(-6 -175)"/></svg>
@@ -218,7 +214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -243,8 +239,6 @@
       
   
   
-    
-  
   
   
     
@@ -263,15 +257,17 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="././" class="md-nav__link md-nav__link--active">
+            <a href="../../lessons/" class="md-nav__link ">
               
   
   
@@ -291,7 +287,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -342,7 +338,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../debugging/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -413,7 +409,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../interview/" class="md-nav__link ">
+            <a href="../../interview/" class="md-nav__link ">
               
   
   
@@ -459,7 +455,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cheatsheet/" class="md-nav__link">
+      <a href="../../cheatsheet/" class="md-nav__link">
         
   
   
@@ -487,7 +483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../references/" class="md-nav__link">
+      <a href="../../references/" class="md-nav__link">
         
   
   
@@ -549,10 +545,65 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#lesson-outline" class="md-nav__link">
+  <a href="#diagnostic-flowchart" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Lesson Outline
+        Diagnostic Flowchart
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-verify-the-application-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 1: Verify the Application Error
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-validate-the-connection-string" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 2: Validate the Connection String
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-network-diagnostics-from-the-pod" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 3: Network Diagnostics from the Pod
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-authentication-cloud-sql-auth-proxy-if-applicable" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 4: Authentication &amp; Cloud SQL Auth Proxy (If Applicable)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-network-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 5: Network Policies
       </span>
     </span>
   </a>
@@ -577,124 +628,82 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="./.." class="md-path__link">
-        
-  
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      
-        
-          
-        
-      
-    
-    
-    
-    
-      <li class="md-path__item">
-        <a href="././" class="md-path__link">
-          
-  
-  <span class="md-ellipsis">
-    Lessons
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
                   
 
-<h1 id="lessons">Lessons<a class="headerlink" href="#lessons" title="Permanent link">&para;</a></h1>
-<p>Welcome to the lessons section. Here, you will learn the core concepts and architecture of Kubernetes step by step.</p>
-<h2 id="lesson-outline">Lesson Outline<a class="headerlink" href="#lesson-outline" title="Permanent link">&para;</a></h2>
+<h1 id="debugging-database-connectivity-from-gke">Debugging Database Connectivity from GKE<a class="headerlink" href="#debugging-database-connectivity-from-gke" title="Permanent link">&para;</a></h1>
+<p>When an application running in a Google Kubernetes Engine (GKE) cluster fails to connect to a database (such as Cloud SQL, AlloyDB, or a self-hosted database on Compute Engine), the issue typically falls into one of three categories: Configuration, Networking, or Authentication.</p>
+<p>Use this guide to systematically diagnose and fix database connection errors.</p>
+<h2 id="diagnostic-flowchart">Diagnostic Flowchart<a class="headerlink" href="#diagnostic-flowchart" title="Permanent link">&para;</a></h2>
+<p>Follow this process to isolate the root cause of the connectivity failure:</p>
+<pre class="mermaid"><code>flowchart TD
+    Start([App Fails to Connect]) --&gt; Logs{Check Pod Logs}
+
+    Logs -- "Authentication Failed" --&gt; IAM[Check IAM &amp; Workload Identity]
+    Logs -- "Connection Refused / Timeout" --&gt; Config{Check Connection String}
+    Logs -- "Unknown Host" --&gt; DNS[Check DNS Resolution]
+
+    Config -- Incorrect --&gt; FixConfig[Update ConfigMap / Secret]
+    Config -- Correct --&gt; Ping{Network Connectivity Test}
+
+    Ping -- "Port Open" --&gt; AuthProxy[Check Cloud SQL Auth Proxy]
+    Ping -- "Port Closed / Timeout" --&gt; FW{Check Firewall Rules}
+
+    FW -- "Blocked" --&gt; FixFW[Add VPC Firewall Rule or Authorized Network]
+    FW -- "Allowed" --&gt; Route[Check VPC Peering &amp; Routes]
+
+    DNS --&gt; Exec[Run `nslookup` inside Pod]</code></pre>
+<h2 id="step-1-verify-the-application-error">Step 1: Verify the Application Error<a class="headerlink" href="#step-1-verify-the-application-error" title="Permanent link">&para;</a></h2>
+<p>First, look at the exact error message the application is throwing.</p>
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
+</span></code></pre></div>
+- <strong>"Unknown host" or "Name or service not known"</strong>: Points to a DNS issue.
+- <strong>"Connection timed out"</strong>: Points to a network routing or firewall issue.
+- <strong>"Connection refused"</strong>: The network reached the destination, but the database port is closed or not listening on that IP.
+- <strong>"Access denied" / "Authentication failed"</strong>: Network is fine, but credentials or IAM permissions are incorrect.</p>
+<h2 id="step-2-validate-the-connection-string">Step 2: Validate the Connection String<a class="headerlink" href="#step-2-validate-the-connection-string" title="Permanent link">&para;</a></h2>
+<p>Ensure the Pod is receiving the correct connection string, username, and password. These are typically injected via ConfigMaps and Secrets.</p>
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>db-credentials<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># Decode the base64 value</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;YmFzZTY0c3RyaW5n&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>--decode
+</span></code></pre></div>
+Verify the IP address, port, and credentials match the database configuration.</p>
+<h2 id="step-3-network-diagnostics-from-the-pod">Step 3: Network Diagnostics from the Pod<a class="headerlink" href="#step-3-network-diagnostics-from-the-pod" title="Permanent link">&para;</a></h2>
+<p>Exec into the pod (or use an ephemeral debug container) to test the connection exactly as the application experiences it.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--<span class="w"> </span>/bin/sh
+</span></code></pre></div>
+<p><strong>1. Test DNS Resolution:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>nslookup<span class="w"> </span>&lt;database-hostname&gt;
+</span></code></pre></div>
+If this fails, ensure the Kubernetes CoreDNS is functioning, or verify the Cloud DNS configuration if using a private GCP DNS zone.</p>
+<p><strong>2. Test Port Connectivity:</strong>
+Use <code>nc</code> (netcat), <code>telnet</code>, or <code>curl</code> to check if the port is reachable.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Example for PostgreSQL (5432) or MySQL (3306)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>nc<span class="w"> </span>-zv<span class="w"> </span>&lt;database-ip&gt;<span class="w"> </span><span class="m">5432</span>
+</span></code></pre></div>
+If the connection times out:
+- Check GCP VPC Firewall Rules (does the rule allow ingress from the GKE Pod CIDR?).
+- If using a Public IP for Cloud SQL, check the "Authorized Networks" tab in Cloud SQL.
+- If using Private Services Access (VPC Peering), ensure the GKE Pod ranges are correctly exported/imported.</p>
+<h2 id="step-4-authentication-cloud-sql-auth-proxy-if-applicable">Step 4: Authentication &amp; Cloud SQL Auth Proxy (If Applicable)<a class="headerlink" href="#step-4-authentication-cloud-sql-auth-proxy-if-applicable" title="Permanent link">&para;</a></h2>
+<p>If connecting to Cloud SQL, the recommended method is using the <strong>Cloud SQL Auth Proxy</strong> as a sidecar container.</p>
 <ol>
-<li><strong><a href="0001-what-is-kubernetes-and-prerequisites/">Lesson 1: Introduction to Kubernetes &amp; Prerequisites</a></strong><ul>
-<li>Understanding container orchestration and high-level control plane vs worker node architecture.</li>
-<li>Prerequisites: Docker, terminal commands, container network concepts.</li>
-</ul>
-</li>
-<li><strong><a href="0002-pod-anatomy/">Lesson 2: Pod Anatomy &amp; Configuration</a></strong><ul>
-<li>How containers share network namespaces (localhost) and storage volumes inside a Pod.</li>
-<li>Implementing the sidecar design pattern and understanding Pod lifecycle phases.</li>
-</ul>
-</li>
-<li><strong><a href="0003-node-scheduling-deployment-strategies-autoscaling/">Lesson 3: Node Scheduling, Deployment Strategies &amp; Autoscaling</a></strong><ul>
-<li>Labels, selectors, taints, and scheduling decisions.</li>
-<li>Deployments (RollingUpdate vs Recreate) and horizontal pod auto-scaling.</li>
-</ul>
-</li>
-<li><strong><a href="0004-service-communication/">Lesson 4: Service-to-Service Communication &amp; DNS</a></strong><ul>
-<li>Internal service discovery, Service types (ClusterIP, NodePort, LoadBalancer), CoreDNS resolution.</li>
-</ul>
-</li>
-<li><strong><a href="0005-stateless-stateful-secrets-gcp/">Lesson 5: Stateless/Stateful App Configuration &amp; Secrets</a></strong><ul>
-<li>Mounting configurations using ConfigMaps, managing sensitive Secrets, GKE credential sync.</li>
-</ul>
-</li>
-<li><strong><a href="0006-ingress-gke-load-balancing/">Lesson 6: Ingress &amp; GKE Load Balancing</a></strong><ul>
-<li>Using Ingress controllers to route external HTTP/HTTPS traffic to backend cluster services.</li>
-</ul>
-</li>
-<li><strong><a href="0007-pv-pvc-storageclasses/">Lesson 7: Persistent Volumes, PVCs &amp; StorageClasses</a></strong><ul>
-<li>Requesting storage dynamically with StorageClasses and mounting Persistent Volumes.</li>
-</ul>
-</li>
-<li><strong><a href="0008-gke-gateway-api/">Lesson 8: GKE Gateway API</a></strong><ul>
-<li>Advanced traffic routing, path-based matching, and multi-tenant Gateway configuration.</li>
-</ul>
-</li>
-<li><strong><a href="0009-resources-probes-graceful-shutdown/">Lesson 9: Pod Lifecycle, Resource Allocation, and Health Probes</a></strong><ul>
-<li>Tuning CPU/Memory requests/limits, configuring liveness/readiness/startup probes, implementing preStop graceful shutdown.</li>
-</ul>
-</li>
-<li><strong><a href="0010-capstone-project/">Lesson 10: Capstone Project</a></strong><ul>
-<li>Deploying a complete, highly-available multi-tier web application.</li>
-</ul>
-</li>
-<li><strong><a href="0011-helm-package-manager/">Lesson 11: Helm Package Manager</a></strong><ul>
-<li>Packaging, parameterizing, and versioning repeatable Kubernetes manifest sets.</li>
-</ul>
-</li>
-<li><strong><a href="0012-github-actions-cicd-gke/">Lesson 12: CI/CD with GitHub Actions &amp; GKE</a></strong><ul>
-<li>Automating GKE deployments using GitHub Actions, Workload Identity Federation (WIF), and DNS-based kubeconfig credentials.</li>
-</ul>
-</li>
-<li><strong><a href="0013-zero-downtime-cluster-upgrades/">Lesson 13: Zero-Downtime Cluster Upgrades</a></strong><ul>
-<li>Upgrading control plane and worker nodes without downtime using Surge Upgrades, PDBs, and graceful termination.</li>
-</ul>
-</li>
+<li><strong>Check Proxy Logs:</strong>
+   If the proxy is failing, the app will get "Connection Refused" when trying to hit <code>127.0.0.1</code>.
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>-c<span class="w"> </span>cloud-sql-proxy
+</span></code></pre></div></li>
+<li><strong>Workload Identity:</strong>
+   The proxy needs IAM permissions (<code>roles/cloudsql.client</code>). Verify Workload Identity is configured correctly:</li>
+<li>Does the Kubernetes Service Account (KSA) have the <code>iam.gke.io/gcp-service-account</code> annotation?</li>
+<li>Does the GCP Service Account (GSA) have the <code>roles/iam.workloadIdentityUser</code> binding granting access to the KSA?</li>
+<li>Can you impersonate the GSA from the pod?</li>
 </ol>
-<hr />
-<p><a href="../">← Home</a></p>
+<h2 id="step-5-network-policies">Step 5: Network Policies<a class="headerlink" href="#step-5-network-policies" title="Permanent link">&para;</a></h2>
+<p>If your cluster uses Kubernetes Network Policies, ensure there isn't an egress rule blocking traffic from your application namespace to the database IP range.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>networkpolicies<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
+</span></code></pre></div>
 
 
 
@@ -703,9 +712,6 @@
 
 
 
-
-  
-  
 
 
 
@@ -732,44 +738,6 @@
       
         <footer class="md-footer">
   
-    
-      
-      <nav class="md-footer__inner md-grid" aria-label="Footer" >
-        
-          
-          <a href="./.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
-            </div>
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              <div class="md-ellipsis">
-                Home
-              </div>
-            </div>
-          </a>
-        
-        
-          
-          <a href="../debugging/" class="md-footer__link md-footer__link--next" aria-label="Next: Debugging Workloads &amp;amp; Networking">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                Debugging Workloads &amp; Networking
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-          </a>
-        
-      </nav>
     
   
   <div class="md-footer-meta md-typeset">
@@ -818,10 +786,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["announce.dismiss","content.action.edit","content.action.view","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.expand","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["announce.dismiss","content.action.edit","content.action.view","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.expand","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
     
     
-      <script src="../assets/javascripts/bundle.6e5f0216.min.js"></script>
+      <script src="../../assets/javascripts/bundle.6e5f0216.min.js"></script>
       
     
   </body>
