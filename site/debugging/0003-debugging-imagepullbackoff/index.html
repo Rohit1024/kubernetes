@@ -12,36 +12,32 @@
         <meta name="author" content="Rohit Kharche">
       
       
-        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/debugging/">
+        <link rel="canonical" href="https://rohit1024.github.io/kubernetes/debugging/0003-debugging-imagepullbackoff/">
       
       
-        <link rel="prev" href="../lessons/">
-      
-      
-        <link rel="next" href="../interview/">
       
       
         
       
       
-      <link rel="icon" href="../images/favicon.png">
+      <link rel="icon" href="../../images/favicon.png">
       <meta name="generator" content="zensical-0.0.45">
     
     
       
-        <title>Debugging Workloads & Networking - Learn Kubernetes</title>
+        <title>Debugging: Troubleshooting ImagePullBackOff - Learn Kubernetes</title>
       
     
     
       
         
       
-      <link rel="stylesheet" href="../assets/stylesheets/modern/main.fba56155.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.fba56155.min.css">
       
         
           
         
-        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.dfe2e883.min.css">
       
       
 
@@ -60,7 +56,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
     
       
 
@@ -85,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#debugging-workloads-networking" class="md-skip">
+        <a href="#debugging-troubleshooting-imagepullbackoff" class="md-skip">
           Skip to content
         </a>
       
@@ -101,7 +97,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="./.." title="Learn Kubernetes" class="md-header__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
+    <a href="../.." title="Learn Kubernetes" class="md-header__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
       
   
   <svg viewBox="0 0 722.8 702"><path style="fill:#326ce5;fill-opacity:1;stroke:#fff;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" d="M365 185a47 46 0 0 0-18 4L103 306a47 46 0 0 0-25 32L18 600a47 46 0 0 0 6 35 47 46 0 0 0 3 4l169 210a47 46 0 0 0 36 18h271a47 46 0 0 0 37-18l169-210a47 46 0 0 0 9-39l-60-263a47 46 0 0 0-26-31L388 189a47 46 0 0 0-23-4z" transform="translate(-6 -175)"/><path d="M368 274c-8 0-15 7-15 16v4l2 14 2 27c-1 3-3 6-5 7v7a190 190 0 0 0-122 58l-6-3c-2 0-5 1-8-1l-20-18-10-10-3-3c-3-2-7-4-10-4-5 0-9 2-12 5-5 7-3 16 4 22l3 3 12 7 22 15c2 2 3 7 3 8l5 5c-26 37-37 84-30 131l-6 2c-2 2-4 6-7 7l-26 4-14 1-4 1c-9 2-14 10-13 18 2 8 11 12 19 11h1v-1h4l13-5c9-4 17-7 25-8l9 3 6-1c15 45 45 82 84 105l-2 7c1 2 2 5 1 8l-13 24-8 11-2 4c-4 8-1 18 6 21 8 4 17 0 20-8l2-4 5-13c3-10 6-20 11-27l6-3 3-6a189 189 0 0 0 135 1l4 5c2 1 5 2 7 5l10 24 4 14 2 4c4 8 13 11 20 8 8-4 10-13 7-21l-2-4-8-12c-6-8-10-15-13-23-1-4 0-6 1-8l-2-6c40-24 70-62 84-106l6 1c2-2 4-4 8-3 8 1 16 4 26 7l13 5 4 1c9 2 17-3 19-10 2-8-4-16-12-18l-5-1-14-1c-10-1-18-2-26-5-3-1-5-5-6-6l-6-2a189 189 0 0 0-31-131l6-5c0-3 0-5 2-8 6-6 13-10 22-16l12-7 4-2c7-6 8-16 3-22s-15-7-22-1l-3 2-10 11c-7 7-13 13-19 17-3 2-7 2-9 1l-6 4c-31-33-75-54-121-58v-7c-2-2-5-3-5-7-1-8 0-16 1-27l2-14v-4c0-9-6-16-14-16zm-19 113-4 77a13 13 0 0 1-21 10l-63-44a151 151 0 0 1 88-43zm37 0c33 5 64 20 88 43l-63 44a13 13 0 0 1-21-10zm-148 71 58 52a13 13 0 0 1-5 22l-74 22c-4-35 4-68 21-96zm259 0a153 153 0 0 1 22 95l-74-21a13 13 0 0 1-5-22h-1l58-52zm-141 56h23l15 18-5 23-21 10-21-10-6-23zm75 62h3l77 13c-12 32-33 59-61 77l-30-72a13 13 0 0 1 11-18zm-128 1a13 13 0 0 1 12 18l-29 71c-27-18-49-44-61-77l76-12h2zm64 31c2-1 4 0 6 1 3 1 5 3 6 5l38 68a154 154 0 0 1-98-1l37-67c3-4 7-6 11-6z" style="font-size:medium;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000;fill:#fff;fill-opacity:1;stroke:#fff;stroke-width:.25;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;font-family:Sans;-inkscape-font-specification:Sans" transform="translate(-6 -175)"/></svg>
@@ -121,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Debugging Workloads &amp; Networking
+              Debugging: Troubleshooting ImagePullBackOff
             
           </span>
         </div>
@@ -200,7 +196,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="./.." title="Learn Kubernetes" class="md-nav__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
+    <a href="../.." title="Learn Kubernetes" class="md-nav__button md-logo" aria-label="Learn Kubernetes" data-md-component="logo">
       
   
   <svg viewBox="0 0 722.8 702"><path style="fill:#326ce5;fill-opacity:1;stroke:#fff;stroke-width:0;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" d="M365 185a47 46 0 0 0-18 4L103 306a47 46 0 0 0-25 32L18 600a47 46 0 0 0 6 35 47 46 0 0 0 3 4l169 210a47 46 0 0 0 36 18h271a47 46 0 0 0 37-18l169-210a47 46 0 0 0 9-39l-60-263a47 46 0 0 0-26-31L388 189a47 46 0 0 0-23-4z" transform="translate(-6 -175)"/><path d="M368 274c-8 0-15 7-15 16v4l2 14 2 27c-1 3-3 6-5 7v7a190 190 0 0 0-122 58l-6-3c-2 0-5 1-8-1l-20-18-10-10-3-3c-3-2-7-4-10-4-5 0-9 2-12 5-5 7-3 16 4 22l3 3 12 7 22 15c2 2 3 7 3 8l5 5c-26 37-37 84-30 131l-6 2c-2 2-4 6-7 7l-26 4-14 1-4 1c-9 2-14 10-13 18 2 8 11 12 19 11h1v-1h4l13-5c9-4 17-7 25-8l9 3 6-1c15 45 45 82 84 105l-2 7c1 2 2 5 1 8l-13 24-8 11-2 4c-4 8-1 18 6 21 8 4 17 0 20-8l2-4 5-13c3-10 6-20 11-27l6-3 3-6a189 189 0 0 0 135 1l4 5c2 1 5 2 7 5l10 24 4 14 2 4c4 8 13 11 20 8 8-4 10-13 7-21l-2-4-8-12c-6-8-10-15-13-23-1-4 0-6 1-8l-2-6c40-24 70-62 84-106l6 1c2-2 4-4 8-3 8 1 16 4 26 7l13 5 4 1c9 2 17-3 19-10 2-8-4-16-12-18l-5-1-14-1c-10-1-18-2-26-5-3-1-5-5-6-6l-6-2a189 189 0 0 0-31-131l6-5c0-3 0-5 2-8 6-6 13-10 22-16l12-7 4-2c7-6 8-16 3-22s-15-7-22-1l-3 2-10 11c-7 7-13 13-19 17-3 2-7 2-9 1l-6 4c-31-33-75-54-121-58v-7c-2-2-5-3-5-7-1-8 0-16 1-27l2-14v-4c0-9-6-16-14-16zm-19 113-4 77a13 13 0 0 1-21 10l-63-44a151 151 0 0 1 88-43zm37 0c33 5 64 20 88 43l-63 44a13 13 0 0 1-21-10zm-148 71 58 52a13 13 0 0 1-5 22l-74 22c-4-35 4-68 21-96zm259 0a153 153 0 0 1 22 95l-74-21a13 13 0 0 1-5-22h-1l58-52zm-141 56h23l15 18-5 23-21 10-21-10-6-23zm75 62h3l77 13c-12 32-33 59-61 77l-30-72a13 13 0 0 1 11-18zm-128 1a13 13 0 0 1 12 18l-29 71c-27-18-49-44-61-77l76-12h2zm64 31c2-1 4 0 6 1 3 1 5 3 6 5l38 68a154 154 0 0 1-98-1l37-67c3-4 7-6 11-6z" style="font-size:medium;font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000;fill:#fff;fill-opacity:1;stroke:#fff;stroke-width:.25;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;font-family:Sans;-inkscape-font-specification:Sans" transform="translate(-6 -175)"/></svg>
@@ -218,7 +214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="./.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -271,7 +267,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../lessons/" class="md-nav__link ">
+            <a href="../../lessons/" class="md-nav__link ">
               
   
   
@@ -314,8 +310,6 @@
       
   
   
-    
-  
   
   
     
@@ -334,15 +328,17 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="././" class="md-nav__link md-nav__link--active">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -362,7 +358,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -413,7 +409,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../interview/" class="md-nav__link ">
+            <a href="../../interview/" class="md-nav__link ">
               
   
   
@@ -459,7 +455,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cheatsheet/" class="md-nav__link">
+      <a href="../../cheatsheet/" class="md-nav__link">
         
   
   
@@ -487,7 +483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../references/" class="md-nav__link">
+      <a href="../../references/" class="md-nav__link">
         
   
   
@@ -549,13 +545,152 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#diagnostic-guides" class="md-nav__link">
+  <a href="#1-what-is-imagepullbackoff" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Diagnostic Guides
+        1. What is ImagePullBackOff?
       </span>
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-3-step-diagnostic-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. The 3-Step Diagnostic Workflow
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The 3-Step Diagnostic Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-a-identify-the-failing-pod" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step A: Identify the failing Pod
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-b-inspect-pod-lifecycle-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step B: Inspect Pod Lifecycle &amp; Events
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-c-verify-the-image-name-and-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step C: Verify the Image Name and Tag
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-common-root-causes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Common Root Causes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hands-on-lab-deploy-resolve-a-broken-pod" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Hands-on Lab: Deploy &amp; Resolve a Broken Pod
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hands-on Lab: Deploy &amp; Resolve a Broken Pod">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-deploy-the-broken-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 1: Deploy the broken container
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-run-diagnostic-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 2: Run diagnostic steps
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-clean-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Step 3: Clean up
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-your-knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Test Your Knowledge
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Your Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-where-is-the-best-place-to-look-to-find-the-exact-reason-why-an-image-pull-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Where is the best place to look to find the exact reason why an image pull failed?
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -577,87 +712,102 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="./.." class="md-path__link">
-        
-  
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      
-        
-          
-        
-      
-    
-    
-    
-    
-      <li class="md-path__item">
-        <a href="././" class="md-path__link">
-          
-  
-  <span class="md-ellipsis">
-    Debugging
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
                   
 
-<h1 id="debugging-workloads-networking">Debugging Workloads &amp; Networking<a class="headerlink" href="#debugging-workloads-networking" title="Permanent link">&para;</a></h1>
-<p>Welcome to the debugging section. When applications fail to boot, crash, or fail to communicate inside the cluster, use these step-by-step diagnostic playbooks to isolate and fix the root causes.</p>
-<h2 id="diagnostic-guides">Diagnostic Guides<a class="headerlink" href="#diagnostic-guides" title="Permanent link">&para;</a></h2>
-<ol>
-<li>
-<dl>
-<dt><strong><a href="0001-debugging-crashloopbackoff/">Troubleshooting CrashLoopBackOff</a></strong></dt>
-<dd>What the status means, how to check container exit codes, and retrieving previous logs.</dd>
-</dl>
-</li>
-<li>
-<dl>
-<dt><strong><a href="0002-dns-networking-troubleshooting/">Troubleshooting DNS &amp; Service Routing</a></strong></dt>
-<dd>Checking service endpoints, resolving CoreDNS service names, bypassing service routing, and checking network policies.</dd>
-</dl>
-</li>
-<li>
-<dl>
-<dt><strong><a href="0003-debugging-imagepullbackoff/">Troubleshooting ImagePullBackOff</a></strong></dt>
-<dd>Diagnosing image pull failures, verifying tags, authentication, and network issues.</dd>
-</dl>
-</li>
-</ol>
+<h1 id="debugging-troubleshooting-imagepullbackoff">Debugging: Troubleshooting ImagePullBackOff<a class="headerlink" href="#debugging-troubleshooting-imagepullbackoff" title="Permanent link">&para;</a></h1>
+<p>One of the most frequent errors encountered when deploying new workloads in a Kubernetes cluster is <strong><code>ImagePullBackOff</code></strong> (or its precursor, <strong><code>ErrImagePull</code></strong>). This guide covers what this status actually means, how to run the diagnostic sequence, and how to fix the underlying issues.</p>
 <hr />
-<p><a href="../">← Home</a></p>
+<h2 id="1-what-is-imagepullbackoff">1. What is ImagePullBackOff?<a class="headerlink" href="#1-what-is-imagepullbackoff" title="Permanent link">&para;</a></h2>
+<p><code>ImagePullBackOff</code> is a status message from Kubernetes indicating that the kubelet on a worker node is unable to pull the requested container image from the container registry. </p>
+<p>When a pod is scheduled, the process looks like this:
+1. The node attempts to pull the container image.
+2. The pull fails, and the status is set to <code>ErrImagePull</code>.
+3. Kubernetes waits, then tries to pull the image again.
+4. The pull fails again.
+5. Kubernetes enters a <strong>backoff</strong> loop (<code>ImagePullBackOff</code>), exponentially increasing the delay between retry attempts (up to 5 minutes) to avoid overloading the registry or network.</p>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; PodCreated
+    PodCreated --&gt; PullingImage : Attempt to pull
+    PullingImage --&gt; ErrImagePull : Pull fails (Auth/Not Found)
+    ErrImagePull --&gt; ImagePullBackOff : Backoff delay
+    ImagePullBackOff --&gt; PullingImage : Retry pull
+    PullingImage --&gt; ImagePulled : Success
+    ImagePulled --&gt; [*] : Start Container</code></pre>
+<hr />
+<h2 id="2-the-3-step-diagnostic-workflow">2. The 3-Step Diagnostic Workflow<a class="headerlink" href="#2-the-3-step-diagnostic-workflow" title="Permanent link">&para;</a></h2>
+<p>When a Pod is stuck in <code>ImagePullBackOff</code>, execute this command sequence in your terminal to pinpoint the root cause:</p>
+<h3 id="step-a-identify-the-failing-pod">Step A: Identify the failing Pod<a class="headerlink" href="#step-a-identify-the-failing-pod" title="Permanent link">&para;</a></h3>
+<p>List the pods in your namespace and check the <code>STATUS</code>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+</span></code></pre></div></p>
+<h3 id="step-b-inspect-pod-lifecycle-events">Step B: Inspect Pod Lifecycle &amp; Events<a class="headerlink" href="#step-b-inspect-pod-lifecycle-events" title="Permanent link">&para;</a></h3>
+<p>Look at the metadata, state changes, and events of the Pod:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>&lt;pod-name&gt;
+</span></code></pre></div>
+Scroll to the <strong>Events</strong> section at the bottom. This is where the kubelet logs why the image pull failed. Look for reasons like:
+* <code>Failed to pull image "my-image:tag": rpc error: code = Unknown desc = Error response from daemon: manifest for my-image:tag not found</code>
+* <code>pull access denied for my-image, repository does not exist or may require 'docker login'</code></p>
+<h3 id="step-c-verify-the-image-name-and-tag">Step C: Verify the Image Name and Tag<a class="headerlink" href="#step-c-verify-the-image-name-and-tag" title="Permanent link">&para;</a></h3>
+<p>Check the container specification in your deployment or pod definition. 
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pod<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>-o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.containers[*].image}&#39;</span>
+</span></code></pre></div>
+Ensure there are no typos in the registry URL, image name, or the tag.</p>
+<hr />
+<h2 id="3-common-root-causes">3. Common Root Causes<a class="headerlink" href="#3-common-root-causes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Invalid Image Name or Tag:</strong> A typo in the image name or specifying a tag that hasn't been pushed to the registry (e.g., <code>v1.0.0</code> instead of <code>v1.0</code>).</li>
+<li><strong>Missing Authentication (Private Registry):</strong> The image is hosted in a private registry, but the Pod is missing the <code>imagePullSecrets</code> configuration, or the secret contains expired/invalid credentials.</li>
+<li><strong>Network Issues / Air-gapped Cluster:</strong> The worker node doesn't have internet access to reach external registries like Docker Hub or Quay.</li>
+<li><strong>Rate Limiting:</strong> Pulling images from public registries like Docker Hub anonymously can hit rate limits (<code>toomanyrequests</code>), causing temporary pull failures.</li>
+</ul>
+<hr />
+<h2 id="hands-on-lab-deploy-resolve-a-broken-pod">Hands-on Lab: Deploy &amp; Resolve a Broken Pod<a class="headerlink" href="#hands-on-lab-deploy-resolve-a-broken-pod" title="Permanent link">&para;</a></h2>
+<p>Let's deploy a container deliberately configured with a non-existent image tag to trigger this error.</p>
+<h3 id="step-1-deploy-the-broken-container">Step 1: Deploy the broken container<a class="headerlink" href="#step-1-deploy-the-broken-container" title="Permanent link">&para;</a></h3>
+<p>Save the following configuration to <code>broken-image-pod.yaml</code> and apply it:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pod</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug-imagepull-pod</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-app</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx:999.999.999-nonexistent</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>broken-image-pod.yaml
+</span></code></pre></div>
+<h3 id="step-2-run-diagnostic-steps">Step 2: Run diagnostic steps<a class="headerlink" href="#step-2-run-diagnostic-steps" title="Permanent link">&para;</a></h3>
+<p>Monitor the status until it enters <code>ErrImagePull</code> and then <code>ImagePullBackOff</code>:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-w
+</span></code></pre></div>
+Run <code>kubectl describe</code> to see the exact error in the Events section:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>debug-imagepull-pod
+</span></code></pre></div>
+You should see a message indicating the manifest is not found.</p>
+<h3 id="step-3-clean-up">Step 3: Clean up<a class="headerlink" href="#step-3-clean-up" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>-f<span class="w"> </span>broken-image-pod.yaml
+</span></code></pre></div>
+<hr />
+<h2 id="test-your-knowledge">Test Your Knowledge<a class="headerlink" href="#test-your-knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="1-where-is-the-best-place-to-look-to-find-the-exact-reason-why-an-image-pull-failed">1. Where is the best place to look to find the exact reason why an image pull failed?<a class="headerlink" href="#1-where-is-the-best-place-to-look-to-find-the-exact-reason-why-an-image-pull-failed" title="Permanent link">&para;</a></h3>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>A.</strong> <code>kubectl logs &lt;pod-name&gt;</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>B.</strong> <code>kubectl describe pod &lt;pod-name&gt;</code></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>C.</strong> <code>kubectl get pod &lt;pod-name&gt; -o yaml</code></li>
+</ul>
+<details>
+<summary><b>Answer & Explanation</b></summary>
+
+**Correct Answer:** B
+
+**Explanation:** `kubectl describe pod <pod-name>` shows the Kubernetes Events for the pod at the bottom of the output. This is where the kubelet reports exactly why it failed to pull the image (e.g., authorization failure, not found). `kubectl logs` will not work because the container hasn't started running yet.
+</details>
+
+<hr />
+<p><a href=".././0002-dns-networking-troubleshooting/">← DNS &amp; Network Troubleshooting</a> | <a href="../../cheatsheet/">Cheatsheets Index →</a></p>
 
 
 
@@ -695,44 +845,6 @@
       
         <footer class="md-footer">
   
-    
-      
-      <nav class="md-footer__inner md-grid" aria-label="Footer" >
-        
-          
-          <a href="../lessons/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Lessons">
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
-            </div>
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              <div class="md-ellipsis">
-                Lessons
-              </div>
-            </div>
-          </a>
-        
-        
-          
-          <a href="../interview/" class="md-footer__link md-footer__link--next" aria-label="Next: Kubernetes Interview Questions &amp;amp; Scenarios">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                Kubernetes Interview Questions &amp; Scenarios
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-          </a>
-        
-      </nav>
     
   
   <div class="md-footer-meta md-typeset">
@@ -781,10 +893,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["announce.dismiss","content.action.edit","content.action.view","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.expand","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["announce.dismiss","content.action.edit","content.action.view","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.expand","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"../../assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
     
     
-      <script src="../assets/javascripts/bundle.6e5f0216.min.js"></script>
+      <script src="../../assets/javascripts/bundle.6e5f0216.min.js"></script>
       
     
   </body>
