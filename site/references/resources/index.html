@@ -25,7 +25,7 @@
     
     
       
-        <title>Kubernetes Resources - Learn Kubernetes</title>
+        <title>Kubernetes & GitOps Resources - Learn Kubernetes</title>
       
     
     
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubernetes-resources" class="md-skip">
+        <a href="#kubernetes-gitops-resources" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Kubernetes Resources
+              Kubernetes &amp; GitOps Resources
             
           </span>
         </div>
@@ -553,6 +553,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Core Kubernetes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gitops-argo-project-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        GitOps &amp; Argo Project Ecosystem
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flux-cd-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Flux CD Ecosystem
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -589,8 +628,9 @@
                 
                   
 
-<h1 id="kubernetes-resources">Kubernetes Resources<a class="headerlink" href="#kubernetes-resources" title="Permanent link">&para;</a></h1>
+<h1 id="kubernetes-gitops-resources">Kubernetes &amp; GitOps Resources<a class="headerlink" href="#kubernetes-gitops-resources" title="Permanent link">&para;</a></h1>
 <h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="core-kubernetes">Core Kubernetes<a class="headerlink" href="#core-kubernetes" title="Permanent link">&para;</a></h3>
 <ul>
 <li><a href="https://kubernetes.io/docs/">Official Kubernetes Documentation</a>
   The ultimate reference source for all API components, YAML schemas, and core concepts. Use for: standard manifest templates, troubleshooting steps, and kubectl CLI references.</li>
@@ -601,12 +641,39 @@
 <li><a href="https://killercoda.com/">Killercoda Kubernetes Playgrounds</a>
   Interactive web-based terminal environments for practicing K8s. Use for: testing commands quickly when away from a real cluster.</li>
 </ul>
+<h3 id="gitops-argo-project-ecosystem">GitOps &amp; Argo Project Ecosystem<a class="headerlink" href="#gitops-argo-project-ecosystem" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://opengitops.dev/">OpenGitOps Specification</a>
+  The definitive vendor-neutral definition and 4 principles of GitOps managed by the CNCF.</li>
+<li><a href="https://argo-cd.readthedocs.io/">Argo CD Official Documentation</a>
+  Comprehensive documentation for Argo CD, ApplicationSets, Sync Waves, RBAC, and Web UI configuration.</li>
+<li><a href="https://argoproj.github.io/argo-rollouts/">Argo Rollouts Documentation</a>
+  Official guide for progressive delivery, canary releases, Blue/Green deployments, and automated Prometheus analysis.</li>
+<li><a href="https://argoproj.github.io/">Argo Workflows &amp; Events Documentation</a>
+  Kubernetes-native DAG workflow engine and event-driven automation framework.</li>
+<li><a href="https://argocd-vault-plugin.readthedocs.io/">Argo CD Vault Plugin (AVP)</a>
+  Secret injection tool for Argo CD without storing plaintext secrets in Git.</li>
+<li><a href="https://argocd-image-updater.readthedocs.io/">Argo CD Image Updater</a>
+  Automated container registry polling and Git write-back tool.</li>
+<li><a href="https://argocd-autopilot.readthedocs.io/">Argo CD Autopilot</a>
+  Opinionated GitOps repository bootstrapping and multi-project structure automation.</li>
+</ul>
+<h3 id="flux-cd-ecosystem">Flux CD Ecosystem<a class="headerlink" href="#flux-cd-ecosystem" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://fluxcd.io/">Flux CD Documentation</a>
+  Official documentation for Flux v2, Source Controller, Kustomize Controller, Helm Controller, and Image Automation.</li>
+<li><a href="https://fluxcd.io/flux/guides/multi-tenancy/">Flux Multi-Tenancy Guide</a>
+  Enterprise security patterns and ServiceAccount impersonation for multi-team clusters.</li>
+</ul>
+<hr />
 <h2 id="wisdom-communities">Wisdom (Communities)<a class="headerlink" href="#wisdom-communities" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://reddit.com/r/kubernetes">r/kubernetes Subreddit</a>
   High-signal community of platform engineers and developers sharing real-world setups, troubleshooting tips, and post-mortems. Use for: debugging obscure issues and comparing deployment patterns.</li>
 <li><a href="https://slack.cncf.io/">CNCF Slack Workspace</a>
-  Official CNCF Slack containing #kubernetes-users and #gke channels where core developers and users help each other in real-time. Use for: asking specific setup questions.</li>
+  Official CNCF Slack containing <code>#argo-cd</code>, <code>#argo-rollouts</code>, <code>#argo-workflows</code>, <code>#flux</code>, <code>#kubernetes-users</code>, and <code>#gke</code> channels where maintainers and practitioners collaborate in real-time. Use for: asking specific setup questions and getting architectural reviews.</li>
+<li><a href="https://github.com/argoproj/argo-cd/discussions">Argo Project GitHub Discussions</a>
+  Community forum for architectural RFCs, plugin discussions, and design patterns.</li>
 </ul>
 
 

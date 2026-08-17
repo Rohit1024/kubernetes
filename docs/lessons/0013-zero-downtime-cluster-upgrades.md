@@ -109,3 +109,7 @@ sequenceDiagram
 ```
 
 By combining Surge Upgrades, PDBs, and Graceful Shutdowns, the cluster transitions your applications to the new Kubernetes version seamlessly without dropping user traffic.
+
+---
+
+[← Lesson 12: CI/CD with GitHub Actions & GKE](./0012-github-actions-cicd-gke.md) | [Lesson 14: GitOps Principles & Argo CD Fundamentals →](./0014-gitops-principles-and-argocd-fundamentals.md)

@@ -549,10 +549,32 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#lesson-outline" class="md-nav__link">
+  <a href="#module-1-core-kubernetes-architecture-workloads" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Lesson Outline
+        Module 1: Core Kubernetes Architecture &amp; Workloads
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-2-packaging-cicd-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Module 2: Packaging, CI/CD &amp; Operations
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-3-gitops-progressive-delivery-argo-cd-flux-cd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Module 3: GitOps &amp; Progressive Delivery (Argo CD &amp; Flux CD)
       </span>
     </span>
   </a>
@@ -634,8 +656,9 @@
                   
 
 <h1 id="lessons">Lessons<a class="headerlink" href="#lessons" title="Permanent link">&para;</a></h1>
-<p>Welcome to the lessons section. Here, you will learn the core concepts and architecture of Kubernetes step by step.</p>
-<h2 id="lesson-outline">Lesson Outline<a class="headerlink" href="#lesson-outline" title="Permanent link">&para;</a></h2>
+<p>Welcome to the lessons section. Here, you will learn the core concepts, architecture, and production workflows of Kubernetes and modern GitOps step by step.</p>
+<hr />
+<h2 id="module-1-core-kubernetes-architecture-workloads">Module 1: Core Kubernetes Architecture &amp; Workloads<a class="headerlink" href="#module-1-core-kubernetes-architecture-workloads" title="Permanent link">&para;</a></h2>
 <ol>
 <li><strong><a href="0001-what-is-kubernetes-and-prerequisites/">Lesson 1: Introduction to Kubernetes &amp; Prerequisites</a></strong><ul>
 <li>Understanding container orchestration and high-level control plane vs worker node architecture.</li>
@@ -680,6 +703,10 @@
 <li>Deploying a complete, highly-available multi-tier web application.</li>
 </ul>
 </li>
+</ol>
+<hr />
+<h2 id="module-2-packaging-cicd-operations">Module 2: Packaging, CI/CD &amp; Operations<a class="headerlink" href="#module-2-packaging-cicd-operations" title="Permanent link">&para;</a></h2>
+<ol>
 <li><strong><a href="0011-helm-package-manager/">Lesson 11: Helm Package Manager</a></strong><ul>
 <li>Packaging, parameterizing, and versioning repeatable Kubernetes manifest sets.</li>
 </ul>
@@ -690,6 +717,46 @@
 </li>
 <li><strong><a href="0013-zero-downtime-cluster-upgrades/">Lesson 13: Zero-Downtime Cluster Upgrades</a></strong><ul>
 <li>Upgrading control plane and worker nodes without downtime using Surge Upgrades, PDBs, and graceful termination.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="module-3-gitops-progressive-delivery-argo-cd-flux-cd">Module 3: GitOps &amp; Progressive Delivery (Argo CD &amp; Flux CD)<a class="headerlink" href="#module-3-gitops-progressive-delivery-argo-cd-flux-cd" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong><a href="0014-gitops-principles-and-argocd-fundamentals/">Lesson 14: GitOps Core Principles &amp; Argo CD Fundamentals</a></strong><ul>
+<li>OpenGitOps 4 principles, pull-based vs push-based CI/CD, Argo CD architecture, declarative <code>Application</code> CRD, self-healing, and the App of Apps pattern.</li>
+</ul>
+</li>
+<li><strong><a href="0015-argo-helm-kustomize-sync-waves/">Lesson 15: Argo CD with Helm, Kustomize, Sync Waves &amp; Hooks</a></strong><ul>
+<li>Native Helm/Kustomize rendering, deterministic sync waves, PreSync/PostSync database migration hooks, and health checks.</li>
+</ul>
+</li>
+<li><strong><a href="0016-argo-applicationsets/">Lesson 16: Multi-Cluster &amp; Multi-Tenant Scalability with ApplicationSets</a></strong><ul>
+<li>Eliminating boilerplate across clusters using ApplicationSet Generators (Git Directory, Cluster, Matrix, Merge) and Progressive Syncs.</li>
+</ul>
+</li>
+<li><strong><a href="0017-argocd-image-updater-and-vault-plugin/">Lesson 17: Secret Management (Argo CD Vault Plugin) &amp; Automated Deployments (Argo CD Image Updater)</a></strong><ul>
+<li>Solving GitOps secrets with Argo CD Vault Plugin (AVP) and automating SemVer container upgrades with Argo CD Image Updater.</li>
+</ul>
+</li>
+<li><strong><a href="0018-argocd-autopilot-repo-structure/">Lesson 18: Production GitOps Architecture &amp; Bootstrapping with Argo CD Autopilot</a></strong><ul>
+<li>Monorepo vs Polyrepo setups, multi-environment promotion strategies, team AppProjects, and cluster bootstrapping with Autopilot.</li>
+</ul>
+</li>
+<li><strong><a href="0019-argo-rollouts-progressive-delivery/">Lesson 19: Progressive Delivery with Argo Rollouts</a></strong><ul>
+<li>Canary and Blue/Green strategies with traffic routing (Ingress NGINX/Gateway API) and automated Prometheus metric analysis &amp; rollback.</li>
+</ul>
+</li>
+<li><strong><a href="0020-argo-workflows-and-argo-events/">Lesson 20: Event-Driven Automation &amp; Pipelines with Argo Workflows &amp; Argo Events</a></strong><ul>
+<li>Kubernetes-native DAG pipelines with Argo Workflows and event-driven automation (EventSource, EventBus, Sensor) with Argo Events.</li>
+</ul>
+</li>
+<li><strong><a href="0021-fluxcd-fundamentals-and-architecture/">Lesson 21: Flux CD (Flux v2) GitOps Engine &amp; Image Automation</a></strong><ul>
+<li>Decentralized microservices controllers (source, kustomize, helm, notify), OCI artifacts, automated Git commit writes, and multi-tenancy.</li>
+</ul>
+</li>
+<li><strong><a href="0022-argocd-vs-fluxcd-comparison/">Lesson 22: Argo CD vs. Flux CD Deep Comparison &amp; Production Selection Guide</a></strong><ul>
+<li>Feature-by-feature architectural comparison, security models, developer experience, and production decision matrix.</li>
 </ul>
 </li>
 </ol>
