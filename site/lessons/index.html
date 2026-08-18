@@ -581,6 +581,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#module-4-event-driven-autoscaling-with-keda-gitops-synchronization" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Module 4: Event-Driven Autoscaling with KEDA &amp; GitOps Synchronization
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -757,6 +768,30 @@
 </li>
 <li><strong><a href="0022-argocd-vs-fluxcd-comparison/">Lesson 22: Argo CD vs. Flux CD Deep Comparison &amp; Production Selection Guide</a></strong><ul>
 <li>Feature-by-feature architectural comparison, security models, developer experience, and production decision matrix.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="module-4-event-driven-autoscaling-with-keda-gitops-synchronization">Module 4: Event-Driven Autoscaling with KEDA &amp; GitOps Synchronization<a class="headerlink" href="#module-4-event-driven-autoscaling-with-keda-gitops-synchronization" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong><a href="0023-keda-fundamentals-and-architecture/">Lesson 23: KEDA Fundamentals &amp; Event-Driven Autoscaling Architecture</a></strong><ul>
+<li>Limitations of native HPA, KEDA Operator vs. Metrics Server, scale-to-zero (<code>0 ↔ N</code>) mechanics, and CRD models.</li>
+</ul>
+</li>
+<li><strong><a href="0024-keda-external-metrics-scalers/">Lesson 24: Scaling Workloads with KEDA External Metric Triggers</a></strong><ul>
+<li>Prometheus PromQL triggers, message queue depth (RabbitMQ, Kafka lag, AWS SQS), fallbacks, and HPA stabilization behavior.</li>
+</ul>
+</li>
+<li><strong><a href="0025-keda-cron-and-scheduled-scaling/">Lesson 25: Time-Based Autoscaling with KEDA Cron Scaler &amp; Multi-Trigger Composition</a></strong><ul>
+<li>Proactive pre-warming for business hours, IANA timezone schedules, and multi-trigger MAX evaluation rules.</li>
+</ul>
+</li>
+<li><strong><a href="0026-keda-argocd-gitops-integration-and-drift/">Lesson 26: Solving the GitOps Tug-of-War: KEDA + Argo CD Drift Resolution</a></strong><ul>
+<li>Resolving the Replicas Tug-of-War, configuring Argo CD <code>ignoreDifferences</code> on <code>/spec/replicas</code>, omitting replica keys in Git, and scaling Argo Rollouts.</li>
+</ul>
+</li>
+<li><strong><a href="0027-keda-scaledjobs-and-batch-processing/">Lesson 27: Event-Driven Batch Processing with KEDA ScaledJobs &amp; Secure Authentication</a></strong><ul>
+<li>Spawning discrete run-to-completion batch Jobs with <code>ScaledJob</code>, keyless Cloud Workload Identity with <code>TriggerAuthentication</code>, and DLQ resilience.</li>
 </ul>
 </li>
 </ol>

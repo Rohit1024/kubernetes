@@ -20,3 +20,9 @@
    - Lesson 20: Pipelines with Argo Workflows & Argo Events
    - Lesson 21: Flux CD (Flux v2) GitOps Engine & Image Automation
    - Lesson 22: Argo CD vs. Flux CD Deep Comparison & Production Selection Guide
+4. **Module 4: Event-Driven Autoscaling with KEDA & GitOps Synchronization (Lessons 23-27)**
+   - Lesson 23: KEDA Fundamentals & Architecture (Scale-to-Zero, Operator, Metrics Adapter)
+   - Lesson 24: KEDA External Metric Triggers (Prometheus PromQL, Kafka Lag, RabbitMQ, SQS, Fallbacks)
+   - Lesson 25: Time-Based Autoscaling with KEDA Cron Scaler & Multi-Trigger Composition
+   - Lesson 26: Solving the GitOps Tug-of-War: KEDA + Argo CD Drift Resolution & Rollouts
+   - Lesson 27: Event-Driven Batch Processing with KEDA ScaledJobs & Secure Authentication

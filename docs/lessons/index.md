@@ -70,4 +70,19 @@ Welcome to the lessons section. Here, you will learn the core concepts, architec
 
 ---
 
+## Module 4: Event-Driven Autoscaling with KEDA & GitOps Synchronization
+
+23. **[Lesson 23: KEDA Fundamentals & Event-Driven Autoscaling Architecture](0023-keda-fundamentals-and-architecture.md)**
+    - Limitations of native HPA, KEDA Operator vs. Metrics Server, scale-to-zero (`0 ↔ N`) mechanics, and CRD models.
+24. **[Lesson 24: Scaling Workloads with KEDA External Metric Triggers](0024-keda-external-metrics-scalers.md)**
+    - Prometheus PromQL triggers, message queue depth (RabbitMQ, Kafka lag, AWS SQS), fallbacks, and HPA stabilization behavior.
+25. **[Lesson 25: Time-Based Autoscaling with KEDA Cron Scaler & Multi-Trigger Composition](0025-keda-cron-and-scheduled-scaling.md)**
+    - Proactive pre-warming for business hours, IANA timezone schedules, and multi-trigger MAX evaluation rules.
+26. **[Lesson 26: Solving the GitOps Tug-of-War: KEDA + Argo CD Drift Resolution](0026-keda-argocd-gitops-integration-and-drift.md)**
+    - Resolving the Replicas Tug-of-War, configuring Argo CD `ignoreDifferences` on `/spec/replicas`, omitting replica keys in Git, and scaling Argo Rollouts.
+27. **[Lesson 27: Event-Driven Batch Processing with KEDA ScaledJobs & Secure Authentication](0027-keda-scaledjobs-and-batch-processing.md)**
+    - Spawning discrete run-to-completion batch Jobs with `ScaledJob`, keyless Cloud Workload Identity with `TriggerAuthentication`, and DLQ resilience.
+
+---
+
 [← Home](../index.md)

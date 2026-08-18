@@ -34,6 +34,14 @@
 - [Flux Multi-Tenancy Guide](https://fluxcd.io/flux/guides/multi-tenancy/)
   Enterprise security patterns and ServiceAccount impersonation for multi-team clusters.
 
+### KEDA & Event-Driven Autoscaling
+- [KEDA Official Documentation](https://keda.sh/docs/latest/)
+  The definitive guide for KEDA concepts, CRD specifications (`ScaledObject`, `ScaledJob`, `TriggerAuthentication`), and 60+ scaler references.
+- [KEDA Scalers Directory](https://keda.sh/docs/latest/scalers/)
+  Comprehensive list of all supported event sources (Prometheus, RabbitMQ, Kafka, AWS SQS, GCP Pub/Sub, Cron, Redis, etc.).
+- [Argo CD Diffing & ignoreDifferences Guide](https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/)
+  Official documentation on resolving GitOps state conflicts and ignoring dynamic replica drift with autoscalers.
+
 ---
 
 ## Wisdom (Communities)
@@ -41,6 +49,8 @@
 - [r/kubernetes Subreddit](https://reddit.com/r/kubernetes)
   High-signal community of platform engineers and developers sharing real-world setups, troubleshooting tips, and post-mortems. Use for: debugging obscure issues and comparing deployment patterns.
 - [CNCF Slack Workspace](https://slack.cncf.io/)
-  Official CNCF Slack containing `#argo-cd`, `#argo-rollouts`, `#argo-workflows`, `#flux`, `#kubernetes-users`, and `#gke` channels where maintainers and practitioners collaborate in real-time. Use for: asking specific setup questions and getting architectural reviews.
+  Official CNCF Slack containing `#keda`, `#argo-cd`, `#argo-rollouts`, `#argo-workflows`, `#flux`, `#kubernetes-users`, and `#gke` channels where maintainers and practitioners collaborate in real-time. Use for: asking specific setup questions and getting architectural reviews.
+- [KEDA Project GitHub Discussions](https://github.com/kedacore/keda/discussions)
+  Community forum for KEDA scaler feature requests, troubleshooting, and architectural questions.
 - [Argo Project GitHub Discussions](https://github.com/argoproj/argo-cd/discussions)
   Community forum for architectural RFCs, plugin discussions, and design patterns.

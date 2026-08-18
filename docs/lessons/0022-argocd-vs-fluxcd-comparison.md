@@ -118,4 +118,4 @@ Congratulations! You have completed the **Kubernetes GitOps & Progressive Delive
 ---
 **Looking to build a custom GitOps pipeline or evaluate enterprise tools?** Let us know in chat, and we'll help you architect the ideal solution!
 
-[← Lesson 21: Flux CD Architecture & Image Automation](./0021-fluxcd-fundamentals-and-architecture.md) | [Return to Lessons Overview →](./index.md)
+[← Lesson 21: Flux CD Architecture & Image Automation](./0021-fluxcd-fundamentals-and-architecture.md) | [Lesson 23: KEDA Fundamentals & Architecture →](./0023-keda-fundamentals-and-architecture.md)
