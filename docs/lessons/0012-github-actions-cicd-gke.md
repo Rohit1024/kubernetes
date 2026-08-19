@@ -2,17 +2,17 @@
 icon: lucide/git-branch
 ---
 
-# Lesson 0012: CI/CD with GitHub Actions & GKE
+# Lesson 0012: CI/CD with GitHub Actions and GKE
 
-Automating application deployments to Google Kubernetes Engine (GKE) requires a secure, automated CI/CD pipeline. In this lesson, we will cover how to configure GitHub Actions to authenticate securely to Google Cloud, fetch cluster credentials, and deploy applications using standard deployment steps.
+Automating application deployments to Google Kubernetes Engine (GKE) requires a secure authentication workflow. This lesson covers how to configure GitHub Actions to authenticate to Google Cloud using short-lived tokens, retrieve cluster credentials, and deploy applications.
 
 ---
 
-## 1. Modern GKE Authentication: Workload Identity Federation
+## 1. Modern GKE authentication: Workload Identity Federation
 
-In the past, CI/CD systems authenticated to Google Cloud by downloading long-lived service account JSON keys. These keys are a significant security risk if leaked. 
+Traditional CI/CD pipelines authenticated to Google Cloud by downloading long-lived service account JSON keys. If leaked, these static keys give attackers persistent access to your cloud project.
 
-Today, Google Cloud and GitHub support **Workload Identity Federation (WIF)**. WIF allows GitHub Actions to use short-lived OpenID Connect (OIDC) tokens to authenticate directly to Google Cloud without storing any secrets in GitHub.
+Google Cloud and GitHub support **Workload Identity Federation (WIF)**. WIF allows GitHub Actions to use short-lived OpenID Connect (OIDC) tokens to authenticate directly to Google Cloud without storing secret keys in GitHub.
 
 ```mermaid
 sequenceDiagram
@@ -30,9 +30,9 @@ sequenceDiagram
 
 ---
 
-## 2. Acquiring GKE Credentials inside the Workflow
+## 2. Acquiring GKE credentials inside the workflow
 
-Once authenticated, the GitHub Actions runner needs a `kubeconfig` file to connect to GKE. We use the official **`google-github-actions/get-gke-credentials`** action to generate this file automatically.
+Once authenticated, the GitHub Actions runner needs a `kubeconfig` file to connect to GKE. The **`google-github-actions/get-gke-credentials`** action generates this file automatically.
 
 ### Configuring the credentials step
 ```yaml
@@ -44,19 +44,19 @@ Once authenticated, the GitHub Actions runner needs a `kubeconfig` file to conne
           use_dns_based_endpoint: true
 ```
 
-### What does `use_dns_based_endpoint: true` do?
-By default, the credentials tool configures `kubectl` to connect to the cluster control plane using its direct IP address. Setting `use_dns_based_endpoint: true` forces the connection to target GKE's modern **DNS-based endpoints** (e.g. `*.gke.gcloud.dev`).
+### How DNS-based endpoints work
+By default, credential tools configure `kubectl` to connect to the cluster control plane using its direct IP address. Setting `use_dns_based_endpoint: true` directs the connection to GKE's modern **DNS-based endpoints** (such as `*.gke.gcloud.dev`).
 
-This is essential because:
+This provides two benefits:
 
-- **TLS Verification:** It ensures connection certificates align correctly with Google-managed DNS hostnames, preventing hostname validation issues.
-- **Private Clusters:** Private clusters often route external administrative connections strictly through private cloud DNS or load-balanced domain name records.
+- **TLS verification:** Certificates match Google-managed DNS hostnames, preventing certificate validation errors.
+- **Private clusters:** Private clusters route administrative connections through private cloud DNS or load-balanced domain records.
 
 ---
 
-## 3. Complete GitHub Actions Workflow Example
+## 3. GitHub Actions workflow example
 
-Save the following YAML file to your GitHub repository at `.github/workflows/deploy.yaml` to configure the deployment pipeline.
+Save the following YAML file to `.github/workflows/deploy.yaml` in your repository:
 
 ```yaml
 name: Deploy Workload to GKE
@@ -74,7 +74,7 @@ env:
 
 permissions:
   contents: read
-  id-token: write # CRUCIAL: Required for requesting WIF OIDC tokens
+  id-token: write # Required for requesting WIF OIDC tokens
 
 jobs:
   deploy:
@@ -115,9 +115,9 @@ jobs:
 
 ---
 
-## 4. Google Cloud IAM Pre-requisite Configuration
+## 4. Google Cloud IAM setup
 
-Before running the workflow, you must link GitHub and GCP in the Cloud Console or CLI.
+Before running the workflow, configure Workload Identity Federation in Google Cloud:
 
 ### Step 1: Create the Workload Identity Pool and Provider
 ```bash
@@ -135,16 +135,16 @@ gcloud iam workload-identity-pools providers create-oidc "github-provider" \
     --issuer-uri="https://token.actions.githubusercontent.com"
 ```
 
-### Step 2: Grant the WIF Provider access to your Service Account
-Allow GitHub Actions running within your specific repository to assume the IAM Service Account identity:
+### Step 2: Bind the provider to your Service Account
+Allow GitHub Actions running from your repository to impersonate the IAM Service Account:
 ```bash
 gcloud iam service-accounts add-iam-policy-binding "github-deployer@my-gcp-project-id.iam.gserviceaccount.com" \
     --role="roles/iam.workloadIdentityUser" \
     --member="principalSet://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/YOUR_GITHUB_ORG/YOUR_REPO_NAME"
 ```
 
-### Step 3: Grant Service Account permission to GKE
-Ensure the Service Account possesses cluster admin or developer access roles:
+### Step 3: Grant GKE permissions
+Assign the Service Account appropriate GKE permissions:
 ```bash
 gcloud projects add-iam-policy-binding my-gcp-project-id \
     --member="serviceAccount:github-deployer@my-gcp-project-id.iam.gserviceaccount.com" \
@@ -153,34 +153,20 @@ gcloud projects add-iam-policy-binding my-gcp-project-id \
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
-### 1. Why is the 'permissions' config 'id-token: write' required in the GitHub Actions YAML file?
-- [ ] **A.** To allow the runner to checkout code from the private git repository.
-- [ ] **B.** To authorize GitHub to request the temporary OIDC ID token needed to authenticate with Google's Workload Identity Federation.
-- [ ] **C.** To allow the runner to write tag metadata to the container registry.
+1. Why is the permission `id-token: write` required in the GitHub Actions workflow file?
+   - [ ] A) To allow the runner to clone code from private Git repositories
+   - [ ] B) To authorize GitHub to mint the temporary OIDC token used by Workload Identity Federation
+   
+   Answer: B. Without `id-token: write`, GitHub Actions cannot generate the OIDC assertion token needed by `google-github-actions/auth` to exchange for Google Cloud IAM access credentials.
 
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-**Explanation:** Without the `id-token: write` permission, GitHub Actions cannot mint the OIDC security assertion token needed by `google-github-actions/auth` to swap for Google Cloud IAM access credentials.
-</details>
-
-### 2. What security benefit does Workload Identity Federation offer over traditional Service Account JSON keys?
-- [ ] **A.** It speeds up the deployment process by bypassing TLS handshake protocols.
-- [ ] **B.** It eliminates the need to manage, store, or rotate long-lived, high-risk cryptographic keys in GitHub Secrets.
-- [ ] **C.** It prevents the use of public load balancer configurations.
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-**Explanation:** Workload Identity Federation operates on short-lived, automated token exchanges. No secret JSON files are stored in GitHub, removing the risk of key leaks and eliminating the need for periodic rotation.
-</details>
+2. What security benefit does Workload Identity Federation offer over service account JSON keys?
+   - [ ] A) It speeds up deployments by skipping TLS handshakes
+   - [ ] B) It eliminates long-lived secret keys stored in GitHub Secrets
+   
+   Answer: B. Workload Identity Federation uses short-lived tokens, eliminating static secret files and key rotation overhead.
 
 ---
 
-[← Lesson 11: Helm Package Manager](./0011-helm-package-manager.md) | [Home →](../index.md)
+[← Lesson 11: Helm package manager](./0011-helm-package-manager.md) | [Lesson 13: Zero-downtime cluster upgrades →](./0013-zero-downtime-cluster-upgrades.md)

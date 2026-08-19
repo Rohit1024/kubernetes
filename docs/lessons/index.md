@@ -4,84 +4,84 @@ icon: lucide/graduation-cap
 
 # Lessons
 
-Welcome to the lessons section. Here, you will learn the core concepts, architecture, and production workflows of Kubernetes and modern GitOps step by step.
+Practical guides on Kubernetes architecture, production operations, GitOps workflows, and event-driven autoscaling.
 
 ---
 
-## Module 1: Core Kubernetes Architecture & Workloads
+## Module 1: Core Kubernetes architecture and workloads
 
-1. **[Lesson 1: Introduction to Kubernetes & Prerequisites](0001-what-is-kubernetes-and-prerequisites.md)**
-    - Understanding container orchestration and high-level control plane vs worker node architecture.
-    - Prerequisites: Docker, terminal commands, container network concepts.
-2. **[Lesson 2: Pod Anatomy & Configuration](0002-pod-anatomy.md)**
-    - How containers share network namespaces (localhost) and storage volumes inside a Pod.
-    - Implementing the sidecar design pattern and understanding Pod lifecycle phases.
-3. **[Lesson 3: Node Scheduling, Deployment Strategies & Autoscaling](0003-node-scheduling-deployment-strategies-autoscaling.md)**
-    - Labels, selectors, taints, and scheduling decisions.
-    - Deployments (RollingUpdate vs Recreate) and horizontal pod auto-scaling.
-4. **[Lesson 4: Service-to-Service Communication & DNS](0004-service-communication.md)**
-    - Internal service discovery, Service types (ClusterIP, NodePort, LoadBalancer), CoreDNS resolution.
-5. **[Lesson 5: Stateless/Stateful App Configuration & Secrets](0005-stateless-stateful-secrets-gcp.md)**
-    - Mounting configurations using ConfigMaps, managing sensitive Secrets, GKE credential sync.
-6. **[Lesson 6: Ingress & GKE Load Balancing](0006-ingress-gke-load-balancing.md)**
-    - Using Ingress controllers to route external HTTP/HTTPS traffic to backend cluster services.
-7. **[Lesson 7: Persistent Volumes, PVCs & StorageClasses](0007-pv-pvc-storageclasses.md)**
-    - Requesting storage dynamically with StorageClasses and mounting Persistent Volumes.
+1. **[Lesson 1: Introduction to Kubernetes architecture and prerequisites](0001-what-is-kubernetes-and-prerequisites.md)**
+    - Container orchestration mechanics, control plane components, and worker node internals.
+    - Prerequisites: Linux primitives, container runtime basics, and networking fundamentals.
+2. **[Lesson 2: Pod anatomy, multi-container patterns, and lifecycle](0002-pod-anatomy.md)**
+    - Shared network namespaces, the pause container, IPC, and storage volumes inside a Pod.
+    - Native sidecars, container restart policies, and pod phase state transitions.
+3. **[Lesson 3: Node scheduling, deployment strategies, and autoscaling](0003-node-scheduling-deployment-strategies-autoscaling.md)**
+    - Node affinity, taints, tolerations, and scheduler scoring.
+    - Rolling updates, recreate strategies, and horizontal pod autoscaling.
+4. **[Lesson 4: Service-to-service communication and DNS](0004-service-communication.md)**
+    - ClusterIP, NodePort, LoadBalancer routing, kube-proxy modes, and CoreDNS lookups.
+5. **[Lesson 5: Stateless and stateful configuration with Secrets and ConfigMaps](0005-stateless-stateful-secrets-gcp.md)**
+    - ConfigMap mounts, secret security, and cloud credential synchronization.
+6. **[Lesson 6: Ingress and GKE load balancing](0006-ingress-gke-load-balancing.md)**
+    - Ingress controllers, Google Cloud load balancers, and network endpoint groups (NEGs).
+7. **[Lesson 7: Persistent volumes, PVCs, and StorageClasses](0007-pv-pvc-storageclasses.md)**
+    - Dynamic storage provisioning, reclaim policies, and CSI volume drivers.
 8. **[Lesson 8: GKE Gateway API](0008-gke-gateway-api.md)**
-    - Advanced traffic routing, path-based matching, and multi-tenant Gateway configuration.
-9. **[Lesson 9: Pod Lifecycle, Resource Allocation, and Health Probes](0009-resources-probes-graceful-shutdown.md)**
-    - Tuning CPU/Memory requests/limits, configuring liveness/readiness/startup probes, implementing preStop graceful shutdown.
-10. **[Lesson 10: Capstone Project](0010-capstone-project.md)**
-    - Deploying a complete, highly-available multi-tier web application.
+    - GatewayClass, Gateway, HTTPRoute, traffic splitting, and multi-tenant ingress routing.
+9. **[Lesson 9: Pod lifecycle, resource allocation, and health probes](0009-resources-probes-graceful-shutdown.md)**
+    - CPU and memory requests vs limits, liveness and readiness probes, and preStop hooks for graceful shutdown.
+10. **[Lesson 10: Capstone project](0010-capstone-project.md)**
+    - End-to-end production deployment of a multi-tier web application.
 
 ---
 
-## Module 2: Packaging, CI/CD & Operations
+## Module 2: Packaging, CI/CD, and operations
 
-11. **[Lesson 11: Helm Package Manager](0011-helm-package-manager.md)**
-    - Packaging, parameterizing, and versioning repeatable Kubernetes manifest sets.
-12. **[Lesson 12: CI/CD with GitHub Actions & GKE](0012-github-actions-cicd-gke.md)**
-    - Automating GKE deployments using GitHub Actions, Workload Identity Federation (WIF), and DNS-based kubeconfig credentials.
-13. **[Lesson 13: Zero-Downtime Cluster Upgrades](0013-zero-downtime-cluster-upgrades.md)**
-    - Upgrading control plane and worker nodes without downtime using Surge Upgrades, PDBs, and graceful termination.
-
----
-
-## Module 3: GitOps & Progressive Delivery (Argo CD & Flux CD)
-
-14. **[Lesson 14: GitOps Core Principles & Argo CD Fundamentals](0014-gitops-principles-and-argocd-fundamentals.md)**
-    - OpenGitOps 4 principles, pull-based vs push-based CI/CD, Argo CD architecture, declarative `Application` CRD, self-healing, and the App of Apps pattern.
-15. **[Lesson 15: Argo CD with Helm, Kustomize, Sync Waves & Hooks](0015-argo-helm-kustomize-sync-waves.md)**
-    - Native Helm/Kustomize rendering, deterministic sync waves, PreSync/PostSync database migration hooks, and health checks.
-16. **[Lesson 16: Multi-Cluster & Multi-Tenant Scalability with ApplicationSets](0016-argo-applicationsets.md)**
-    - Eliminating boilerplate across clusters using ApplicationSet Generators (Git Directory, Cluster, Matrix, Merge) and Progressive Syncs.
-17. **[Lesson 17: Secret Management (Argo CD Vault Plugin) & Automated Deployments (Argo CD Image Updater)](0017-argocd-image-updater-and-vault-plugin.md)**
-    - Solving GitOps secrets with Argo CD Vault Plugin (AVP) and automating SemVer container upgrades with Argo CD Image Updater.
-18. **[Lesson 18: Production GitOps Architecture & Bootstrapping with Argo CD Autopilot](0018-argocd-autopilot-repo-structure.md)**
-    - Monorepo vs Polyrepo setups, multi-environment promotion strategies, team AppProjects, and cluster bootstrapping with Autopilot.
-19. **[Lesson 19: Progressive Delivery with Argo Rollouts](0019-argo-rollouts-progressive-delivery.md)**
-    - Canary and Blue/Green strategies with traffic routing (Ingress NGINX/Gateway API) and automated Prometheus metric analysis & rollback.
-20. **[Lesson 20: Event-Driven Automation & Pipelines with Argo Workflows & Argo Events](0020-argo-workflows-and-argo-events.md)**
-    - Kubernetes-native DAG pipelines with Argo Workflows and event-driven automation (EventSource, EventBus, Sensor) with Argo Events.
-21. **[Lesson 21: Flux CD (Flux v2) GitOps Engine & Image Automation](0021-fluxcd-fundamentals-and-architecture.md)**
-    - Decentralized microservices controllers (source, kustomize, helm, notify), OCI artifacts, automated Git commit writes, and multi-tenancy.
-22. **[Lesson 22: Argo CD vs. Flux CD Deep Comparison & Production Selection Guide](0022-argocd-vs-fluxcd-comparison.md)**
-    - Feature-by-feature architectural comparison, security models, developer experience, and production decision matrix.
+11. **[Lesson 11: Helm package manager](0011-helm-package-manager.md)**
+    - Chart structure, Go templating, values files, and release lifecycle management.
+12. **[Lesson 12: CI/CD with GitHub Actions and GKE](0012-github-actions-cicd-gke.md)**
+    - Automated deployment pipelines, Workload Identity Federation (WIF), and keyless cluster authentication.
+13. **[Lesson 13: Zero-downtime cluster upgrades](0013-zero-downtime-cluster-upgrades.md)**
+    - Control plane and worker node upgrades, surge upgrades, PodDisruptionBudgets, and node draining.
 
 ---
 
-## Module 4: Event-Driven Autoscaling with KEDA & GitOps Synchronization
+## Module 3: GitOps and progressive delivery (Argo CD and Flux CD)
 
-23. **[Lesson 23: KEDA Fundamentals & Event-Driven Autoscaling Architecture](0023-keda-fundamentals-and-architecture.md)**
-    - Limitations of native HPA, KEDA Operator vs. Metrics Server, scale-to-zero (`0 ↔ N`) mechanics, and CRD models.
-24. **[Lesson 24: Scaling Workloads with KEDA External Metric Triggers](0024-keda-external-metrics-scalers.md)**
-    - Prometheus PromQL triggers, message queue depth (RabbitMQ, Kafka lag, AWS SQS), fallbacks, and HPA stabilization behavior.
-25. **[Lesson 25: Time-Based Autoscaling with KEDA Cron Scaler & Multi-Trigger Composition](0025-keda-cron-and-scheduled-scaling.md)**
-    - Proactive pre-warming for business hours, IANA timezone schedules, and multi-trigger MAX evaluation rules.
-26. **[Lesson 26: Solving the GitOps Tug-of-War: KEDA + Argo CD Drift Resolution](0026-keda-argocd-gitops-integration-and-drift.md)**
-    - Resolving the Replicas Tug-of-War, configuring Argo CD `ignoreDifferences` on `/spec/replicas`, omitting replica keys in Git, and scaling Argo Rollouts.
-27. **[Lesson 27: Event-Driven Batch Processing with KEDA ScaledJobs & Secure Authentication](0027-keda-scaledjobs-and-batch-processing.md)**
-    - Spawning discrete run-to-completion batch Jobs with `ScaledJob`, keyless Cloud Workload Identity with `TriggerAuthentication`, and DLQ resilience.
+14. **[Lesson 14: GitOps principles and Argo CD fundamentals](0014-gitops-principles-and-argocd-fundamentals.md)**
+    - OpenGitOps core tenets, pull-based reconciliation, Application CRDs, and the app-of-apps pattern.
+15. **[Lesson 15: Argo CD with Helm, Kustomize, sync waves, and hooks](0015-argo-helm-kustomize-sync-waves.md)**
+    - Template rendering, deterministic sync waves, pre-sync database migration hooks, and health assessments.
+16. **[Lesson 16: Multi-cluster and multi-tenant management with ApplicationSets](0016-argo-applicationsets.md)**
+    - ApplicationSet generators (Git directory, cluster, matrix, merge) and progressive rollouts.
+17. **[Lesson 17: Secret management with Vault plugin and automated image updates](0017-argocd-image-updater-and-vault-plugin.md)**
+    - Argo CD Vault Plugin secret injection and SemVer container upgrades with Image Updater.
+18. **[Lesson 18: Production repository architecture and Argo CD Autopilot](0018-argocd-autopilot-repo-structure.md)**
+    - Repository layout strategies, multi-environment promotions, team AppProjects, and cluster bootstrapping.
+19. **[Lesson 19: Progressive delivery with Argo Rollouts](0019-argo-rollouts-progressive-delivery.md)**
+    - Canary and blue-green deployments, traffic routing, and automated metric analysis rollbacks.
+20. **[Lesson 20: Pipelines and event-driven automation with Argo Workflows and Argo Events](0020-argo-workflows-and-argo-events.md)**
+    - Kubernetes-native DAG pipelines with Argo Workflows, and event triggers with Argo Events.
+21. **[Lesson 21: Flux CD architecture and automated Git write-backs](0021-fluxcd-fundamentals-and-architecture.md)**
+    - Source, Kustomize, Helm, and Notification controllers, OCI repositories, and automated image updates.
+22. **[Lesson 22: Argo CD and Flux CD comparison](0022-argocd-vs-fluxcd-comparison.md)**
+    - Architectural differences, security models, developer workflows, and selection trade-offs.
+
+---
+
+## Module 4: Event-driven autoscaling with KEDA and GitOps synchronization
+
+23. **[Lesson 23: KEDA fundamentals and autoscaling architecture](0023-keda-fundamentals-and-architecture.md)**
+    - Custom metrics scaling, scale-to-zero mechanics, and KEDA operator architecture.
+24. **[Lesson 24: Workload scaling with external metric triggers](0024-keda-external-metrics-scalers.md)**
+    - Prometheus queries, message queue depths (RabbitMQ, Kafka, AWS SQS), and fallback triggers.
+25. **[Lesson 25: Scheduled autoscaling with Cron scalers and multi-trigger composition](0025-keda-cron-and-scheduled-scaling.md)**
+    - Timezone-aware scheduling, proactive workload pre-warming, and composite trigger evaluations.
+26. **[Lesson 26: KEDA and Argo CD replica drift resolution](0026-keda-argocd-gitops-integration-and-drift.md)**
+    - Preventing GitOps replica fighting with ignoreDifferences and headless deployment manifests.
+27. **[Lesson 27: Batch processing with ScaledJobs and workload identity](0027-keda-scaledjobs-and-batch-processing.md)**
+    - Queue-driven run-to-completion Jobs with ScaledJob and keyless Cloud IAM authentication.
 
 ---
 

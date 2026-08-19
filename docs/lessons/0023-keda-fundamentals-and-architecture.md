@@ -1,10 +1,10 @@
-# Lesson 23: KEDA Fundamentals & Event-Driven Autoscaling Architecture
+# Lesson 0023: KEDA fundamentals and autoscaling architecture
 
 ## 1. What is KEDA?
 
-**KEDA** (Kubernetes Event-driven Autoscaling) is a CNCF Graduated project that provides event-driven autoscaling for any container workload in Kubernetes. While native Kubernetes scaling is primarily tied to resource metrics (CPU and Memory utilization), KEDA allows workloads to scale dynamically based on real-world events and external metrics—such as message queue depth, database query counts, HTTP traffic rates, or time-of-day schedules.
+**KEDA** (Kubernetes Event-driven Autoscaling) is a CNCF Graduated project that provides event-driven autoscaling for container workloads. While native Kubernetes scaling primarily monitors resource consumption (CPU and memory), KEDA scales workloads based on external signals: message queue depth, database query counts, HTTP request rates, or cron schedules.
 
-Crucially, KEDA solves one of the biggest limitations of standard Kubernetes autoscaling: **scaling to and from zero replicas (`0 ↔ N`)**.
+KEDA also enables **scale-to-zero (`0 ↔ N`)**, allowing workloads to scale down completely when idle and reactivate on the first incoming event.
 
 ```mermaid
 graph TD
@@ -39,46 +39,44 @@ graph TD
 
 ---
 
-## 2. KEDA vs. Native Kubernetes HPA
+## 2. KEDA versus native Kubernetes HPA
 
-The native Kubernetes `HorizontalPodAutoscaler` (HPA) is a powerful resource, but it has two primary constraints in production:
+The native Kubernetes `HorizontalPodAutoscaler` (HPA) has two main operational constraints:
 
-1. **Cannot Scale to Zero (0 Replicas):** Standard HPA requires at least 1 replica running (`minReplicas: 1`) so that resource metrics (CPU/Memory) can be collected. It cannot shut idle workloads down to 0 to eliminate cloud computing costs.
-2. **Limited Event Awareness:** Native HPA has no direct understanding of external queues, cloud message brokers, or custom Prometheus metrics without deploying complex custom metrics adapters.
+1. **Cannot scale to zero replicas:** Standard HPA requires at least 1 replica running (`minReplicas: 1`) to collect CPU and memory metrics.
+2. **Limited external metric awareness:** Native HPA does not natively poll message brokers or cloud databases without custom metric adapters.
 
 | Capability | Native Kubernetes HPA | KEDA (with HPA) |
 | :--- | :--- | :--- |
-| **Metric Types** | CPU, Memory, standard Custom Metrics | 60+ Built-in Scalers (Kafka, SQS, RabbitMQ, Cron, Prometheus, Redis, etc.) |
-| **Scale to Zero (`0` replicas)** | :x: No (Minimum `minReplicas: 1`) | :white_check_mark: Yes (Full scale-to-zero when queues/events are empty) |
-| **Scale from Zero (`0 → 1`)** | :x: No | :white_check_mark: Yes (KEDA Operator activates workload on first event) |
-| **Scale from 1 to N (`1 → N`)** | :white_check_mark: Yes (Via standard HPA) | :white_check_mark: Yes (KEDA automatically provisions & tunes an underlying HPA) |
-| **Batch / Job Scaling** | :x: Deployments/StatefulSets only | :white_check_mark: Deployments, StatefulSets, Custom Resources, and **`ScaledJobs`** |
+| **Metric types** | CPU, Memory, standard Custom Metrics | 60+ Built-in Scalers (Kafka, SQS, RabbitMQ, Cron, Prometheus, Redis) |
+| **Scale to zero (`0` replicas)** | No (Minimum `minReplicas: 1`) | Yes (Full scale-to-zero when queues are empty) |
+| **Scale from zero (`0 → 1`)** | No | Yes (KEDA Operator activates workload on first event) |
+| **Scale from 1 to N (`1 → N`)** | Yes (Via standard HPA) | Yes (KEDA provisions and manages an underlying HPA) |
+| **Batch / Job scaling** | Deployments and StatefulSets only | Deployments, StatefulSets, Custom Resources, and **`ScaledJobs`** |
 
 ---
 
-## 3. Core Architectural Components
+## 3. Core architectural components
 
-KEDA installs into the cluster (typically in the `keda` namespace) and consists of three key architectural services:
+KEDA installs into the cluster (typically in the `keda` namespace) and consists of three services:
 
 ### 1. `keda-operator`
-- Watches KEDA Custom Resource Definitions (`ScaledObject`, `ScaledJob`, `TriggerAuthentication`).
-- Responsible for **Scale-to-Zero and Scale-from-Zero** (`0 ↔ 1`):
-  - When no events exist, it directly modifies the target Deployment's `spec.replicas` to `0`.
-  - When an event arrives, it intercepts the metric and scales the Deployment from `0` to `1`.
-- Automatically synthesizes and manages the lifecycle of a corresponding native Kubernetes `HorizontalPodAutoscaler` (HPA) for `1 ↔ N` scaling.
+- Watches KEDA custom resources (`ScaledObject`, `ScaledJob`, `TriggerAuthentication`).
+- Manages **0-to-1 and 1-to-0 transitions**:
+  - When no events exist, it sets the target Deployment's `spec.replicas` to `0`.
+  - When an event arrives, it scales the Deployment from `0` to `1`.
+- Manages the lifecycle of a corresponding native `HorizontalPodAutoscaler` (HPA) for `1 ↔ N` scaling.
 
 ### 2. `keda-operator-metrics-apiserver`
 - Implements the Kubernetes External Metrics API specification.
-- Acts as a dynamic translation bridge: it queries external systems (e.g., Redis, Kafka, Datadog, Prometheus) and translates their numbers into external metrics that the native Kubernetes HPA controller can digest.
+- Queries external systems (such as Redis, Kafka, Datadog, Prometheus) and translates their values into metrics that the native HPA controller consumes.
 
 ### 3. `keda-admission-webhooks`
-- Validates the syntax, credentials, and configuration of `ScaledObject` and `ScaledJob` resources before they are admitted into `etcd`.
+- Validates the syntax and configuration of `ScaledObject` and `ScaledJob` resources before admission.
 
 ---
 
-## 4. Key Custom Resource Definitions (CRDs)
-
-KEDA introduces four primary CRDs:
+## 4. Key custom resource definitions (CRDs)
 
 ```mermaid
 graph LR
@@ -87,16 +85,16 @@ graph LR
     SO -->|Generates & Manages| HPA["Kubernetes HPA"]
 ```
 
-1. **`ScaledObject`**: Defines the mapping between an event source (triggers), the target workload (`scaleTargetRef` like a Deployment, StatefulSet, or Argo Rollout), and scaling boundaries (`minReplicaCount`, `maxReplicaCount`, `cooldownPeriod`, `pollingInterval`).
-2. **`ScaledJob`**: Defines event-driven batch processing where Kubernetes `Job` objects are launched per event/message instead of long-running Pods.
-3. **`TriggerAuthentication`**: Contains or references the authentication credentials (secrets, API keys, IAM roles) required to connect to external systems in the same namespace.
-4. **`ClusterTriggerAuthentication`**: Cluster-wide authentication credentials that can be shared across multiple namespaces.
+1. **`ScaledObject`**: Defines the mapping between an event source (triggers), the target workload (`scaleTargetRef`), and scaling bounds (`minReplicaCount`, `maxReplicaCount`, `cooldownPeriod`, `pollingInterval`).
+2. **`ScaledJob`**: Defines event-driven batch processing where Kubernetes `Job` resources are launched per event instead of long-running Pods.
+3. **`TriggerAuthentication`**: Defines the credentials (secrets, API keys, IAM roles) required to connect to external event sources in the same namespace.
+4. **`ClusterTriggerAuthentication`**: Cluster-wide credentials shared across multiple namespaces.
 
 ---
 
-## 5. Declarative ScaledObject Blueprint
+## 5. Declarative ScaledObject blueprint
 
-Here is a minimal `ScaledObject` that scales a worker deployment based on queue depth:
+Below is a `ScaledObject` that scales a worker deployment based on queue depth:
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -111,7 +109,7 @@ spec:
     name: order-processor-worker
   pollingInterval: 15                 # Check event source every 15 seconds
   cooldownPeriod:  300                # Wait 5 minutes of 0 events before scaling to 0
-  minReplicaCount: 0                  # Scale to 0 when queue is empty!
+  minReplicaCount: 0                  # Scale to 0 when queue is empty
   maxReplicaCount: 30                 # Maximum burst capacity
   advanced:
     restoreToOriginalReplicaCount: true # Restores initial replica count if ScaledObject is deleted
@@ -127,52 +125,49 @@ spec:
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. Why does KEDA split scaling responsibility between the KEDA Operator and the Kubernetes native HPA?
    - [ ] A) Operator manages 0-to-1 activations while HPA manages 1-to-N scaling
    - [ ] B) Operator manages CPU metrics while HPA handles external queue systems
    
-   *Answer:* A) Operator manages 0-to-1 activations while HPA manages 1-to-N scaling - Correct! Standard HPA cannot scale workloads to or from 0, so KEDA's operator directly manipulates `spec.replicas` for 0 ↔ 1 transitions and leverages native HPA for 1 ↔ N scaling.
+   Answer: A. Standard HPA cannot scale workloads to or from 0, so KEDA's operator manages `spec.replicas` directly for 0 $\leftrightarrow$ 1 transitions and delegates 1 $\leftrightarrow$ N scaling to HPA.
 
 2. Which KEDA component acts as an external metrics adapter to feed event metrics to the Kubernetes HPA controller?
    - [ ] A) The keda-operator-metrics-apiserver service
    - [ ] B) The keda-admission-webhooks controller
    
-   *Answer:* A) The keda-operator-metrics-apiserver service - Correct! The metrics server implements the Kubernetes External Metrics API to serve real-time external data to the HPA controller.
+   Answer: A. The metrics server implements the Kubernetes External Metrics API to serve real-time external data to the HPA controller.
 
 ---
 
-## Interactive Win: Inspecting KEDA Custom Resources
+## Hands-on practice: Inspecting KEDA custom resources
 
-Let's explore essential `kubectl` commands to verify KEDA operator health and examine running ScaledObjects.
-
-### Step 1: Verify KEDA Controller Pods
+### Step 1: Verify KEDA controller pods
 ```bash
-# Check that the operator and metrics adapter are healthy
+# Check that the operator and metrics adapter are running
 kubectl get pods -n keda -l app.kubernetes.io/name=keda-operator
 kubectl get pods -n keda -l app.kubernetes.io/name=keda-operator-metrics-apiserver
 ```
 
-### Step 2: Inspect ScaledObjects & Synthesized HPAs
+### Step 2: Inspect ScaledObjects and synthesized HPAs
 ```bash
-# List all ScaledObjects and check their ACTIVE and READY status
+# List all ScaledObjects
 kubectl get scaledobject -A
 
-# View the underlying HPA automatically created by KEDA
+# View the underlying HPA generated by KEDA
 kubectl get hpa -A
 
-# Describe the ScaledObject to inspect real-time trigger evaluation
+# Describe the ScaledObject to inspect trigger status
 kubectl describe scaledobject order-processor-scaler -n e-commerce
 ```
 
 ---
 
-## Recommended Primary Resource
-- [KEDA Official Documentation & Architecture](https://keda.sh/docs/latest/concepts/)
-- [CNCF KEDA Project Overview](https://www.cncf.io/projects/keda/)
+## Recommended primary resources
+- [KEDA documentation and concepts](https://keda.sh/docs/latest/concepts/)
+- [CNCF KEDA project overview](https://www.cncf.io/projects/keda/)
 
 ---
-**Questions on KEDA architecture or scale-to-zero mechanics?** Ask in the chat, and we'll dive into specific scaler implementations!
 
-[← Lesson 22: Argo CD vs. Flux CD Deep Comparison](./0022-argocd-vs-fluxcd-comparison.md) | [Lesson 24: KEDA External Metric Triggers →](./0024-keda-external-metrics-scalers.md)
+[← Lesson 22: Argo CD and Flux CD comparison](./0022-argocd-vs-fluxcd-comparison.md) | [Lesson 24: Workload scaling with external metric triggers →](./0024-keda-external-metrics-scalers.md)

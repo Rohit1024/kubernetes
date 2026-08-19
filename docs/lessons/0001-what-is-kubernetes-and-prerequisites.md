@@ -2,25 +2,25 @@
 icon: lucide/info
 ---
 
-# Lesson 0001: Introduction to Kubernetes Architecture & Prerequisites
+# Lesson 0001: Introduction to Kubernetes architecture and prerequisites
 
-## 🚀 Fast Interview Summary & Cheatsheet
+## Fast interview summary and cheatsheet
 
-| Component | Layer | Primary Responsibility | Critical Interview Fact |
+| Component | Layer | Primary responsibility | Key technical fact |
 | :--- | :--- | :--- | :--- |
-| **`kube-apiserver`** | Control Plane | REST API gateway, AuthN/AuthZ, Admission Control | **Only component that reads/writes directly to `etcd`**. Stateless and scales horizontally. |
-| **`etcd`** | Control Plane | Consistent, distributed key-value database | Uses **Raft Consensus**. Quorum = $\lfloor N/2 \rfloor + 1$. Requires odd numbers (3, 5). |
-| **`kube-scheduler`** | Control Plane | Assigns unscheduled Pods to optimal Nodes | Two-phase cycle: **Filtering** (Predicates) and **Scoring** (Priorities). |
+| **`kube-apiserver`** | Control Plane | REST API gateway, AuthN/AuthZ, admission control | Only component that reads and writes directly to `etcd`. Stateless and scales horizontally. |
+| **`etcd`** | Control Plane | Distributed key-value database | Uses Raft consensus. Quorum = $\lfloor N/2 \rfloor + 1$. Requires odd numbers of nodes (3, 5). |
+| **`kube-scheduler`** | Control Plane | Assigns unscheduled Pods to optimal nodes | Two-phase cycle: filtering (predicates) and scoring (priorities). |
 | **`kube-controller-manager`** | Control Plane | Runs control loops to enforce desired state | Bundles Node, ReplicaSet, Deployment, and EndpointSlice controllers. |
-| **`kubelet`** | Worker Node | Primary node agent; manages container lifecycles | Communicates with container runtime via **CRI**, network via **CNI**, storage via **CSI**. |
-| **`kube-proxy`** | Worker Node | Implements Service networking & load balancing | Operates in **`iptables`**, **`IPVS`**, or **`eBPF`** modes. |
-| **Container Runtime** | Worker Node | Executes containers (e.g. `containerd`, `CRI-O`) | Complies with OCI (Open Container Initiative) runtime spec (`runc`). |
+| **`kubelet`** | Worker Node | Node agent; manages container lifecycles | Communicates with container runtime via CRI, networking via CNI, storage via CSI. |
+| **`kube-proxy`** | Worker Node | Implements Service networking and load balancing | Operates in `iptables`, `IPVS`, or `eBPF` modes. |
+| **Container Runtime** | Worker Node | Executes containers (e.g. `containerd`, `CRI-O`) | Complies with OCI runtime specification (`runc`). |
 
 ---
 
 ## 1. What is Kubernetes?
 
-**Kubernetes** (often abbreviated as **K8s**, replacing the 8 letters between "K" and "s") is an open-source container orchestration engine that automates deployment, scaling, management, and networking of containerized applications across distributed clusters.
+Kubernetes (often abbreviated as K8s, replacing the 8 letters between "K" and "s") is an open-source container orchestration engine that automates deployment, scaling, management, and networking of containerized applications across distributed worker nodes.
 
 ```mermaid
 graph LR
@@ -37,17 +37,17 @@ graph LR
     end
 ```
 
-### Core Value Propositions:
-* **High Availability & Self-Healing:** Automatically restarts failed containers, reschedules Pods when worker nodes fail, and replaces unresponsive nodes.
-* **Horizontal Autoscaling:** Scales container replicas dynamically based on CPU, memory, or custom external metrics (via HPA/KEDA).
-* **Service Discovery & Load Balancing:** Assigns Pods their own IP addresses and exposes a single DNS name for a set of containers, balancing traffic across healthy endpoints.
-* **Automated Rollouts & Rollbacks:** Manages progressive releases (RollingUpdate, Blue/Green, Canary) and rolls back instantly if health checks fail.
+### Core features
+* **High availability and self-healing:** Restarts failed containers, reschedules Pods when worker nodes fail, and replaces unresponsive nodes.
+* **Horizontal autoscaling:** Scales container replicas dynamically based on CPU, memory, or custom external metrics through HPA and KEDA.
+* **Service discovery and load balancing:** Assigns each Pod its own IP address and exposes a single DNS name for a set of containers, balancing traffic across healthy endpoints.
+* **Automated rollouts and rollbacks:** Coordinates progressive releases (RollingUpdate, Blue/Green, Canary) and rolls back if health checks fail.
 
 ---
 
-## 2. Kubernetes Control Plane Architecture
+## 2. Kubernetes control plane architecture
 
-The Control Plane makes global decisions about the cluster (e.g., scheduling), detects and responds to cluster events, and maintains the desired state.
+The control plane makes global decisions about the cluster, detects and responds to cluster events, and maintains desired state.
 
 ```mermaid
 graph TD
@@ -82,31 +82,31 @@ graph TD
     APIServer <-->|HTTPS / TLS| Kubelet2
 ```
 
-### Control Plane Components Explained
+### Control plane components
 
-1. **`kube-apiserver` (The Front Door):**
-   - The central nervous system of Kubernetes. Every internal and external component communicates exclusively through the API Server over JSON/YAML over HTTPS.
-   - It executes three validation stages: **Authentication** (Certificates, OIDC, Webhooks) $\to$ **Authorization** (RBAC, ABAC) $\to$ **Admission Control** (Mutating & Validating webhooks).
+1. **`kube-apiserver` (API Gateway):**
+   - Serves as the communication hub. Every internal and external component communicates exclusively through the API Server over HTTPS.
+   - Runs three validation stages in order: authentication (certificates, OIDC, webhooks), authorization (RBAC, ABAC), and admission control (mutating and validating webhooks).
 
-2. **`etcd` (The Source of Truth):**
-   - A strongly consistent, distributed key-value store using the **Raft consensus algorithm**.
-   - Stores the complete state and specifications of all cluster objects. Only `kube-apiserver` is permitted to communicate directly with `etcd`.
+2. **`etcd` (State Storage):**
+   - A strongly consistent, distributed key-value store using the Raft consensus algorithm.
+   - Stores the complete state and specifications of all cluster objects. Only `kube-apiserver` reads or writes directly to `etcd`.
 
-3. **`kube-scheduler` (The Placement Engine):**
-   - Assigns unscheduled Pods (`spec.nodeName` is blank) to healthy nodes.
+3. **`kube-scheduler` (Pod Placement):**
+   - Assigns unscheduled Pods (`spec.nodeName` is empty) to healthy nodes.
    - Evaluates node fit in two phases:
-     - **Filtering (Predicates):** Filters out nodes lacking resources, ports, or matching taints/tolerations.
-     - **Scoring (Priorities):** Scores the remaining nodes to find the optimal match (e.g., spreading Pods across failure domains).
+     - **Filtering (Predicates):** Removes nodes that lack required CPU/memory, ports, or matching taints and tolerations.
+     - **Scoring (Priorities):** Ranks the remaining nodes to find the best match, such as spreading Pods evenly across failure domains.
 
-4. **`kube-controller-manager` (The Enforcer):**
-   - Runs continuous control loops (reconciliation loops) that compare **desired state** (from `etcd`) with **actual state** (reported by nodes) and executes mutations to fix drift.
-   - Contains: *Node Controller*, *Deployment Controller*, *ReplicaSet Controller*, *EndpointSlice Controller*, *Job Controller*.
+4. **`kube-controller-manager` (Reconciliation Loops):**
+   - Runs continuous control loops that compare desired state in `etcd` with actual state reported by nodes, executing mutations to reconcile drift.
+   - Bundles the Node, Deployment, ReplicaSet, EndpointSlice, and Job controllers.
 
 ---
 
-## 3. Worker Node Architecture
+## 3. Worker node architecture
 
-Worker nodes host the application containers and execute commands issued by the Control Plane.
+Worker nodes host application containers and execute commands issued by the control plane.
 
 ```mermaid
 graph TD
@@ -125,81 +125,81 @@ graph TD
 ```
 
 1. **`kubelet`:**
-   - The node agent registered with the API Server. It receives `PodSpec` definitions and ensures that the corresponding containers are running and healthy.
-   - Implements **PLEG (Pod Lifecycle Event Generator)** to periodically check container runtime states and report health back to the control plane.
+   - The node agent registered with the API server. It receives `PodSpec` objects and keeps the corresponding containers running and healthy.
+   - Implements PLEG (Pod Lifecycle Event Generator) to inspect container runtime states periodically and report health status back to the control plane.
 
 2. **`kube-proxy`:**
-   - A network proxy that runs on each node. It maintains network routing rules (using `iptables`, `IPVS`, or eBPF) so that connections to Kubernetes `Service` virtual IPs reach the correct backend Pods.
+   - A network proxy on each node. It maintains network routing rules using `iptables`, `IPVS`, or eBPF so connections to Service virtual IPs route to healthy backend Pods.
 
 3. **Container Runtime (`CRI`):**
-   - The low-level software that executes containers. Modern Kubernetes uses **containerd** or **CRI-O** via the gRPC Container Runtime Interface (`CRI`).
+   - The low-level software that executes containers. Modern clusters use `containerd` or `CRI-O` through the gRPC Container Runtime Interface (`CRI`).
 
 ---
 
-## 🎯 Interview Deep-Dives & Scenarios
+## Interview deep-dives and scenarios
 
-??? question "Interview Scenario: What happens under the hood when you run `kubectl apply -f deployment.yaml`?"
-    **Step-by-Step Architectural Execution:**
-    1. **Client-Side:** `kubectl` parses the YAML, validates client-side syntax, and sends an HTTP POST/PUT request to `kube-apiserver`.
-    2. **API Server Processing:**
-       - **Authentication:** Validates the caller's identity (e.g., client TLS certificate, bearer token).
-       - **Authorization:** Checks RBAC permissions (can this user create Deployments in this namespace?).
-       - **Mutating Admission Controllers:** Mutates default fields (e.g., injects default storage classes or sidecars).
-       - **Schema Validation:** Verifies structural correctness.
-       - **Validating Admission Controllers:** Enforces cluster security policies (e.g., Gatekeeper/OPA).
-    3. **Persistence:** `kube-apiserver` writes the `Deployment` manifest into `etcd`.
-    4. **Deployment Controller:** Watches the API Server, detects the new `Deployment`, and generates a child `ReplicaSet` object.
-    5. **ReplicaSet Controller:** Detects the `ReplicaSet` and creates the requested number of `Pod` objects with `spec.nodeName: ""` (unscheduled).
-    6. **kube-scheduler:** Watches for unbound Pods, filters and scores available nodes, selects the best node, and sends a *Binding* request to `kube-apiserver` (writing `spec.nodeName`).
-    7. **kubelet (Target Node):** Watches the API server for Pods assigned to its node.
-       - Calls the **CSI plugin** to mount required persistent storage volumes.
-       - Calls the **CNI plugin** to assign an IP and create the Pod network namespace.
-       - Calls the **CRI runtime (containerd)** to pull the container image and start the containers.
-    8. **Status Update:** `kubelet` reports Pod status (`Running`) back to `kube-apiserver`, which updates `etcd`.
+??? question "Interview scenario: What happens under the hood when you run `kubectl apply -f deployment.yaml`?"
+    **Step-by-step architectural execution:**
+    1. **Client side:** `kubectl` parses the YAML, validates syntax locally, and sends an HTTP POST or PUT request to `kube-apiserver`.
+    2. **API server processing:**
+       - **Authentication:** Validates caller identity using client TLS certificates, bearer tokens, or OIDC.
+       - **Authorization:** Checks RBAC permissions to verify the caller can create Deployments in the target namespace.
+       - **Mutating admission controllers:** Injects default values, sidecars, or storage classes.
+       - **Schema validation:** Verifies structural correctness against the OpenAPI schema.
+       - **Validating admission controllers:** Enforces cluster security policies (such as Gatekeeper or Kyverno).
+    3. **Persistence:** `kube-apiserver` writes the `Deployment` record into `etcd`.
+    4. **Deployment controller:** Watches the API server, notices the new `Deployment`, and generates a child `ReplicaSet` object.
+    5. **ReplicaSet controller:** Notices the `ReplicaSet` and creates the requested number of `Pod` objects with `spec.nodeName` left empty.
+    6. **kube-scheduler:** Filters and scores available nodes for unbound Pods, picks the best node, and writes a binding back to `kube-apiserver` to update `spec.nodeName`.
+    7. **kubelet (target node):** Detects Pods assigned to its node.
+       - Invokes the CSI plugin to attach and mount required storage volumes.
+       - Invokes the CNI plugin to configure networking and assign an IP address to the Pod network namespace.
+       - Calls the container runtime (containerd) over CRI to pull images and start containers.
+    8. **Status update:** `kubelet` reports Pod status (`Running`) back to `kube-apiserver`, which updates `etcd`.
 
-??? question "Interview Question: What happens if `etcd` loses quorum or one etcd member fails?"
-    **Answer:**
-    - **Quorum Formula:** $Q = \lfloor N/2 \rfloor + 1$.
-      - In a **3-node cluster**, quorum is 2. The cluster can tolerate **1 failure**.
-      - In a **5-node cluster**, quorum is 3. The cluster can tolerate **2 failures**.
-    - **If 1 node fails (Quorum preserved):**
-      - The remaining nodes elect a leader if needed and continue serving read/write operations normally with zero downtime.
-    - **If Quorum is lost ($> N/2$ nodes down):**
-      - `etcd` transitions into **read-only emergency mode** to prevent split-brain data corruption.
-      - `kube-apiserver` rejects all write requests (`kubectl apply`, scaling, scheduling new Pods).
-      - **Existing running application Pods continue running** without interruption on worker nodes, but the cluster cannot heal, restart failed pods, or schedule new workloads until quorum is restored.
+??? question "Interview question: What happens if `etcd` loses quorum or one etcd member fails?"
+    **Quorum formula:** $Q = \lfloor N/2 \rfloor + 1$.
+    - In a 3-node cluster, quorum is 2. The cluster tolerates 1 node failure.
+    - In a 5-node cluster, quorum is 3. The cluster tolerates 2 node failures.
 
-??? question "Interview Question: What happens to running workloads if the entire Control Plane crashes?"
-    **Answer:**
-    - **Data Plane Isolation:** Worker nodes are decoupled from the Control Plane. Existing Pods, containers, and network routing rules (`iptables`/`IPVS` configured by `kube-proxy`) remain active in kernel space.
-    - **Impact:**
-      - In-flight user traffic to active Pods continues flowing normally.
-      - However, the cluster loses **orchestration capabilities**: no new Pods can be scheduled, crashing Pods cannot be restarted, auto-scaling is frozen, and `kubectl` commands will fail with connection errors.
+    **If one node fails (quorum maintained):**
+    - The remaining nodes elect a new leader if the failed node was the leader, and continue serving read and write operations without interruption.
 
-??? question "Interview Question: Differentiate Docker, containerd, CRI, OCI, and runc."
-    **Answer:**
-    - **OCI (Open Container Initiative):** The open governance standard defining container image formats (`image-spec`) and runtime execution (`runtime-spec`).
-    - **runc:** The reference low-level CLI tool that interacts directly with Linux kernel cgroups and namespaces to spawn a container.
-    - **CRI (Container Runtime Interface):** The gRPC interface created by Kubernetes to decouple `kubelet` from specific container runtimes.
-    - **containerd / CRI-O:** High-level container runtimes that implement the CRI gRPC API, manage image downloads, unpack storage snapshots, and invoke `runc` to execute containers.
-    - **Docker:** A full developer platform that wraps `containerd`, networking, build tools (`buildx`), and a daemon. Kubernetes deprecated direct Docker support (Dockershim) in v1.24 in favor of direct CRI integration (`containerd`).
+    **If quorum is lost (more than $N/2$ nodes down):**
+    - `etcd` drops into read-only mode to prevent split-brain data corruption.
+    - `kube-apiserver` rejects all write requests (`kubectl apply`, scaling, scheduling new Pods).
+    - Existing application Pods continue running on worker nodes without disruption, but the cluster cannot heal, restart dead pods, or schedule workloads until quorum returns.
 
----
+??? question "Interview question: What happens to running workloads if the entire control plane crashes?"
+    **Data plane isolation:** Worker nodes operate independently from the control plane. Existing Pods, containers, and network routing rules (`iptables` or `IPVS` written by `kube-proxy`) remain active in kernel space.
 
-## ⚠️ Common Production Pitfalls & Interview Traps
+    **Impact:**
+    - Traffic to existing Pods continues flowing normally.
+    - The cluster loses all orchestration capabilities: no new Pods can be scheduled, crashing Pods will not restart, autoscaling freezes, and `kubectl` commands fail with connection errors.
 
-??? warning "Production Trap: Running an Even Number of `etcd` Nodes"
-    **Why it's dangerous:** Adding an even node increases failure risk without increasing fault tolerance.
-    - A 3-node cluster requires 2 nodes for quorum (tolerates 1 failure).
-    - A 4-node cluster requires 3 nodes for quorum (tolerates only 1 failure, but has 4 nodes that could fail!).
-    - **Rule of Thumb:** Always run 3 or 5 `etcd` nodes.
-
-??? warning "Production Trap: Assuming `kubectl` Talks to Worker Nodes"
-    `kubectl` **never** communicates directly with worker nodes or `kubelet` directly (unless executing proxy/port-forward sub-commands mediated by the API Server). All client requests are authenticated and handled exclusively by `kube-apiserver`.
+??? question "Interview question: Differentiate Docker, containerd, CRI, OCI, and runc."
+    - **OCI (Open Container Initiative):** The open specification defining container image formats (`image-spec`) and runtime execution (`runtime-spec`).
+    - **runc:** The reference CLI tool that interacts directly with Linux kernel cgroups and namespaces to spawn containers.
+    - **CRI (Container Runtime Interface):** The gRPC interface Kubernetes uses to decouple `kubelet` from specific container runtimes.
+    - **containerd / CRI-O:** High-level container runtimes that implement the CRI gRPC API, download images, unpack storage snapshots, and call `runc` to execute containers.
+    - **Docker:** A developer platform that bundles `containerd`, networking, build tools (`buildx`), and a daemon. Kubernetes dropped direct Dockershim support in v1.24 in favor of direct CRI runtimes.
 
 ---
 
-## 💻 Hands-on Verification & Diagnostic Toolkit
+## Common production pitfalls and interview traps
+
+??? warning "Production trap: Running an even number of `etcd` nodes"
+    Adding an even node increases failure surface without increasing fault tolerance.
+    - A 3-node cluster needs 2 nodes for quorum (tolerates 1 failure).
+    - A 4-node cluster needs 3 nodes for quorum (tolerates only 1 failure, but introduces 4 possible points of failure).
+    - Always run 3 or 5 `etcd` nodes.
+
+??? warning "Production trap: Assuming `kubectl` communicates directly with worker nodes"
+    `kubectl` never communicates with worker nodes or `kubelet` directly (unless using sub-commands mediated through the API server). All client requests are authenticated and processed exclusively by `kube-apiserver`.
+
+---
+
+## Hands-on verification and diagnostics
 
 ```bash
 # 1. Check control plane component health
@@ -209,7 +209,7 @@ kubectl cluster-info
 # 2. Inspect node health and status
 kubectl get nodes -o wide
 
-# 3. View low-level node capacity and allocatable resources
+# 3. View node allocatable resources and capacity
 kubectl describe node <NODE_NAME> | grep -A 8 "Allocatable:"
 
 # 4. View API Server real-time logs (Control Plane)
@@ -218,27 +218,26 @@ kubectl logs -n kube-system -l component=kube-apiserver --tail=50
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
-1. Which Kubernetes component is the ONLY service permitted to read and write directly to `etcd`?
+1. Which Kubernetes component is the only service permitted to read and write directly to `etcd`?
    - [ ] A) The kube-apiserver component
    - [ ] B) The kube-scheduler component
    
-   *Answer:* A) The kube-apiserver component - Correct! `kube-apiserver` is the single gateway to `etcd`. All other components (scheduler, controller-manager, kubelet) communicate through the API server.
+   Answer: A. `kube-apiserver` is the single gateway to `etcd`. All other components (scheduler, controller-manager, kubelet) communicate through the API server.
 
 2. In a 5-node `etcd` cluster, what is the minimum quorum required to accept state writes, and how many node failures can it tolerate?
    - [ ] A) Quorum is 3 nodes and it tolerates 2 node failures
    - [ ] B) Quorum is 4 nodes and it tolerates 1 node failure
    
-   *Answer:* A) Quorum is 3 nodes and it tolerates 2 node failures - Correct! The quorum formula is $\lfloor 5/2 \rfloor + 1 = 3$. It can lose up to 2 nodes while maintaining write availability.
+   Answer: A. The quorum formula is $\lfloor 5/2 \rfloor + 1 = 3$. The cluster can lose up to 2 nodes while maintaining write availability.
 
 ---
 
-## Recommended Primary Resource
-- [Kubernetes Official Architecture Concepts](https://kubernetes.io/docs/concepts/architecture/)
-- [etcd Raft Consensus Algorithm FAQ](https://etcd.io/docs/v3.5/learning/why/)
+## Recommended primary resources
+- [Kubernetes architecture concepts](https://kubernetes.io/docs/concepts/architecture/)
+- [etcd Raft consensus algorithm FAQ](https://etcd.io/docs/v3.5/learning/why/)
 
 ---
-**Preparing for a platform engineering interview?** Ask in the chat, and we can simulate a control plane failure scenario!
 
-[← Home](../index.md) | [Lesson 2: Pod Anatomy & Configuration →](./0002-pod-anatomy.md)
+[← Home](../index.md) | [Lesson 2: Pod anatomy, multi-container patterns, and lifecycle →](./0002-pod-anatomy.md)

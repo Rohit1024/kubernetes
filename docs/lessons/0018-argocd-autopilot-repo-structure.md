@@ -1,8 +1,8 @@
-# Lesson 18: Production GitOps Architecture & Bootstrapping with Argo CD Autopilot
+# Lesson 0018: Production repository architecture and Argo CD Autopilot
 
-## 1. Production GitOps Repository Topologies
+## 1. Production GitOps repository topologies
 
-When adopting GitOps at scale, structuring your Git repositories correctly is critical for team velocity, access control (RBAC), and disaster recovery.
+Structuring Git repositories effectively supports access control (RBAC), auditing, and disaster recovery.
 
 ```mermaid
 graph TD
@@ -18,25 +18,25 @@ graph TD
     ConfigRepo -->|3. Pulls desired state| Cluster
 ```
 
-### Why Separate Application Code from GitOps Manifests?
-1. **Clean Commit History:** Continuous deployments update image tags dozens of times a day; keeping this in an infra repo prevents polluting application code history.
-2. **Access Control (RBAC):** Developers can have write access to application code while only platform/DevOps engineers can merge PRs to production cluster infrastructure.
-3. **Disaster Recovery:** If an entire cloud region or cluster is destroyed, point a newly provisioned cluster to the Config Repo to restore all workloads within minutes.
+### Why separate application code from GitOps manifests?
+1. **Clean commit history:** Automated tag updates happen continuously; separating repositories keeps these automated commits out of application code history.
+2. **Access control (RBAC):** Developers have write access to application repositories, while platform teams control approvals on production cluster manifests.
+3. **Disaster recovery:** If a cluster is destroyed, point a freshly provisioned cluster to the configuration repository to restore all workloads quickly.
 
 ---
 
 ## 2. What is Argo CD Autopilot?
 
-**Argo CD Autopilot** is an opinionated tool developed by the Argo team that implements best-practice GitOps directory structures, multi-project isolation, and automated cluster bootstrapping.
+**Argo CD Autopilot** is an opinionated tool from the Argo project that implements standardized GitOps directory layouts, multi-project isolation, and cluster bootstrapping.
 
-Instead of writing custom directory structures and initial root application manifests from scratch, Autopilot configures everything using a clean, standardized hierarchy.
+Autopilot establishes a consistent structure across teams:
 
 ```
 gitops-repo/
-├── bootstrap/                    # Argo CD installation & root controllers
+├── bootstrap/                    # Argo CD installation and root controllers
 │   ├── cluster-resources/
 │   └── root.yaml
-├── projects/                     # Argo CD AppProjects (team / security boundaries)
+├── projects/                     # Argo CD AppProjects (team and security boundaries)
 │   ├── core-platform/
 │   ├── payments-team/
 │   └── analytics-team/
@@ -51,28 +51,26 @@ gitops-repo/
 
 ---
 
-## 3. Autopilot CLI Workflow
+## 3. Autopilot CLI workflow
 
-The Autopilot CLI simplifies repository bootstrapping and application onboarding into a few standard commands.
-
-### A. Bootstrapping a New Cluster
+### A. Bootstrapping a new cluster
 ```bash
-# Export your Git provider credentials
+# Export Git provider credentials
 export GIT_TOKEN=ghp_yourpersonalaccesstoken
 export GIT_REPO=https://github.com/my-org/production-gitops
 
 # Bootstrap Argo CD into your Kubernetes cluster
 argocd-autopilot repo bootstrap
 ```
-*What this does:* Installs Argo CD, commits the installation YAMLs into the `bootstrap/` folder of your Git repo, and applies the root bootstrap application.
+This installs Argo CD, commits the installation manifests into `bootstrap/` in your repository, and deploys the root bootstrap application.
 
-### B. Creating a Team Project
+### B. Creating a team project
 ```bash
 argocd-autopilot project create payments-team
 ```
-*What this does:* Commits an `AppProject` CRD defining allowed namespaces, destination clusters, and repository whitelists.
+This generates an `AppProject` CRD with destination cluster and namespace constraints.
 
-### C. Onboarding an Application
+### C. Onboarding an application
 ```bash
 argocd-autopilot app create payment-api \
   --app github.com/my-org/payment-api/manifests \
@@ -81,9 +79,9 @@ argocd-autopilot app create payment-api \
 
 ---
 
-## 4. Multi-Environment Promotion Patterns
+## 4. Multi-environment promotion patterns
 
-Promoting releases across environments (Development → Staging → Production) in GitOps follows two primary strategies:
+Promoting releases across environments (Development $\to$ Staging $\to$ Production) in GitOps follows two common strategies:
 
 ```mermaid
 graph LR
@@ -102,34 +100,32 @@ graph LR
     end
 ```
 
-| Promotion Strategy | Advantages | Trade-offs |
+| Promotion strategy | Advantages | Trade-offs |
 | :--- | :--- | :--- |
 | **Directory / Overlay (Recommended)** | Single branch (`main`); changes are visible side-by-side in PR diffs | Requires Kustomize or Helm value overlays |
 | **Branch-per-Environment** | Strict Git branch protection rules per environment | High merge conflict risk; branches diverge over time |
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. Why should you separate application source code repositories from GitOps manifest repositories?
    - [ ] A) To maintain separated access controls and clear histories
    - [ ] B) To avoid running container image builds on clusters
    
-   *Answer:* A) To maintain separated access controls and clear histories - Correct! Separating repositories isolates CI automation noise from core source code and enables fine-grained RBAC for cluster configuration.
+   Answer: A. Separating repositories isolates CI automation updates from source code and enables fine-grained RBAC for cluster configuration.
 
 2. In the Argo CD Autopilot directory layout, what is stored inside the `projects/` directory?
    - [ ] A) AppProject custom resources defining security boundaries
    - [ ] B) Container images pushed from external build pipelines
    
-   *Answer:* A) AppProject custom resources defining security boundaries - Correct! The `projects/` directory holds AppProject CRDs which govern namespace access, cluster destinations, and source repository whitelists.
+   Answer: A. The `projects/` directory holds AppProject CRDs that govern namespace access, cluster destinations, and source repository whitelists.
 
 ---
 
-## Interactive Win: Designing a Production GitOps Structure
+## Hands-on practice: Creating an isolated AppProject
 
-Let's inspect how an `AppProject` CRD isolates a development team from modifying production namespaces.
-
-### Step 1: Create an Isolated AppProject Manifest
+### Step 1: Create an isolated AppProject manifest
 Save as `team-project.yaml`:
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -161,11 +157,10 @@ kubectl apply -f team-project.yaml
 
 ---
 
-## Recommended Primary Resource
-- [Argo CD Autopilot Official Documentation](https://argocd-autopilot.readthedocs.io/)
-- [OpenGitOps Directory & Repository Best Practices](https://opengitops.dev/)
+## Recommended primary resources
+- [Argo CD Autopilot documentation](https://argocd-autopilot.readthedocs.io/)
+- [OpenGitOps repository best practices](https://opengitops.dev/)
 
 ---
-**Setting up multi-tenant project policies or promotion workflows?** Let us know in chat, and we'll configure your AppProject RBAC rules!
 
-[← Lesson 17: Secret Management & Image Updater](./0017-argocd-image-updater-and-vault-plugin.md) | [Lesson 19: Progressive Delivery with Argo Rollouts →](./0019-argo-rollouts-progressive-delivery.md)
+[← Lesson 17: Secret management with Vault plugin and automated image updates](./0017-argocd-image-updater-and-vault-plugin.md) | [Lesson 19: Progressive delivery with Argo Rollouts →](./0019-argo-rollouts-progressive-delivery.md)

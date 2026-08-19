@@ -1,12 +1,12 @@
-# Lesson 20: Event-Driven Automation & Pipelines with Argo Workflows & Argo Events
+# Lesson 0020: Pipelines and event-driven automation with Argo Workflows and Argo Events
 
-## 1. The Argo Kubernetes-Native CI/CD Stack
+## 1. The Argo CI/CD architecture
 
-While Argo CD handles **Continuous Delivery (CD)** and GitOps reconciliation, modern cloud-native engineering requires two additional capabilities:
-1. **Container Workflow Execution (CI / Pipelines):** Building code, executing integration tests, and running ML/data processing.
-2. **Event-Driven Automation:** Reacting to external webhooks, Kafka streams, cloud pub/sub messages, or storage bucket uploads in real time.
+While Argo CD handles Continuous Delivery (CD) and GitOps reconciliation, two related needs exist in automated software delivery:
+1. **Container workflow execution (CI / Pipelines):** Building code, executing automated test suites, and orchestrating data processing tasks.
+2. **Event-driven automation:** Reacting to external webhooks, Kafka messages, cloud pub/sub events, or object storage changes in real time.
 
-The Argo project provides two purpose-built tools for this: **Argo Workflows** and **Argo Events**.
+The Argo project provides two specialized controllers for these workloads: **Argo Workflows** and **Argo Events**.
 
 ```mermaid
 graph LR
@@ -26,16 +26,16 @@ graph LR
 
 ---
 
-## 2. Argo Workflows: Kubernetes-Native DAGs & CI
+## 2. Argo Workflows: Kubernetes-native DAGs and CI
 
-**Argo Workflows** runs each step of your pipeline inside its own isolated Kubernetes Pod. It provides native support for **Directed Acyclic Graphs (DAGs)**, artifact sharing (via S3/GCS/MinIO), and retries.
+**Argo Workflows** executes each pipeline task inside its own container and Pod. It supports Directed Acyclic Graphs (DAGs), artifact storage (S3, GCS, MinIO), and step retries.
 
-### Core Custom Resources:
-- **`Workflow`**: A single instance of an executing pipeline.
+### Core custom resources
+- **`Workflow`**: A single execution instance of a pipeline.
 - **`WorkflowTemplate`**: A reusable, parameterized pipeline definition stored in a namespace.
-- **`CronWorkflow`**: Scheduled workflows (e.g., nightly builds, database backups).
+- **`CronWorkflow`**: Scheduled workflows for periodic jobs (such as nightly builds or database backups).
 
-### Example: A Complete CI Pipeline with DAGs
+### Example: CI pipeline with DAGs
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -78,9 +78,9 @@ spec:
 
 ---
 
-## 3. Argo Events: Event-Driven Framework
+## 3. Argo Events: Event-driven framework
 
-**Argo Events** transforms external signals into Kubernetes actions. Its architecture is built on three decoupled components:
+**Argo Events** translates external events into Kubernetes operations. Its design uses three decoupled components:
 
 ```mermaid
 graph TD
@@ -90,15 +90,15 @@ graph TD
     Sensor -->|Evaluates Filters & Triggers| Action["Action: Submit Argo Workflow\nOR Sync Argo CD Application"]
 ```
 
-1. **`EventSource`**: Configures listeners for external event producers (e.g., GitHub webhooks, Slack commands, AWS S3 file drops, Kafka messages).
-2. **`EventBus`**: The messaging backbone that connects EventSources to Sensors, powered by an internal, highly available NATS JetStream cluster.
-3. **`Sensor`**: Listens to messages from the EventBus, applies filtering logic (e.g., only trigger on PRs to the `main` branch), and dispatches actions (triggers an Argo Workflow, syncs an Argo CD app, or emits a cloud event).
+1. **`EventSource`**: Configures listeners for external event producers (such as GitHub webhooks, Slack interactions, S3 bucket drops, or Kafka topics).
+2. **`EventBus`**: The transport bus connecting EventSources to Sensors, backed by a NATS JetStream cluster.
+3. **`Sensor`**: Consumes messages from the EventBus, evaluates filtering conditions, and triggers actions (such as submitting an Argo Workflow or synchronizing an Argo CD Application).
 
 ---
 
-## 4. End-to-End Event Trigger Example
+## 4. End-to-end event trigger example
 
-### A. The EventSource (Webhook Listener)
+### A. The EventSource (Webhook listener)
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: EventSource
@@ -113,7 +113,7 @@ spec:
       method: POST
 ```
 
-### B. The Sensor (Triggering a Workflow on Main Branch Push)
+### B. The Sensor (Triggering a workflow on main branch push)
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Sensor
@@ -155,27 +155,25 @@ spec:
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. In Argo Events, which component is responsible for filtering event payloads and executing target actions?
    - [ ] A) The Sensor custom resource
    - [ ] B) The EventSource custom resource
    
-   *Answer:* A) The Sensor custom resource - Correct! The Sensor subscribes to events, evaluates matching criteria and payload filters, and dispatches target triggers.
+   Answer: A. The Sensor subscribes to events, evaluates matching criteria and payload filters, and dispatches target triggers.
 
 2. In an Argo Workflow DAG template, what keyword specifies that a task cannot run until previous tasks pass?
    - [ ] A) The dependencies parameter list
    - [ ] B) The sync-wave parameter string
    
-   *Answer:* A) The dependencies parameter list - Correct! DAG tasks declare `dependencies: [task-a, task-b]` to define execution ordering and prerequisite steps.
+   Answer: A. DAG tasks declare `dependencies: [task-a, task-b]` to define execution order and prerequisite steps.
 
 ---
 
-## Interactive Win: Submitting an Argo Workflow
+## Hands-on practice: Submitting an Argo Workflow
 
-Let's install the Argo Workflows CLI and submit a multi-step parallel pipeline.
-
-### Step 1: Install Argo Workflows in Cluster
+### Step 1: Install Argo Workflows in cluster
 ```bash
 # Create namespace and apply install manifests
 kubectl create namespace argo
@@ -185,7 +183,7 @@ kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/lat
 kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default -n argo
 ```
 
-### Step 2: Submit a Hello-World Workflow
+### Step 2: Submit a test workflow
 Save as `hello-workflow.yaml`:
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -200,24 +198,23 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["Hello from Argo Workflows & GitOps!"]
+      args: ["Hello from Argo Workflows!"]
 ```
 
 ```bash
-# Submit the workflow via kubectl
+# Submit the workflow
 kubectl create -f hello-workflow.yaml
 
-# Watch the pod execute and view cow message logs
+# Watch the pod execute
 kubectl get pods -n argo -w
 ```
 
 ---
 
-## Recommended Primary Resource
-- [Argo Workflows Official Documentation](https://argo-workflows.readthedocs.io/)
-- [Argo Events Architecture Guide](https://argoproj.github.io/argo-events/)
+## Recommended primary resources
+- [Argo Workflows documentation](https://argo-workflows.readthedocs.io/)
+- [Argo Events architecture guide](https://argoproj.github.io/argo-events/)
 
 ---
-**Building automated artifact uploads to S3 or connecting Kafka EventSources?** Ask in chat, and we'll configure your pipeline DAGs!
 
-[← Lesson 19: Progressive Delivery with Argo Rollouts](./0019-argo-rollouts-progressive-delivery.md) | [Lesson 21: Flux CD Architecture & Image Automation →](./0021-fluxcd-fundamentals-and-architecture.md)
+[← Lesson 19: Progressive delivery with Argo Rollouts](./0019-argo-rollouts-progressive-delivery.md) | [Lesson 21: Flux CD architecture and automated Git write-backs →](./0021-fluxcd-fundamentals-and-architecture.md)

@@ -1,10 +1,10 @@
-# Lesson 24: Scaling Workloads with KEDA External Metric Triggers
+# Lesson 0024: Workload scaling with external metric triggers
 
-## 1. What are KEDA Scalers?
+## 1. What are KEDA scalers?
 
-A **KEDA Scaler** is a dedicated integration module that connects to an external system, queries real-time metrics (e.g., message count in a queue, CPU load on a database, request rate in Prometheus), and translates those values into scaling signals for Kubernetes.
+A **KEDA Scaler** is an integration module that queries external metrics (message counts in a queue, query statistics in a database, request rates in Prometheus) and translates those values into scaling targets for Kubernetes workloads.
 
-KEDA comes with **over 60+ built-in scalers** supporting all major cloud providers, databases, streaming systems, and monitoring platforms:
+KEDA provides **over 60 built-in scalers** across cloud services, databases, messaging brokers, and monitoring platforms:
 
 ```mermaid
 graph TD
@@ -38,10 +38,10 @@ graph TD
 
 ## 2. Scaling with Prometheus PromQL
 
-The **Prometheus scaler** is one of the most flexible scalers because any metric collected in your cluster can be evaluated using PromQL.
+The **Prometheus scaler** allows evaluating arbitrary PromQL queries to drive workload scale.
 
-### Example: Scaling on HTTP Request Rate per Pod
-Suppose you have an API service and you want each Pod to handle an average of **100 requests per second (RPS)**. When the global rate reaches 500 RPS, KEDA should scale the deployment to 5 Pods.
+### Example: Scaling on HTTP request rate per Pod
+Suppose an API service targets an average of **100 requests per second (RPS)** per pod. When total traffic reaches 500 RPS, KEDA scales the deployment to 5 Pods:
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -71,20 +71,20 @@ spec:
         activationThreshold: '5'
 ```
 
-### Formula for Replica Calculation
-The HPA calculates desired replicas using the standard equation:
+### Formula for replica calculation
+The HPA calculates desired replicas using this formula:
 $$\text{Desired Replicas} = \left\lceil \frac{\text{Current Metric Value}}{\text{Threshold}} \right\rceil$$
 
-If `sum(rate(...))` = `450`, Desired Replicas = $\lceil 450 / 100 \rceil = 5$ pods.
+If `sum(rate(...))` equals `450`, Desired Replicas = $\lceil 450 / 100 \rceil = 5$ pods.
 
 ---
 
-## 3. Scaling with Message Queues (RabbitMQ, Kafka, AWS SQS)
+## 3. Scaling with message queues (RabbitMQ, Kafka, AWS SQS)
 
-Message-driven workloads need to scale based on **backlog (queue depth or consumer lag)** rather than CPU. If messages are sitting in a queue unprocessed, CPU utilization might remain low while latency spikes.
+Message-driven workloads scale based on **queue backlog or consumer lag** rather than CPU utilization. When messages accumulate, CPU usage may remain steady while processing latency increases.
 
-### Example: RabbitMQ Queue Scaler
-Scale worker pods based on the number of messages waiting in a RabbitMQ queue:
+### Example: RabbitMQ queue scaler
+Scales worker pods based on the count of unacknowledged messages:
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -95,21 +95,21 @@ metadata:
 spec:
   scaleTargetRef:
     name: order-consumer
-  minReplicaCount: 0                  # Scale to ZERO when queue is empty!
+  minReplicaCount: 0                  # Scale to zero when queue is empty
   maxReplicaCount: 50                 # Scale up to 50 workers under heavy load
-  pollingInterval: 10                 # Frequent polling for rapid responsiveness
-  cooldownPeriod: 180                 # 3-minute grace period before scaling to zero
+  pollingInterval: 10                 # Poll every 10 seconds
+  cooldownPeriod: 180                 # 3-minute cooldown before scaling to zero
   triggers:
     - type: rabbitmq
       metadata:
         queueName: orders-queue
         host: http://guest:guest@rabbitmq.messaging.svc:15672
         queueLength: '20'             # 1 worker pod for every 20 messages in queue
-        activationQueueLength: '1'    # 1 message will activate the first worker (0 → 1)
+        activationQueueLength: '1'    # 1 message activates the first worker (0 → 1)
 ```
 
-### Example: Kafka Consumer Group Lag Scaler
-For Kafka, scaling is based on **consumer lag** across partitions:
+### Example: Kafka consumer group lag scaler
+Scales workers based on partition consumer lag:
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -134,12 +134,12 @@ spec:
 
 ---
 
-## 4. Production Resilience: Fallback & Stabilization Windows
+## 4. Production resilience: Fallback and stabilization windows
 
-In enterprise production environments, metric systems can experience transient network partitions or outages. KEDA provides built-in mechanisms to protect against autoscaling instability.
+Metric services can experience network blips or restarts. KEDA includes controls to keep autoscaling stable during metric disruptions.
 
-### 1. Fallback Configuration
-If KEDA fails to communicate with the metric source (e.g., Prometheus is restarting or credentials expired), the `fallback` block prevents catastrophic scale-down by maintaining a safe baseline:
+### 1. Fallback configuration
+If KEDA fails to query the metric endpoint, `fallback` maintains a safe baseline replica count:
 
 ```yaml
 spec:
@@ -148,8 +148,8 @@ spec:
     replicas: 5                       # Force replicas to 5 until metric source recovers
 ```
 
-### 2. Stabilization Windows (Preventing Flapping)
-To prevent "thrashing" (rapidly scaling up and down in seconds), configure custom HPA behavior inside `advanced.horizontalPodAutoscalerConfig`:
+### 2. Stabilization windows (Preventing flapping)
+To prevent rapid scaling oscillation, configure custom HPA behavior inside `advanced.horizontalPodAutoscalerConfig`:
 
 ```yaml
 spec:
@@ -172,52 +172,45 @@ spec:
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. What is the difference between `threshold` and `activationThreshold` in a KEDA trigger?
    - [ ] A) Activation triggers 0 to 1 scaling while threshold calculates target pod counts
    - [ ] B) Activation triggers pod deletion while threshold initiates rolling deployments
    
-   *Answer:* A) Activation triggers 0 to 1 scaling while threshold calculates target pod counts - Correct! `activationThreshold` is used by the KEDA Operator for `0 → 1` activation, while `threshold` is passed to the HPA for `1 → N` target calculations.
+   Answer: A. `activationThreshold` is used by the KEDA Operator for `0 → 1` activation, while `threshold` is used by HPA for `1 → N` target calculations.
 
-2. If your Prometheus server becomes temporarily unreachable, what KEDA feature ensures your application does not scale down to zero?
+2. If your Prometheus server becomes temporarily unreachable, what KEDA feature prevents your application from scaling down to zero?
    - [ ] A) The fallback configuration block
    - [ ] B) The cluster daemonset controller
    
-   *Answer:* A) The fallback configuration block - Correct! The `fallback` configuration specifies a safe default replica count whenever consecutive metric queries fail.
+   Answer: A. The `fallback` configuration specifies a safe default replica count when consecutive metric queries fail.
 
 ---
 
-## Interactive Win: Triggering & Validating an Event Scale-Up
+## Hands-on practice: Triggering and validating an event scale-up
 
-Let's simulate inspecting external metric evaluation on a running ScaledObject.
-
-### Step 1: Check ScaledObject Metrics & Status
+### Step 1: Check ScaledObject metrics and status
 ```bash
-# Get real-time status, active state, and current replica count
+# Get real-time status and active replica count
 kubectl get scaledobject rabbitmq-worker-scaler -n workers
-
-# Output should show:
-# NAME                     TARGET            MIN   MAX   TRIGGERS   AUTHENTICATION   ACTIVE   READY   AGE
-# rabbitmq-worker-scaler   order-consumer    0     50    rabbitmq                    True     True    5m
 ```
 
-### Step 2: Query the Synthetic KEDA Metrics API
+### Step 2: Query the synthetic KEDA metrics API
 ```bash
-# Query the raw External Metrics endpoint served by keda-operator-metrics-apiserver
+# Query the raw External Metrics endpoint
 kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1" | jq .
 
-# Inspect the exact metric value currently being reported
+# Inspect the exact metric value currently reported
 kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1/namespaces/workers/s0-rabbitmq-orders-queue" | jq .
 ```
 
 ---
 
-## Recommended Primary Resource
-- [KEDA External Scalers Directory](https://keda.sh/docs/latest/scalers/)
-- [KEDA Prometheus Scaler Specification](https://keda.sh/docs/latest/scalers/prometheus/)
+## Recommended primary resources
+- [KEDA external scalers directory](https://keda.sh/docs/latest/scalers/)
+- [KEDA Prometheus scaler](https://keda.sh/docs/latest/scalers/prometheus/)
 
 ---
-**Need help formulating a PromQL query or tuning Kafka consumer lag thresholds?** Ask in the chat, and we can test the calculations together!
 
-[← Lesson 23: KEDA Fundamentals & Architecture](./0023-keda-fundamentals-and-architecture.md) | [Lesson 25: Time-Based & Cron Scaling →](./0025-keda-cron-and-scheduled-scaling.md)
+[← Lesson 23: KEDA fundamentals and autoscaling architecture](./0023-keda-fundamentals-and-architecture.md) | [Lesson 25: Scheduled autoscaling with Cron scalers and multi-trigger composition →](./0025-keda-cron-and-scheduled-scaling.md)

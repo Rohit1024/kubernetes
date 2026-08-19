@@ -2,21 +2,21 @@
 icon: lucide/database
 ---
 
-# Lesson 0005: Stateless vs. Stateful Workloads, ConfigMaps & Secrets
+# Lesson 0005: Stateless versus stateful workloads, ConfigMaps, and Secrets
 
-## 🚀 Fast Interview Summary & Cheatsheet
+## Fast interview summary and cheatsheet
 
 | Characteristic | Stateless (`Deployment`) | Stateful (`StatefulSet`) |
 | :--- | :--- | :--- |
-| **Pod Identity** | Random hash (e.g. `web-78bfd8b67f-9x2jk`) | Deterministic ordinal (e.g. `redis-0`, `redis-1`, `redis-2`) |
-| **Storage Binding** | Shared volume or ephemeral disk | Dedicated PV per replica via **`volumeClaimTemplates`** |
-| **Startup / Teardown** | Concurrent / Random | Sequential (0 $\to$ N-1 on start; N-1 $\to$ 0 on stop) |
-| **Network Identity** | Shared Service ClusterIP | Dedicated DNS via **Headless Service** (`redis-0.redis-svc`) |
-| **Scaling Down PVCs** | N/A | **PVCs are NEVER deleted automatically** (Data protection) |
+| **Pod identity** | Random hash (such as `web-78bfd8b67f-9x2jk`) | Deterministic ordinal (such as `redis-0`, `redis-1`, `redis-2`) |
+| **Storage binding** | Shared volume or ephemeral disk | Dedicated PV per replica via `volumeClaimTemplates` |
+| **Startup and teardown** | Concurrent | Sequential (0 $\to$ N-1 on start; N-1 $\to$ 0 on stop) |
+| **Network identity** | Shared Service ClusterIP | Dedicated DNS via Headless Service (`redis-0.redis-svc`) |
+| **Scale down PVC retention** | N/A | PVCs are never deleted automatically to protect data |
 
 ---
 
-## 1. Deployments vs. StatefulSets Architecture
+## 1. Deployments versus StatefulSets architecture
 
 ```mermaid
 graph TD
@@ -39,14 +39,14 @@ graph TD
     end
 ```
 
-### Key StatefulSet Primitives:
-1. **Deterministic Ordinal Index:** If `db-1` crashes, the replacement Pod is guaranteed to be named `db-1` and scheduled with the exact same hostname and storage attachment.
-2. **`volumeClaimTemplates`:** Unlike Deployments where all replicas share the same PVC definition, a StatefulSet dynamically synthesizes an isolated `PersistentVolumeClaim` for each replica: `<claim-name>-<statefulset-name>-<index>`.
-3. **Headless Service Association:** Required by the `serviceName` field in the StatefulSet spec to generate predictable DNS A-records for every individual Pod.
+### StatefulSet components
+1. **Deterministic ordinal index:** If `db-1` crashes, the replacement Pod is guaranteed to be named `db-1` and scheduled with the exact same hostname and storage attachment.
+2. **`volumeClaimTemplates`:** Unlike Deployments where all replicas share the same PVC definition, a StatefulSet provisions an isolated `PersistentVolumeClaim` for each replica: `<claim-name>-<statefulset-name>-<index>`.
+3. **Headless Service association:** The `serviceName` field in the StatefulSet spec creates direct DNS A-records for each individual Pod.
 
 ---
 
-## 2. ConfigMaps & Secrets Management
+## 2. ConfigMaps and Secrets management
 
 Kubernetes decouples configuration and sensitive credentials from container image builds using **ConfigMaps** (plain configuration) and **Secrets** (confidential tokens, passwords, TLS certificates).
 
@@ -70,7 +70,7 @@ graph LR
     Env --> Static["Static; Requires Pod restart to pick up changes!"]
 ```
 
-### Consuming Secrets in a Pod Manifest
+### Consuming Secrets in a Pod manifest
 
 ```yaml
 apiVersion: v1
@@ -101,11 +101,11 @@ spec:
 
 ---
 
-## 3. Production Secrets: External Secrets Operator (ESO) & GCP Secret Manager
+## 3. Production secrets: External Secrets Operator and GCP Secret Manager
 
-In enterprise GitOps, **base64-encoded Kubernetes Secrets must never be stored in Git**.
+In enterprise GitOps setups, base64-encoded Kubernetes Secrets must never be committed to Git repositories.
 
-The **External Secrets Operator (ESO)** bridges Kubernetes with external secret managers (GCP Secret Manager, AWS Secrets Manager, HashiCorp Vault):
+The **External Secrets Operator (ESO)** synchronizes Kubernetes Secrets from external secret managers (GCP Secret Manager, AWS Secrets Manager, HashiCorp Vault):
 
 ```mermaid
 graph LR
@@ -134,44 +134,44 @@ spec:
 
 ---
 
-## 🎯 Interview Deep-Dives & Scenarios
+## Interview deep-dives and scenarios
 
-??? question "Interview Question: Why do StatefulSets require a Headless Service?"
-    **Answer:**
-    - A standard Service provides a single virtual ClusterIP that randomly load-balances requests across all replicas.
-    - Stateful applications (e.g., MySQL Leader-Follower, Kafka Brokers, Elasticsearch) require clients to target a **specific replica directly** (e.g., writing to the Leader on `mysql-0` while reading from Followers on `mysql-1` and `mysql-2`).
-    - By associating a Headless Service (`clusterIP: None`), CoreDNS creates direct A-records for each ordinal:
-      `<pod-name>.<service-name>.<namespace>.svc.cluster.local` (e.g. `mysql-0.mysql-svc.prod.svc.cluster.local`).
+??? question "Interview question: Why do StatefulSets require a Headless Service?"
+    A standard Service provides a single virtual ClusterIP that load-balances requests across all replicas.
+    
+    Stateful applications (such as MySQL Primary/Replica, Kafka Brokers, Elasticsearch) require clients to target a specific replica directly (such as writing to the primary on `mysql-0` while reading from replicas on `mysql-1` and `mysql-2`).
+    
+    By associating a Headless Service (`clusterIP: None`), CoreDNS creates direct A-records for each ordinal:
+    `<pod-name>.<service-name>.<namespace>.svc.cluster.local` (such as `mysql-0.mysql-svc.prod.svc.cluster.local`).
 
-??? question "Interview Scenario: If you update a Secret/ConfigMap, why does a Volume Mount update but an Environment Variable does not?"
-    **The Mechanism:**
-    - **Environment Variables:** Evaluated and set by the OS kernel when the container process starts (`fork/exec`). There is no mechanism in POSIX systems to alter an active process’s environment without restarting the container.
-    - **Mounted Volumes:** `kubelet` regularly watches for ConfigMap/Secret changes and updates the projected files on the host disk using atomic symlinks.
-    - **Interview Pro-Tip:** Applications watching file modifications (e.g. using `inotify` or Spring Cloud Watcher) can reload configurations on the fly with **zero downtime and zero Pod restarts**!
+??? question "Interview scenario: If you update a Secret or ConfigMap, why does a Volume Mount update while an Environment Variable does not?"
+    - **Environment variables:** Evaluated and set by the OS kernel when the container process starts (`fork`/`exec`). POSIX operating systems do not allow changing an active process's environment without restarting the process.
+    - **Mounted volumes:** `kubelet` watches for ConfigMap and Secret changes and updates the projected files on the host disk using atomic symlinks.
+    - Applications watching file modifications (using `inotify` or library watchers) can reload configurations on the fly without Pod restarts.
 
-??? question "Interview Question: Is a standard Kubernetes Secret encrypted by default?"
-    **Answer:**
-    - **No.** By default, native Kubernetes Secrets are merely **base64-encoded strings** stored as plaintext in `etcd`. Anyone with read access to the namespace or `etcd` disk can decode them trivially (`echo <BASE64> | base64 -d`).
-    - **Production Hardening Requirements:**
-      1. Enable **Encryption at Rest** in `kube-apiserver` using KMS (Cloud KMS, AWS KMS, HashiCorp Vault).
-      2. Enforce strict **RBAC policies** preventing unauthorized Secret reads.
-      3. Use tools like **External Secrets Operator (ESO)** or **Sealed Secrets** to prevent secrets from being checked into Git repositories.
-
----
-
-## ⚠️ Common Production Pitfalls & Interview Traps
-
-??? warning "Production Trap: Accidental Storage Deletion vs StatefulSet Retention"
-    When you scale down a StatefulSet from 3 to 1 replica or delete the StatefulSet, **Kubernetes intentionally DOES NOT delete the PVCs (`data-db-1`, `data-db-2`)**.
-    - **Why:** To prevent catastrophic accidental data loss.
-    - **Gotcha:** If you re-scale the StatefulSet back to 3 replicas later, it automatically re-attaches to the existing historical PVCs. If you wanted fresh disks, you must manually delete the historical PVCs!
-
-??? warning "Production Trap: `subPath` Volume Mounts Break Live Updates"
-    If you mount a single key from a ConfigMap using `subPath` (e.g. `mountPath: /etc/app.conf`, `subPath: app.conf`), **Kubernetes will NOT automatically update the file** when the ConfigMap changes. `subPath` mounts bypass symlink updates.
+??? question "Interview question: Is a standard Kubernetes Secret encrypted by default?"
+    No. By default, native Kubernetes Secrets are base64-encoded strings stored as plaintext in `etcd`. Anyone with read access to the namespace or `etcd` disk can decode them directly (`echo <BASE64> | base64 -d`).
+    
+    **Production hardening steps:**
+    1. Enable encryption at rest in `kube-apiserver` using KMS (Cloud KMS, AWS KMS, HashiCorp Vault).
+    2. Enforce RBAC policies preventing unauthorized Secret reads.
+    3. Use External Secrets Operator (ESO) or Sealed Secrets to keep secrets out of Git repositories.
 
 ---
 
-## 💻 Hands-on Verification & Diagnostic Toolkit
+## Common production pitfalls and interview traps
+
+??? warning "Production trap: Accidental storage retention versus StatefulSet scale-down"
+    When you scale down a StatefulSet from 3 to 1 replica or delete the StatefulSet, Kubernetes does not delete the PVCs (`data-db-1`, `data-db-2`).
+    - This prevents accidental data loss.
+    - If you scale the StatefulSet back to 3 replicas later, it automatically re-attaches to the existing PVCs. If you need fresh disks, you must delete the historical PVCs manually.
+
+??? warning "Production trap: subPath volume mounts disable live updates"
+    If you mount a single key from a ConfigMap using `subPath` (such as `mountPath: /etc/app.conf`, `subPath: app.conf`), Kubernetes will not update the file when the ConfigMap changes. `subPath` mounts bypass symlink updates.
+
+---
+
+## Hands-on verification and diagnostics
 
 ```bash
 # 1. Decode all keys inside a Kubernetes Secret
@@ -183,33 +183,32 @@ kubectl exec -it <POD_NAME> -- nslookup db-0.db-headless.default.svc.cluster.loc
 # 3. List all PVCs generated by StatefulSet volumeClaimTemplates
 kubectl get pvc -l app=database
 
-# 4. Trigger rolling restart of a StatefulSet to pick up updated Env Vars
+# 4. Trigger rolling restart of a StatefulSet to pick up updated environment variables
 kubectl rollout restart statefulset/database
 ```
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. When scaling down a StatefulSet from 5 replicas to 2, what happens to the PersistentVolumeClaims (PVCs) attached to replicas 3 and 4?
    - [ ] A) The PVCs are preserved intact on the cluster to prevent accidental data loss
    - [ ] B) The PVCs and their underlying cloud disks are immediately deleted permanently
    
-   *Answer:* A) The PVCs are preserved intact on the cluster to prevent accidental data loss - Correct! Kubernetes never automatically deletes PVCs created by StatefulSets during scale-down operations.
+   Answer: A. Kubernetes never automatically deletes PVCs created by StatefulSets during scale-down operations.
 
 2. Why are ConfigMaps mounted as volumes preferred over environment variables for dynamic applications?
    - [ ] A) Mounted volume files automatically sync live updates without requiring Pod restarts
    - [ ] B) Mounted volumes consume significantly less node memory than environment variables
    
-   *Answer:* A) Mounted volume files automatically sync live updates without requiring Pod restarts - Correct! `kubelet` updates mounted volume files dynamically, allowing applications to hot-reload configuration changes.
+   Answer: A. `kubelet` updates mounted volume files dynamically, allowing applications to reload configuration changes without restarting.
 
 ---
 
-## Recommended Primary Resource
-- [Kubernetes StatefulSets Concept Guide](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
-- [External Secrets Operator Documentation](https://external-secrets.io/latest/)
+## Recommended primary resources
+- [Kubernetes StatefulSets guide](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+- [External Secrets Operator documentation](https://external-secrets.io/latest/)
 
 ---
-**Architecting a high-availability database cluster or managing cloud secrets?** Ask in chat, and we'll configure your SecretStore!
 
-[← Lesson 4: Service Communication & DNS](./0004-service-communication.md) | [Lesson 6: Ingress & GKE Load Balancing →](./0006-ingress-gke-load-balancing.md)
+[← Lesson 4: Service-to-service communication and DNS](./0004-service-communication.md) | [Lesson 6: Ingress and GKE load balancing →](./0006-ingress-gke-load-balancing.md)

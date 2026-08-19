@@ -2,26 +2,26 @@
 icon: lucide/shield-check
 ---
 
-# Lesson 0009: Pod Lifecycle, Resource Allocation & Health Probes
+# Lesson 0009: Pod lifecycle, resource allocation, and health probes
 
-## 🚀 Fast Interview Summary & Cheatsheet
+## Fast interview summary and cheatsheet
 
-| Mechanism | Trigger / Scope | System Action on Failure | Interview Must-Know |
+| Mechanism | Trigger / Scope | System action on failure | Key operational fact |
 | :--- | :--- | :--- | :--- |
-| **CPU Requests** | Scheduler placement | Reserved CPU time | Used by scheduler to place Pods; compressible via CFS shares. |
-| **CPU Limits** | Linux CFS Quota | **CPU Throttling** (No restart) | Container process slows down; never causes OOMKill. |
-| **Memory Requests** | Scheduler placement | Reserved RAM capacity | Incompressible resource. Guaranteed available to Pod. |
-| **Memory Limits** | Linux `cgroups` limit | **`OOMKilled` (Exit Code 137)** | Kernel immediately sends `SIGKILL` to container process. |
-| **`startupProbe`** | Initial container boot | Restarts container | **Disables liveness/readiness checks** until container initializes. |
-| **`livenessProbe`** | Deadlock / Frozen app | **Kills & Restarts container** | NEVER check external databases here (causes cascading restart storms!). |
-| **`readinessProbe`** | Ready to receive traffic | **Removes Pod from Endpoints** | Does **NOT** restart container; simply halts incoming HTTP traffic. |
-| **`preStop` Hook** | Pod termination initiated | Runs script before SIGTERM | Essential `sleep 10` hook allows kube-proxy iptables propagation. |
+| **CPU requests** | Scheduler placement | Reserved CPU time | Used by scheduler to place Pods; compressible via CFS shares. |
+| **CPU limits** | Linux CFS Quota | CPU throttling (No restart) | Container process slows down; does not cause an OOMKill. |
+| **Memory requests** | Scheduler placement | Reserved RAM capacity | Incompressible resource. Guaranteed available to the Pod. |
+| **Memory limits** | Linux `cgroups` limit | **`OOMKilled` (Exit code 137)** | Kernel sends `SIGKILL` to container process immediately. |
+| **`startupProbe`** | Initial container boot | Restarts container | Disables liveness and readiness checks until container initializes. |
+| **`livenessProbe`** | Deadlock / Frozen app | Restarts container | Never query external databases here (causes cascading restart loops). |
+| **`readinessProbe`** | Ready to receive traffic | Removes Pod from Endpoints | Does not restart container; stops incoming traffic. |
+| **`preStop` hook** | Pod termination initiated | Runs script before SIGTERM | A `sleep 10` hook allows kube-proxy and load balancers to update routing tables. |
 
 ---
 
-## 1. Quality of Service (QoS) Classes & Eviction Hierarchy
+## 1. Quality of Service (QoS) classes and eviction hierarchy
 
-Kubernetes classifies every Pod into one of three **Quality of Service (QoS)** tiers. When a worker node runs low on memory or disk space, `kubelet` evicts Pods in strict reverse order of their QoS tier:
+Kubernetes assigns every Pod into one of three **Quality of Service (QoS)** tiers. When a worker node runs low on memory or disk space, `kubelet` evicts Pods in reverse order of their QoS tier:
 
 ```mermaid
 graph TD
@@ -34,17 +34,17 @@ graph TD
     end
 ```
 
-### QoS Classification Rules:
+### QoS classification rules
 1. **`Guaranteed` (Highest Priority):**
-   - Every container in the Pod must have CPU and Memory **requests AND limits explicitly set**, and `requests == limits`.
+   - Every container in the Pod has CPU and Memory requests and limits set, and `requests == limits`.
 2. **`Burstable` (Medium Priority):**
    - At least one container has a memory or CPU request, but limits are higher than requests (or limits are omitted).
 3. **`BestEffort` (Lowest Priority):**
-   - The Pod specifies **no requests and no limits** whatsoever. Under node memory pressure, `kubelet` kills `BestEffort` Pods first.
+   - The Pod specifies no requests and no limits. Under node memory pressure, `kubelet` terminates `BestEffort` Pods first.
 
 ---
 
-## 2. Health Probes: Startup, Liveness & Readiness
+## 2. Health probes: Startup, liveness, and readiness
 
 ```mermaid
 graph TD
@@ -60,17 +60,17 @@ graph TD
     Readiness -->|Yes: Healthy| AddEndpoint["Add Pod IP to Service Endpoints\n(Accepts user traffic)"]
 ```
 
-### The 4 Probe Handlers:
-* **`httpGet`:** Sends an HTTP GET request (status `200–399` indicates success).
-* **`tcpSocket`:** Checks if a TCP socket can be opened.
-* **`exec`:** Runs a command inside the container (exit code `0` indicates success).
-* **`grpc`:** Sends a native gRPC health check request (K8s 1.24+).
+### Probe handlers
+* **`httpGet`:** Sends an HTTP GET request (status code 200 to 399 indicates success).
+* **`tcpSocket`:** Checks if a TCP socket connection succeeds.
+* **`exec`:** Runs a command inside the container (exit code 0 indicates success).
+* **`grpc`:** Sends a native gRPC health check request.
 
 ---
 
-## 3. Zero-Downtime Graceful Shutdown Sequence
+## 3. Zero-downtime graceful shutdown sequence
 
-During rolling updates, scaling down, or node drains, why do applications frequently drop in-flight user requests even when `readinessProbe` is configured?
+During rolling updates, scale-downs, or node drains, applications can drop active user requests if endpoint removal races with container termination:
 
 ```mermaid
 sequenceDiagram
@@ -90,12 +90,14 @@ sequenceDiagram
     Kubelet->>Pod: 4. Sends SIGKILL (Forcible cleanup if still running)
 ```
 
-### The In-Flight Request Race Condition:
-- When a Pod is deleted, two events happen **asynchronously and in parallel**:
-  1. The API Server notifies `kube-proxy` and Cloud Load Balancers to remove the Pod IP from the network endpoints.
-  2. `kubelet` immediately sends `SIGTERM` to the container process.
-- **The Problem:** It takes 2–5 seconds for network routing tables across the cluster to update. If your container terminates immediately upon receiving `SIGTERM`, clients will send HTTP requests to a dead container, resulting in **`502 Bad Gateway`** errors.
-- **The Solution:** A `preStop` hook with `sleep 10` forces the container to wait for network routing tables to drain before stopping!
+### The in-flight request race condition
+When a Pod is deleted, two actions occur asynchronously in parallel:
+1. The API server notifies `kube-proxy` and Cloud Load Balancers to remove the Pod IP from active endpoints.
+2. `kubelet` sends `SIGTERM` to the container process.
+
+It takes 2 to 5 seconds for network routing tables to update across the cluster. If the container process shuts down immediately upon receiving `SIGTERM`, incoming requests hit a closed socket and return `502 Bad Gateway`.
+
+A `preStop` hook running `sleep 10` delays process termination until network tables complete their updates:
 
 ```yaml
 spec:
@@ -127,36 +129,35 @@ spec:
 
 ---
 
-## 🎯 Interview Deep-Dives & Scenarios
+## Interview deep-dives and scenarios
 
-??? question "Interview Scenario: Why is pointing a `livenessProbe` to an external database a catastrophic antipattern?"
-    **The Cascading Failure Storm:**
-    - If your microservice’s `/healthz` endpoint queries PostgreSQL, and PostgreSQL experiences a brief 10-second network glitch or lock saturation:
-      1. Every single Pod replica across your cluster will fail its `livenessProbe` simultaneously.
-      2. `kubelet` on every node will kill and restart **all replicas of your service at the exact same moment**.
-      3. When thousands of new containers reboot, they will slam PostgreSQL with simultaneous initialization connection storms, permanently crashing your database.
-    - **Rule:**
-      - **`livenessProbe`** should **ONLY** check local process health (e.g. is the thread pool alive? is the process deadlocked?).
-      - **`readinessProbe`** can verify external dependencies and temporarily stop routing traffic without killing the process!
+??? question "Interview scenario: Why is pointing a livenessProbe to an external database an antipattern?"
+    If a service's `/healthz` endpoint queries PostgreSQL, and PostgreSQL experiences a short network hiccup or lock contention:
+    1. Every Pod replica fails its `livenessProbe` at the same time.
+    2. `kubelet` on every node terminates and restarts all service replicas simultaneously.
+    3. The restarting containers all attempt to open new database connections at once, causing a connection spike that can keep the database unresponsive.
+    
+    **Best practice:**
+    - `livenessProbe` should test only internal process health (such as deadlock checks or thread responsiveness).
+    - `readinessProbe` can check external dependencies, which stops incoming traffic without terminating the container.
 
-??? question "Interview Question: What is the exact difference between CPU throttling and Memory OOMKilling?"
-    **Answer:**
-    - **CPU is a Compressible Resource:** If a container attempts to use more CPU than its `resources.limits.cpu`, Linux CFS (Completely Fair Scheduler) **throttles** the container’s CPU time slices. The application slows down, but the process is **never killed**.
-    - **Memory is an Incompressible Resource:** If a container attempts to allocate more RAM than its `resources.limits.memory`, the Linux kernel cgroups controller cannot compress memory. The kernel **immediately kills the process with `SIGKILL` (Exit Code 137 - OOMKilled)** to protect the stability of the host node.
-
----
-
-## ⚠️ Common Production Pitfalls & Interview Traps
-
-??? warning "Production Trap: Omitting `startupProbe` for Slow Applications"
-    If a Java/Spring Boot or Rails app takes 45 seconds to initialize, setting `livenessProbe` with `initialDelaySeconds: 10` will cause `kubelet` to kill the container halfway through booting, putting the Pod into an infinite `CrashLoopBackOff`. Always configure a `startupProbe` with high `failureThreshold` to shield the boot phase.
-
-??? warning "Production Trap: Missing `preStop` Hook Dropping In-Flight WebSocket/HTTP Traffic"
-    Without a `preStop` sleep hook, rolling updates will drop active connections because cloud load balancers and `kube-proxy` require a few seconds to withdraw the terminating Pod IP from active routing tables.
+??? question "Interview question: Differentiate CPU throttling and Memory OOMKilling."
+    - **CPU is a compressible resource:** If a container exceeds its `resources.limits.cpu`, the Linux CFS (Completely Fair Scheduler) throttles the container's CPU allocation. The application slows down, but the process does not terminate.
+    - **Memory is an incompressible resource:** If a container allocates more RAM than its `resources.limits.memory`, the Linux kernel cgroups controller cannot compress memory. The kernel terminates the process with `SIGKILL` (Exit code 137 - OOMKilled) to maintain host stability.
 
 ---
 
-## 💻 Hands-on Verification & Diagnostic Toolkit
+## Common production pitfalls and interview traps
+
+??? warning "Production trap: Omitting startupProbe for slow-starting applications"
+    If an application takes 45 seconds to initialize, configuring a `livenessProbe` with `initialDelaySeconds: 10` causes `kubelet` to kill the container during startup, leading to a `CrashLoopBackOff`. Use a `startupProbe` with a sufficient `failureThreshold` to protect the boot sequence.
+
+??? warning "Production trap: Missing preStop hook drops in-flight connections"
+    Without a `preStop` sleep hook, rolling updates drop active connections because cloud load balancers and `kube-proxy` require a short propagation window to withdraw terminating Pod IPs from routing tables.
+
+---
+
+## Hands-on verification and diagnostics
 
 ```bash
 # 1. Inspect Pod QoS Class
@@ -165,7 +166,7 @@ kubectl get pod <POD_NAME> -o jsonpath='{.status.qosClass}'
 # 2. Check probe failure events and restart counts
 kubectl describe pod <POD_NAME> | grep -E "(Liveness|Readiness|Startup|Last State)"
 
-# 3. View CPU throttling metrics (via metrics-server)
+# 3. View CPU throttling metrics
 kubectl top pod <POD_NAME> --containers
 
 # 4. View real-time container termination signals
@@ -174,27 +175,26 @@ kubectl get events --field-selector reason=Killing
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
-1. A Pod has CPU/Memory requests configured, but its memory limit is twice its memory request. Which QoS class does this Pod belong to?
+1. A Pod has CPU and memory requests configured, but its memory limit is twice its memory request. Which QoS class does this Pod belong to?
    - [ ] A) The Burstable QoS classification
    - [ ] B) The Guaranteed QoS classification
    
-   *Answer:* A) The Burstable QoS classification - Correct! A Pod is `Burstable` if at least one container has requests set, but requests do not strictly equal limits.
+   Answer: A. A Pod is `Burstable` if at least one container specifies requests, but requests do not strictly equal limits across all containers.
 
 2. Why must a `preStop` hook execute `sleep 10` before a web server handles `SIGTERM` during a rolling update?
    - [ ] A) It allows time for kube-proxy and cloud load balancers to remove the Pod IP from routing tables
    - [ ] B) It forces the container runtime to flush all ephemeral storage snapshots to persistent disks
    
-   *Answer:* A) It allows time for kube-proxy and cloud load balancers to remove the Pod IP from routing tables - Correct! Asynchronous network propagation requires a brief delay to prevent client requests from hitting a terminating container.
+   Answer: A. Asynchronous network routing propagation requires a brief delay to prevent client traffic from hitting a terminating container.
 
 ---
 
-## Recommended Primary Resource
-- [Kubernetes Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
-- [Kubernetes Pod Quality of Service (QoS) Classes](https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/)
+## Recommended primary resources
+- [Kubernetes liveness, readiness, and startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+- [Kubernetes Pod Quality of Service (QoS) classes](https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/)
 
 ---
-**Diagnosing CPU throttling or fine-tuning probe timings?** Ask in chat, and we'll analyze your container resource allocations!
 
-[← Lesson 8: GKE Gateway API](./0008-gke-gateway-api.md) | [Lesson 10: Capstone Project →](./0010-capstone-project.md)
+[← Lesson 8: GKE Gateway API](./0008-gke-gateway-api.md) | [Lesson 10: Capstone project →](./0010-capstone-project.md)

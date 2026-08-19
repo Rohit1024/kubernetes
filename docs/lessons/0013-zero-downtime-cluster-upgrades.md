@@ -1,42 +1,48 @@
-# Lesson 13: Zero-Downtime Cluster Upgrades
+# Lesson 0013: Zero-downtime cluster upgrades
 
-Upgrading a Kubernetes cluster is a critical administrative task that, if not done correctly, can lead to application downtime and disrupted services. Understanding how to perform zero-downtime upgrades is essential for maintaining high availability.
+Upgrading a Kubernetes cluster involves updating both the control plane and individual worker nodes. If configured improperly, node upgrades will evict workloads prematurely and cause service outages.
 
-This lesson covers the concepts and best practices for upgrading a Kubernetes cluster (both Control Plane and Worker Nodes) without impacting your running applications.
+This lesson covers upgrade mechanics, node pool upgrade strategies, and workload protection patterns.
 
-## 1. Upgrading the Control Plane
+---
 
-The Control Plane components (API Server, Controller Manager, Scheduler, etcd) orchestrate the cluster. In managed services like Google Kubernetes Engine (GKE), Amazon EKS, or Azure AKS, the control plane is managed by the cloud provider.
+## 1. Upgrading the control plane
 
-- **Managed Clusters (GKE/EKS/AKS):** You typically trigger a control plane upgrade via the cloud console or CLI. The provider handles rolling out the new components seamlessly.
-- **Self-Managed Clusters (kubeadm):** You must upgrade `kubeadm`, run `kubeadm upgrade apply`, and then upgrade the `kubelet` and `kubectl` on the master nodes one by one.
+The control plane components (`kube-apiserver`, `kube-controller-manager`, `kube-scheduler`, and `etcd`) manage cluster state.
 
-*Note:* Upgrading the control plane does not restart your application pods, but you might temporarily lose the ability to deploy new workloads or query the API server during the upgrade.
+- **Managed clusters (GKE/EKS/AKS):** The cloud provider orchestrates control plane upgrades in a rolling fashion across internal replicas.
+- **Self-managed clusters (kubeadm):** You upgrade `kubeadm`, run `kubeadm upgrade apply`, and then upgrade `kubelet` and `kubectl` on control plane nodes one at a time.
 
-## 2. Upgrading Worker Nodes
+Upgrading the control plane does not restart running application pods on worker nodes. However, API operations (`kubectl apply`, horizontal pod autoscaling, or deployment updates) will pause during master restart windows.
 
-Worker nodes run your actual application Pods. Upgrading nodes requires replacing the underlying VMs or updating the software (kubelet, container runtime) on them. This is where your applications are at risk of downtime.
+---
 
-### Node Upgrades Strategies
+## 2. Upgrading worker nodes
 
-1. **Surge Upgrades (Rolling Update):**
-   A surge upgrade spins up new nodes with the updated version alongside your existing nodes. Once the new nodes are ready, workloads are migrated from the old nodes to the new ones, and the old nodes are deleted.
-   - **Advantage:** Maintains application capacity during the upgrade.
-   - **Requirement:** You need enough quota and IP addresses for the extra nodes during the surge.
+Worker nodes run application containers. Upgrading nodes requires updating the node operating system, container runtime, and `kubelet`, or replacing the underlying VM instances.
 
-2. **Blue/Green Node Pools:**
-   Create an entirely new node pool with the target version. Cordon and drain the old node pool to migrate workloads to the new one, and then delete the old node pool.
-   - **Advantage:** Gives you full control and allows you to test the new nodes before migrating traffic.
+### Node upgrade strategies
 
-## 3. Protecting Your Workloads During Node Upgrades
+1. **Surge upgrades (rolling replacement):**
+   Spins up new worker nodes on the target version before taking down old nodes. Workloads migrate onto the surge nodes, and once evacuated, the old nodes are deleted.
+   - **Benefit:** Maintains total compute capacity during upgrades.
+   - **Requirement:** Cluster VPC and cloud project quotas must accommodate the temporary surge nodes.
 
-Before you begin upgrading worker nodes, you must configure your workloads to tolerate node restarts. If you don't, Kubernetes might evict all pods of your application simultaneously.
+2. **Blue/green node pools:**
+   Creates an entirely new node pool running the target version. Cordon and drain the old node pool to migrate workloads to the new pool, then delete the old pool.
+   - **Benefit:** Allows testing the new node pool before migrating production traffic.
 
-### A. Multiple Replicas
-Ensure your Deployment has multiple replicas (`replicas: > 1`). A single-replica pod will inherently experience downtime if its node is upgraded.
+---
+
+## 3. Protecting workloads during node upgrades
+
+Before initiating worker node upgrades, configure workloads to handle node evictions safely.
+
+### A. Multiple replicas
+Set `replicas: 2` or higher across failure domains. A single-replica deployment will experience downtime whenever its host node drains.
 
 ### B. Pod Disruption Budgets (PDB)
-A Pod Disruption Budget limits the number of concurrent voluntary disruptions that your application experiences. Node drains (during an upgrade) respect PDBs.
+A Pod Disruption Budget defines the minimum available replicas or maximum unavailable replicas during voluntary disruptions (such as node drains):
 
 ```yaml
 apiVersion: policy/v1
@@ -50,33 +56,32 @@ spec:
     matchLabels:
       app: web-app
 ```
-*If a PDB requires 2 pods to be available, Kubernetes will not drain a node if it would drop the available pods below 2. It waits until a new pod is scheduled and healthy on another node.*
 
-### C. Graceful Shutdown (PreStop Hooks)
-When a node is drained, pods are sent a `SIGTERM` signal. Your application must handle this signal to finish ongoing requests cleanly.
-If your app doesn't handle `SIGTERM` properly, you can use a `preStop` hook to add a delay or run a cleanup script.
+When a node drain runs, the Kubernetes eviction API checks the PDB. If evicting a pod would drop available replicas below `minAvailable`, the drain waits until a replacement pod is scheduled and ready on another node.
+
+### C. Graceful shutdown (PreStop hooks)
+When a node drains, pods receive a `SIGTERM` signal. If an application takes time to flush connections or needs to wait for load balancer endpoint propagation, configure a `preStop` hook:
 
 ```yaml
 lifecycle:
   preStop:
     exec:
-      command: ["/bin/sleep","15"]
+      command: ["/bin/sleep", "15"]
 ```
-*See [Lesson 9](0009-resources-probes-graceful-shutdown.md) for more details on graceful shutdowns.*
 
-### D. Readiness Probes
-Readiness probes ensure that traffic is not routed to a pod until it is fully ready to handle requests. During a rolling node upgrade, this prevents the Service from sending traffic to new pods that are still initializing.
+### D. Readiness probes
+Readiness probes prevent Kubernetes from routing traffic to a new pod until it completes initialization. During rolling node drains, this keeps Services from directing traffic to initializing containers.
 
-## 4. The Node Draining Process
+---
 
-When a node is upgraded, it undergoes the Cordon and Drain process:
+## 4. The node draining process
 
-1. **Cordon (`kubectl cordon <node>`):** The node is marked as "unschedulable". No new pods will be scheduled on this node.
-2. **Drain (`kubectl drain <node> --ignore-daemonsets --delete-emptydir-data`):** Existing pods on the node are gracefully terminated. The Deployment controller immediately schedules replacement pods on other available nodes (such as the new surge nodes).
+When a node upgrades, it goes through cordon and drain steps:
 
-### Visualizing a Surge Upgrade
+1. **Cordon (`kubectl cordon <node>`):** Marks the node as unschedulable. The scheduler will not place new pods on it.
+2. **Drain (`kubectl drain <node> --ignore-daemonsets --delete-emptydir-data`):** Gracefully terminates pods on the node so controllers reschedule them onto other available nodes.
 
-The following sequence diagram illustrates the step-by-step process of a zero-downtime node upgrade using the surge method:
+### Visualizing a surge upgrade
 
 ```mermaid
 sequenceDiagram
@@ -108,8 +113,6 @@ sequenceDiagram
     NodeA-->>CP: Node Deleted
 ```
 
-By combining Surge Upgrades, PDBs, and Graceful Shutdowns, the cluster transitions your applications to the new Kubernetes version seamlessly without dropping user traffic.
-
 ---
 
-[← Lesson 12: CI/CD with GitHub Actions & GKE](./0012-github-actions-cicd-gke.md) | [Lesson 14: GitOps Principles & Argo CD Fundamentals →](./0014-gitops-principles-and-argocd-fundamentals.md)
+[← Lesson 12: CI/CD with GitHub Actions and GKE](./0012-github-actions-cicd-gke.md) | [Lesson 14: GitOps principles and Argo CD fundamentals →](./0014-gitops-principles-and-argocd-fundamentals.md)

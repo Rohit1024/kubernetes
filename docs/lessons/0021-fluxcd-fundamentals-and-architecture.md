@@ -1,10 +1,10 @@
-# Lesson 21: Flux CD (Flux v2) GitOps Engine & Image Automation
+# Lesson 0021: Flux CD architecture and automated Git write-backs
 
 ## 1. What is Flux CD?
 
-**Flux** is a CNCF Graduated GitOps toolkit built from the ground up to leverage Kubernetes' core extension mechanisms (Custom Resource Definitions and specialized controllers).
+**Flux** is a CNCF Graduated GitOps toolkit built around Kubernetes Custom Resource Definitions and specialized controllers.
 
-Unlike Argo CD, which employs a centralized application server with an integrated web UI, **Flux v2 is a decentralized suite of composable Kubernetes controllers**. Each controller is responsible for a single, focused GitOps lifecycle task.
+Unlike Argo CD, which includes a centralized application server and web UI, **Flux v2 is a decentralized set of composable controllers**. Each controller manages a specific part of the GitOps delivery lifecycle.
 
 ```mermaid
 graph TD
@@ -28,24 +28,24 @@ graph TD
 
 ---
 
-## 2. Core Flux Custom Resources
+## 2. Core Flux custom resources
 
-Flux models the entire delivery workflow using declarative Kubernetes custom resources:
+Flux represents the delivery workflow through declarative custom resources:
 
-| Resource Kind | Controller | Purpose |
+| Resource kind | Controller | Purpose |
 | :--- | :--- | :--- |
 | **`GitRepository`** | `source-controller` | Defines the source Git repository, branch, tag, and polling interval. |
 | **`OCIRepository`** | `source-controller` | Pulls Kubernetes manifests packaged as OCI artifacts directly from container registries. |
-| **`Kustomization`** | `kustomize-controller` | Defines what path inside the source repository to build and apply, with health checks and dependencies. |
+| **`Kustomization`** | `kustomize-controller` | Defines the directory in the source repository to build and apply, with health checks and dependencies. |
 | **`HelmRepository`** | `source-controller` | Registers an HTTP or OCI-based Helm chart repository. |
-| **`HelmRelease`** | `helm-controller` | Declaratively manages the installation, upgrades, and values of a Helm chart. |
+| **`HelmRelease`** | `helm-controller` | Manages the installation, upgrades, and values of a Helm chart. |
 
 ---
 
-## 3. Declarative Flux Manifests
+## 3. Declarative Flux manifests
 
-### A. Defining a Git Source & Kustomization
-Flux separates **where the source code lives** (`GitRepository`) from **what path gets applied** (`Kustomization`):
+### A. Defining a Git source and Kustomization
+Flux separates the source location (`GitRepository`) from the reconciliation target (`Kustomization`):
 
 ```yaml
 # 1. Source Definition
@@ -78,7 +78,7 @@ spec:
   timeout: 3m
 ```
 
-### B. Declarative Helm Chart Deployment
+### B. Declarative Helm chart deployment
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
@@ -112,11 +112,11 @@ spec:
 
 ---
 
-## 4. Flux Automated Image Updates
+## 4. Flux automated image updates
 
-Flux provides automated Git write-back through two cooperating controllers:
-1. **`ImageRepository` / `ImagePolicy`**: Scans the container registry and selects the latest tag according to SemVer or regex rules.
-2. **`ImageUpdateAutomation`**: Parses your Git manifests, locates markers (e.g., `{"$imagepolicy": "flux-system:my-app"}`), updates the YAML, and pushes a Git commit.
+Flux automates Git write-backs through two cooperating controllers:
+1. **`ImageRepository` / `ImagePolicy`**: Scans the container registry and selects the latest tag matching semantic versioning or regex rules.
+2. **`ImageUpdateAutomation`**: Parses your manifests in Git, finds setters (such as `{"$imagepolicy": "flux-system:my-app"}`), updates the YAML, and pushes a commit back to Git.
 
 ```yaml
 apiVersion: image.toolkit.fluxcd.io/v1beta2
@@ -159,9 +159,9 @@ spec:
 
 ---
 
-## 5. Multi-Tenancy & Security Isolation
+## 5. Multi-tenancy and security isolation
 
-Flux provides native tenant isolation by leveraging Kubernetes **Service Account Impersonation**. You can restrict a tenant's `Kustomization` or `HelmRelease` so it can only create resources permitted by their specific ServiceAccount RBAC:
+Flux handles tenant isolation through Kubernetes **Service Account impersonation**. You can configure a tenant's `Kustomization` or `HelmRelease` to reconcile using only the permissions granted to their specific ServiceAccount:
 
 ```yaml
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -180,27 +180,25 @@ spec:
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. In Flux v2, which controller is responsible for fetching artifacts from Git, Helm registries, and S3 buckets?
    - [ ] A) The source-controller component
    - [ ] B) The kustomize-controller component
    
-   *Answer:* A) The source-controller component - Correct! `source-controller` acts as the universal artifact acquisition engine in the Flux ecosystem.
+   Answer: A. `source-controller` acts as the artifact acquisition engine across Git, Helm, and OCI repositories.
 
-2. How does Flux ensure multi-tenant security when reconciling manifests for different development teams?
+2. How does Flux enforce multi-tenant security when reconciling manifests for different development teams?
    - [ ] A) By impersonating tenant service accounts
    - [ ] B) By restarting cluster kubelet services
    
-   *Answer:* A) By impersonating tenant service accounts - Correct! Flux enforces RBAC boundaries by impersonating a team-specific ServiceAccount when applying resources.
+   Answer: A. Flux enforces RBAC boundaries by impersonating a team-specific ServiceAccount when applying resources.
 
 ---
 
-## Interactive Win: Inspecting Flux Controller Resources
+## Hands-on practice: Inspecting Flux controller resources
 
-Let's explore the essential `flux` CLI commands used to inspect sources and trigger instantaneous reconciliations.
-
-### Step 1: Flux CLI Inspection Commands
+### Step 1: Flux CLI inspection commands
 ```bash
 # Check overall status of all Flux components
 flux check
@@ -215,7 +213,7 @@ flux get helmreleases -A
 flux get kustomizations -A
 ```
 
-### Step 2: Forcing an Instant Reconciliation (Bypassing Polling Interval)
+### Step 2: Forcing an instant reconciliation
 ```bash
 # Trigger immediate Git repository fetch
 flux reconcile source git fleet-infra
@@ -226,11 +224,10 @@ flux reconcile kustomization apps-prod --with-source
 
 ---
 
-## Recommended Primary Resource
-- [Flux CD Official Documentation](https://fluxcd.io/flux/)
-- [Flux Multi-Tenancy Best Practices](https://fluxcd.io/flux/guides/multi-tenancy/)
+## Recommended primary resources
+- [Flux CD documentation](https://fluxcd.io/flux/)
+- [Flux multi-tenancy guide](https://fluxcd.io/flux/guides/multi-tenancy/)
 
 ---
-**Setting up Flux webhook receiver or S3 bucket sources?** Ask in chat, and we can configure your alerting rules together!
 
-[← Lesson 20: Pipelines with Argo Workflows & Events](./0020-argo-workflows-and-argo-events.md) | [Lesson 22: Argo CD vs. Flux CD Deep Comparison →](./0022-argocd-vs-fluxcd-comparison.md)
+[← Lesson 20: Pipelines and event-driven automation with Argo Workflows and Argo Events](./0020-argo-workflows-and-argo-events.md) | [Lesson 22: Argo CD and Flux CD comparison →](./0022-argocd-vs-fluxcd-comparison.md)

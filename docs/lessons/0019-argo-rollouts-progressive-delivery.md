@@ -1,14 +1,14 @@
-# Lesson 19: Progressive Delivery with Argo Rollouts (Canary, Blue/Green & Metrics Analysis)
+# Lesson 0019: Progressive delivery with Argo Rollouts
 
-## 1. Why Standard Kubernetes Deployments Fall Short
+## 1. Why standard Kubernetes Deployments fall short
 
-Standard Kubernetes `Deployment` resources support `RollingUpdate`. However, RollingUpdates come with critical operational limitations:
+Standard Kubernetes `Deployment` resources support rolling updates, but have several operational limits:
 
-- **No Traffic Splitting:** You cannot route a small percentage (e.g., 5%) of production traffic to the new version unless you scale pod counts proportionally.
-- **No Metric-Driven Decision Making:** Kubernetes checks basic readiness probes; it cannot query Prometheus to see if HTTP 500 errors spiked or latency degraded before proceeding.
-- **No Automated Metric Rollback:** If a regression occurs, human intervention is required to run `kubectl rollout undo`.
+- **No fine-grained traffic splitting:** You cannot route a small fraction (such as 5%) of production traffic to a new version without scaling pod counts proportionally.
+- **No metric-driven progression:** Kubernetes relies on basic container probes; it cannot query Prometheus to verify error rates or latency percentiles before advancing a rollout.
+- **No automated metric-driven rollbacks:** If an application regression occurs, human intervention is needed to run `kubectl rollout undo`.
 
-**Argo Rollouts** brings **Progressive Delivery** to Kubernetes by replacing the `Deployment` resource with a feature-complete **`Rollout`** CRD.
+**Argo Rollouts** adds **progressive delivery** capabilities to Kubernetes by introducing the **`Rollout`** CRD.
 
 ```mermaid
 graph TD
@@ -22,12 +22,10 @@ graph TD
 
 ---
 
-## 2. Deployment Strategies: Blue/Green vs. Canary
+## 2. Deployment strategies: Blue/Green versus Canary
 
-Argo Rollouts supports two primary advanced deployment strategies:
-
-### A. Blue/Green Deployment
-Spins up a new version (Green) alongside the current version (Blue). An active Service points to Blue while a preview Service points to Green for smoke testing. Once verified, traffic switches instantaneously to Green.
+### A. Blue/Green deployment
+Spins up the new version (Green) alongside the active version (Blue). An active Service directs traffic to Blue while a preview Service directs traffic to Green for validation. Once verified, traffic switches to Green.
 
 ```mermaid
 graph LR
@@ -43,14 +41,14 @@ graph LR
     PreviewSvc --> GreenRS
 ```
 
-### B. Canary Deployment with Traffic Routing
-Gradually shifts traffic in discrete steps (e.g., 10% → 25% → 50% → 100%) using an ingress controller or service mesh (Ingress NGINX, GKE Gateway API, Istio, Linkerd, ALB).
+### B. Canary deployment with traffic routing
+Gradually shifts traffic in discrete increments (such as 10% $\to$ 25% $\to$ 50% $\to$ 100%) using an ingress controller or service mesh (Ingress NGINX, Gateway API, Istio, Envoy).
 
 ---
 
-## 3. Defining a Canary Rollout
+## 3. Defining a canary rollout
 
-Here is a declarative `Rollout` manifest using step-based canary progression:
+Below is a declarative `Rollout` manifest using step-based canary progression:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -94,9 +92,9 @@ spec:
 
 ---
 
-## 4. Automated Metric Analysis with `AnalysisTemplate`
+## 4. Automated metric analysis with AnalysisTemplate
 
-An **`AnalysisTemplate`** queries your monitoring systems (Prometheus, Datadog, CloudWatch, New Relic, Webhooks) and aborts the rollout automatically if thresholds are exceeded.
+An **`AnalysisTemplate`** queries monitoring systems (Prometheus, Datadog, CloudWatch, New Relic) and aborts the rollout automatically if error thresholds are exceeded.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -121,50 +119,46 @@ spec:
             sum(rate(http_requests_total{app="{{args.service-name}}"}[2m]))
 ```
 
-!!! important "Zero-Downtime Instant Rollback"
-    If the Prometheus query returns a success rate below 99% during any canary phase, Argo Rollouts **instantly scales the canary ReplicaSet to 0** and points 100% of traffic back to the stable ReplicaSet without human intervention.
+!!! important "Instant automated rollbacks"
+    If the Prometheus query returns a success rate below 99% during any canary phase, Argo Rollouts scales the canary ReplicaSet to 0 and directs all traffic back to the stable ReplicaSet.
 
 ---
 
-## 5. Rollouts CLI & Dashboard Management
-
-Platform engineers interact with rollouts using the `kubectl-argo-rollouts` plugin:
+## 5. Rollouts CLI and dashboard management
 
 ```bash
-# Watch the live visual progression of a rollout
+# Watch the visual progression of a rollout
 kubectl argo rollouts get rollout order-service --watch
 
 # Promote a paused rollout manually
 kubectl argo rollouts promote order-service
 
-# Abort and instantly rollback
+# Abort and rollback
 kubectl argo rollouts abort order-service
 
-# Launch the interactive local Web Dashboard
+# Launch the local web dashboard
 kubectl argo rollouts dashboard
 ```
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. What occurs if an `AnalysisTemplate` query exceeds its configured failure limit during a canary step?
    - [ ] A) The rollout aborts and restores stable traffic
    - [ ] B) The rollout pauses and waits for confirmation
    
-   *Answer:* A) The rollout aborts and restores stable traffic - Correct! When metric thresholds breach failure limits, Argo Rollouts terminates the canary and restores 100% of traffic to the stable revision.
+   Answer: A. When metric thresholds breach failure limits, Argo Rollouts terminates the canary and restores 100% of traffic to the stable revision.
 
 2. In a Blue/Green rollout strategy, what is the role of the preview service?
    - [ ] A) Directing production traffic toward the active release
    - [ ] B) Providing testing access toward the candidate release
    
-   *Answer:* B) Providing testing access toward the candidate release - Correct! The preview service routes internal or QA traffic to the new Green ReplicaSet before it is promoted to serve live production traffic.
+   Answer: B. The preview service routes internal or QA traffic to the new Green ReplicaSet before it is promoted to serve live production traffic.
 
 ---
 
-## Interactive Win: Deploying a Canary Rollout & CLI Inspection
-
-Let's deploy the Argo Rollouts controller and run a live canary rollout.
+## Hands-on practice: Deploying a canary rollout and CLI inspection
 
 ### Step 1: Install Argo Rollouts
 ```bash
@@ -176,7 +170,7 @@ kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/rele
 kubectl get pods -n argo-rollouts
 ```
 
-### Step 2: Deploy a Sample Canary Rollout
+### Step 2: Deploy a sample canary rollout
 Save as `sample-rollout.yaml`:
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -213,7 +207,7 @@ Apply the rollout:
 kubectl apply -f sample-rollout.yaml
 ```
 
-### Step 3: Trigger a Release & Observe
+### Step 3: Trigger a release and observe
 ```bash
 # Update the image to trigger a canary release
 kubectl argo rollouts set image rollouts-demo rollouts-demo=argoproj/rollouts-demo:yellow
@@ -224,11 +218,10 @@ kubectl argo rollouts get rollout rollouts-demo --watch
 
 ---
 
-## Recommended Primary Resource
-- [Argo Rollouts Official Architecture & Quickstart](https://argoproj.github.io/argo-rollouts/)
-- [Automated Analysis with Prometheus](https://argoproj.github.io/argo-rollouts/features/analysis/)
+## Recommended primary resources
+- [Argo Rollouts documentation](https://argoproj.github.io/argo-rollouts/)
+- [Automated analysis with Prometheus](https://argoproj.github.io/argo-rollouts/features/analysis/)
 
 ---
-**Setting up Service Mesh traffic routing (Istio VirtualService or NGINX ingress canary annotations)?** Ask in chat, and we'll configure your routing rules!
 
-[← Lesson 18: Production GitOps with Argo CD Autopilot](./0018-argocd-autopilot-repo-structure.md) | [Lesson 20: Pipelines with Argo Workflows & Argo Events →](./0020-argo-workflows-and-argo-events.md)
+[← Lesson 18: Production repository architecture and Argo CD Autopilot](./0018-argocd-autopilot-repo-structure.md) | [Lesson 20: Pipelines and event-driven automation with Argo Workflows and Argo Events →](./0020-argo-workflows-and-argo-events.md)

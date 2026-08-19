@@ -1,8 +1,8 @@
-# Lesson 15: Argo CD with Helm, Kustomize, Sync Waves & Hooks
+# Lesson 0015: Argo CD with Helm, Kustomize, sync waves, and hooks
 
-## 1. Native Helm & Kustomize Integration
+## 1. Native Helm and Kustomize integration
 
-Argo CD does not require developers to install the Helm or Kustomize CLI on their local machines. The `argocd-repo-server` natively detects chart formats (`Chart.yaml`) or Kustomization files (`kustomization.yaml`) and compiles them into pure Kubernetes manifests on the fly.
+Argo CD does not require developers to run Helm or Kustomize locally before committing. The `argocd-repo-server` detects chart files (`Chart.yaml`) or Kustomization overlays (`kustomization.yaml`) and compiles them into standard Kubernetes manifests dynamically.
 
 ```mermaid
 graph LR
@@ -25,9 +25,9 @@ graph LR
 
 ---
 
-## 2. Deploying Helm Charts with Argo CD
+## 2. Deploying Helm charts with Argo CD
 
-You can deploy Helm charts directly from public/private Helm repositories or from your own Git repository by configuring the `source.helm` section in your `Application` CRD.
+You can deploy Helm charts directly from public or private Helm repositories, or from your own Git repository, by configuring `source.helm` in the `Application` CRD.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -60,7 +60,7 @@ spec:
       selfHeal: true
 ```
 
-### Multiple Values Files from Git
+### Multiple values files from Git
 If you store environment-specific value overrides in a Git repository alongside standard Helm charts:
 
 ```yaml
@@ -76,11 +76,11 @@ source:
 
 ---
 
-## 3. Environment Overlays with Kustomize
+## 3. Environment overlays with Kustomize
 
-Kustomize allows you to define a **`base`** set of manifests and overlay environment-specific customizations (e.g., CPU/memory requests, replicas, domain names) without duplicating YAML files.
+Kustomize defines a **`base`** set of manifests and applies environment-specific customizations (CPU and memory requests, replica counts, hostnames) without duplicating full YAML definitions.
 
-### Typical Directory Layout:
+### Directory layout
 ```
 apps/microservice/
 ├── base/
@@ -96,8 +96,9 @@ apps/microservice/
         └── resource_patch.yaml
 ```
 
-### Production Kustomization (`overlays/prod/kustomization.yaml`):
+### Production Kustomization
 ```yaml
+# overlays/prod/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 bases:
@@ -113,13 +114,13 @@ images:
 
 ---
 
-## 4. Sync Waves: Controlling Deployment Order
+## 4. Sync waves: Controlling deployment order
 
-By default, Kubernetes and Argo CD apply all resources in a manifest simultaneously. However, real-world deployments have dependencies (e.g., Namespaces and CRDs must exist before Operators, Databases before App Services).
+By default, Kubernetes and Argo CD apply all resources in a manifest simultaneously. Real deployments have dependencies (Namespaces and CRDs before operators, Databases before API services).
 
-Argo CD uses **Sync Waves** to order resource application deterministically.
+Argo CD uses **sync waves** to order resource application deterministically.
 
-Resources are assigned a wave using the `argocd.argoproj.io/sync-wave` annotation. Waves are executed from the lowest numerical value to the highest (negative numbers are allowed).
+Resources are assigned a wave using the `argocd.argoproj.io/sync-wave` annotation. Waves execute in ascending numerical order, starting with negative integers.
 
 ```mermaid
 graph TD
@@ -157,23 +158,23 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 ```
 
-!!! note "Wave Progression Rule"
-    Argo CD will **not** begin applying resources in Wave `1` until all resources in Wave `0` have reached a **Healthy** state.
+!!! note "Wave progression rule"
+    Argo CD will not begin applying resources in Wave `1` until all resources in Wave `0` reach a **Healthy** state.
 
 ---
 
-## 5. Argo CD Resource Hooks
+## 5. Argo CD resource hooks
 
-Resource Hooks allow you to run scripts, schema migrations, smoke tests, or notifications during specific phases of a synchronization cycle.
+Resource hooks run scripts, database migrations, smoke tests, or notifications during specific phases of the synchronization cycle.
 
-| Hook Annotation | When It Runs | Common Use Case |
+| Hook annotation | When it runs | Common use case |
 | :--- | :--- | :--- |
 | `PreSync` | Before any manifests in the sync wave are applied | Schema migration, backup DB snapshot |
 | `Sync` | Synchronously alongside main manifests | Custom deployment scripts |
 | `PostSync` | After all manifests have been applied and are healthy | Integration tests, smoke tests, Slack alerts |
 | `SyncFail` | Triggered if any sync operation fails or errors | Rollback triggers, incident alerting |
 
-### Example: Database Migration PreSync Hook Job
+### Example: Database migration PreSync hook Job
 ```yaml
 apiVersion: batch/v1
 kind: Job
@@ -194,31 +195,29 @@ spec:
   backoffLimit: 2
 ```
 
-`argocd.argoproj.io/hook-delete-policy: BeforeHookCreation` automatically deletes any previous migration job before running the new one.
+`argocd.argoproj.io/hook-delete-policy: BeforeHookCreation` deletes any previous instance of the migration job before creating the new one.
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. When using Argo CD sync waves, which resources will be applied and verified healthy first?
    - [ ] A) Resources annotated with wave zero
    - [ ] B) Resources annotated with wave minus-one
    
-   *Answer:* B) Resources annotated with wave minus-one - Correct! Lower numerical sync waves execute before higher ones; negative integers run first.
+   Answer: B. Lower numerical sync waves execute before higher ones, so negative integers run first.
 
 2. Which hook annotation should you use to run automated smoke tests immediately after your application reaches a healthy status?
    - [ ] A) The PreSync hook annotation
    - [ ] B) The PostSync hook annotation
    
-   *Answer:* B) The PostSync hook annotation - Correct! PostSync hooks run only after all manifests have been applied and have transitioned into a healthy state.
+   Answer: B. PostSync hooks execute only after all manifests in the sync have been applied and reached a healthy state.
 
 ---
 
-## Interactive Win: Deploying with Kustomize & Sync Waves
+## Hands-on practice: Deploying with Kustomize and sync waves
 
-Let's configure a multi-stage application deployment using Kustomize overlays and Sync Waves.
-
-### Step 1: Create a Base Directory with Sync Waves
+### Step 1: Create a base directory with sync waves
 Create `app-base.yaml`:
 ```yaml
 apiVersion: v1
@@ -280,11 +279,10 @@ spec:
 
 ---
 
-## Recommended Primary Resource
-- [Argo CD Sync Waves & Hooks Official Guide](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/)
-- [Kubernetes Kustomize Documentation](https://kubectl.docs.kubernetes.io/)
+## Recommended primary resources
+- [Argo CD sync waves and hooks](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/)
+- [Kubernetes Kustomize documentation](https://kubectl.docs.kubernetes.io/)
 
 ---
-**Need help structuring your Helm value files or writing custom hooks?** Ask in the chat, and we'll troubleshoot your sync order!
 
-[← Lesson 14: GitOps Core Principles & Argo CD Fundamentals](./0014-gitops-principles-and-argocd-fundamentals.md) | [Lesson 16: Scaling Deployments with ApplicationSets →](./0016-argo-applicationsets.md)
+[← Lesson 14: GitOps principles and Argo CD fundamentals](./0014-gitops-principles-and-argocd-fundamentals.md) | [Lesson 16: Multi-cluster and multi-tenant management with ApplicationSets →](./0016-argo-applicationsets.md)

@@ -1,16 +1,16 @@
-# Lesson 17: Secret Management (Argo CD Vault Plugin) & Automated Deployments (Argo CD Image Updater)
+# Lesson 0017: Secret management with Vault plugin and automated image updates
 
-## 1. The GitOps Secrets Dilemma
+## 1. The GitOps secrets trade-off
 
-In GitOps, all application configurations reside in Git. However, committing plaintext API keys, passwords, and TLS certificates directly to Git repositories is a severe security vulnerability.
+In GitOps, application configurations live in Git repositories. Storing plaintext API keys, database passwords, or TLS certificates in Git creates a security exposure.
 
-Three industry-standard patterns exist for managing secrets in GitOps:
+Three common patterns exist for managing secrets in GitOps:
 
-| Solution | Mechanism | Pros & Cons |
+| Solution | Mechanism | Trade-offs |
 | :--- | :--- | :--- |
-| **Sealed Secrets (Bitnami)** | Asymmetric encryption in Git; private key in cluster | Simple, but tied strictly to one cluster's private key |
+| **Sealed Secrets (Bitnami)** | Asymmetric encryption in Git; private key in cluster | Simple, but tied to a specific cluster's decryption key |
 | **External Secrets Operator (ESO)** | Syncs external secret stores into native K8s Secrets | Decoupled and native, but creates extra CRDs in cluster |
-| **Argo CD Vault Plugin (AVP)** | Intercepts manifests in Argo CD repo-server and replaces placeholders | Zero secrets stored in Git; supports multiple cloud secret managers |
+| **Argo CD Vault Plugin (AVP)** | Injects secrets into manifests during template generation | No secrets stored in Git; integrates with multiple cloud secret managers |
 
 ```mermaid
 graph LR
@@ -33,12 +33,12 @@ graph LR
 
 ---
 
-## 2. Argo CD Vault Plugin (AVP) Implementation
+## 2. Argo CD Vault Plugin implementation
 
-AVP is installed as a **ConfigManagementPlugin (CMP)** inside the `argocd-repo-server` container.
+AVP runs as a **ConfigManagementPlugin (CMP)** inside the `argocd-repo-server` container.
 
-### A. Template with AVP Placeholders
-In your Git repository, define your secret or ConfigMap using AVP path syntax:
+### A. Manifests with AVP placeholders
+In your Git repository, define your Secret or ConfigMap using AVP path syntax:
 
 ```yaml
 apiVersion: v1
@@ -55,8 +55,8 @@ stringData:
   JWT_SECRET: <path:secret/data/auth#jwt_secret>
 ```
 
-### B. AVP Plugin Configuration (`cmp-plugin.yaml`)
-Configured in the Argo CD repo-server sidecar:
+### B. AVP plugin configuration
+Configured in the Argo CD repo-server sidecar config:
 
 ```yaml
 apiVersion: v1
@@ -81,9 +81,9 @@ data:
 
 ## 3. Argo CD Image Updater
 
-While Git should be the source of truth, manually creating Git commits every time a CI pipeline builds a new Docker container tag slows down continuous delivery.
+While Git serves as the source of truth, manually creating Git commits every time a CI pipeline builds a container image slows down automated delivery.
 
-**Argo CD Image Updater** is a standalone controller that monitors container image registries (Docker Hub, GHCR, ECR, GCR, Harbor) and updates Argo CD workloads automatically.
+**Argo CD Image Updater** is a standalone controller that monitors container registries (Docker Hub, GHCR, ECR, GCR, Harbor) and updates Argo CD workloads automatically.
 
 ```mermaid
 graph LR
@@ -95,19 +95,18 @@ graph LR
 
 ---
 
-## 4. Image Updater Strategies & Write-Back Methods
+## 4. Image Updater strategies and write-back methods
 
-### Update Strategies
-- **`semver`**: Tracks semantic versioning constraints (e.g., `^1.2.0` or `~2.0.0`) and deploys the highest release tag.
+### Update strategies
+- **`semver`**: Tracks semantic versioning constraints (such as `^1.2.0` or `~2.0.0`) and deploys the highest matching release tag.
 - **`latest`**: Updates whenever a newer build timestamp or alphabetically higher tag appears.
-- **`digest`**: Updates mutable tags (like `:latest` or `:master`) whenever their sha256 digest changes.
+- **`digest`**: Updates mutable tags (such as `:latest` or `:master`) when their sha256 digest changes.
 
-### Write-Back Methods
-1. **`argocd` (Parameter Override):** Updates the running Argo CD application parameters in-memory. Fast, but causes Git drift.
-2. **`git` (Direct Git Commit):** Image Updater clones the Git repository, updates the image tag in `.argocd-source-<app_name>.yaml`, commits, and pushes back to Git. Git remains 100% in sync.
+### Write-back methods
+1. **`argocd` (Parameter override):** Updates running application parameters in memory. Fast, but causes Git drift.
+2. **`git` (Direct Git commit):** Clones the repository, updates the image tag in `.argocd-source-<app_name>.yaml`, commits, and pushes to Git, keeping the repository in sync.
 
-### Production Manifest Annotation Example
-Configure your `Application` CRD with Image Updater annotations:
+### Manifest annotations example
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -139,27 +138,25 @@ spec:
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. Why is the Git write-back method preferred over parameter overrides for Argo CD Image Updater?
    - [ ] A) It retains Git as the single source of truth
    - [ ] B) It bypasses repository permissions to commit immediately
    
-   *Answer:* A) It retains Git as the single source of truth - Correct! Git write-back ensures that any tag upgrades are committed back into version control, maintaining an accurate audit log.
+   Answer: A. Git write-back commits tag changes back into version control, maintaining an accurate audit log.
 
 2. When using Argo CD Vault Plugin, where are secrets decrypted into their plain text values?
    - [ ] A) Inside the Git repository prior to committing
    - [ ] B) Inside the repo server during manifest generation
    
-   *Answer:* B) Inside the repo server during manifest generation - Correct! AVP replaces placeholders dynamically in memory when Argo CD renders manifests, never exposing raw values in Git.
+   Answer: B. AVP replaces placeholders dynamically in memory when Argo CD renders manifests, never exposing raw secret values in Git.
 
 ---
 
-## Interactive Win: Configuring Image Updater Annotations
+## Hands-on practice: Configuring Image Updater annotations
 
-Let's configure an Argo CD application to automatically update its image using SemVer constraints.
-
-### Step 1: Create an Application with Image Tracking
+### Step 1: Create an Application with image tracking
 Save as `app-image-updater.yaml`:
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -186,22 +183,21 @@ spec:
       selfHeal: true
 ```
 
-### Step 2: Install Image Updater & Verify Logs
+### Step 2: Install Image Updater and verify logs
 ```bash
 # Install Argo CD Image Updater controller
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
 
-# Monitor Image Updater logs as it inspects container registries
+# Monitor Image Updater logs
 kubectl logs -n argocd -l app.kubernetes.io/name=argocd-image-updater -f
 ```
 
 ---
 
-## Recommended Primary Resource
-- [Argo CD Vault Plugin Documentation](https://argocd-vault-plugin.readthedocs.io/)
-- [Argo CD Image Updater Official Guide](https://argocd-image-updater.readthedocs.io/)
+## Recommended primary resources
+- [Argo CD Vault Plugin documentation](https://argocd-vault-plugin.readthedocs.io/)
+- [Argo CD Image Updater guide](https://argocd-image-updater.readthedocs.io/)
 
 ---
-**Setting up HashiCorp Vault Kubernetes Auth or AWS IRSA?** Let us know in chat, and we can configure your provider tokens!
 
-[← Lesson 16: Multi-Cluster Scalability with ApplicationSets](./0016-argo-applicationsets.md) | [Lesson 18: Production GitOps with Argo CD Autopilot →](./0018-argocd-autopilot-repo-structure.md)
+[← Lesson 16: Multi-cluster and multi-tenant management with ApplicationSets](./0016-argo-applicationsets.md) | [Lesson 18: Production repository architecture and Argo CD Autopilot →](./0018-argocd-autopilot-repo-structure.md)

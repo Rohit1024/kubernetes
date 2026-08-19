@@ -1,14 +1,14 @@
-# Lesson 27: Event-Driven Batch Processing with KEDA ScaledJobs & Secure Authentication
+# Lesson 0027: Batch processing with ScaledJobs and workload identity
 
-## 1. When to Use `ScaledJob` vs. `ScaledObject`
+## 1. When to use ScaledJob versus ScaledObject
 
-So far, we have scaled long-running servers using `ScaledObject` (Deployments, StatefulSets, and Argo Rollouts). However, many workloads are **discrete, run-to-completion batch tasks**:
-- **Video & Media Transcoding:** 1 video uploaded = 1 discrete transcoding Job.
-- **Large Language Model (LLM) & AI Batch Inference:** Processing heavy document embeddings.
-- **Nightly Financial Settlement:** Generating reports for each registered merchant.
-- **Dead-Letter Queue (DLQ) Reprocessing:** Replaying failed transactions one-by-one.
+`ScaledObject` manages long-running workloads (Deployments, StatefulSets, Argo Rollouts). However, many workloads are **discrete, run-to-completion batch tasks**:
+- **Media transcoding:** 1 video uploaded = 1 discrete transcoding Job.
+- **Batch inference:** Processing document batches or embeddings.
+- **Scheduled settlements:** Generating daily reports per merchant.
+- **Dead-letter queue (DLQ) processing:** Processing failed messages individually.
 
-For these use cases, keeping warm pods running is wasteful. Instead, KEDA’s **`ScaledJob` CRD** dynamically spawns native Kubernetes `Job` objects that run to completion and terminate.
+For these workloads, maintaining idle pods consumes unnecessary resources. KEDA's **`ScaledJob` CRD** spawns native Kubernetes `Job` objects that run to completion and exit.
 
 ```mermaid
 graph TD
@@ -36,9 +36,9 @@ graph TD
 
 ---
 
-## 2. Declarative `ScaledJob` Blueprint
+## 2. Declarative ScaledJob blueprint
 
-Here is a production `ScaledJob` that monitors an AWS SQS queue and spawns video transcoding jobs:
+Below is a production `ScaledJob` that monitors an AWS SQS queue and spawns batch processing jobs:
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -81,11 +81,11 @@ spec:
 
 ---
 
-## 3. Secure Scaler Credentials: `TriggerAuthentication`
+## 3. Secure scaler credentials: TriggerAuthentication
 
-Hardcoding credentials or access keys inside `ScaledObject` or `ScaledJob` manifests violates security best practices and exposes secrets in Git.
+Hardcoding credentials or API keys inside `ScaledObject` or `ScaledJob` manifests creates security risks and commits secrets into version control.
 
-KEDA provides the **`TriggerAuthentication`** (namespace-scoped) and **`ClusterTriggerAuthentication`** (cluster-scoped) CRDs to decouple authentication.
+KEDA provides **`TriggerAuthentication`** (namespace-scoped) and **`ClusterTriggerAuthentication`** (cluster-scoped) to manage authentication externally.
 
 ```mermaid
 graph LR
@@ -94,8 +94,8 @@ graph LR
     TA -->|Method B: Secret Reference| K8sSecret["Kubernetes Secret / Vault"]
 ```
 
-### Pattern A: Keyless Cloud Workload Identity (GCP WIF / AWS IRSA)
-In modern cloud clusters (GKE, EKS, AKS), the most secure approach uses **Workload Identity** so no static credentials ever touch the cluster.
+### Pattern A: Keyless cloud Workload Identity (GCP WIF / AWS IRSA)
+In cloud environments (GKE, EKS, AKS), Workload Identity exchanges short-lived tokens without storing static credentials:
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -108,8 +108,8 @@ spec:
     provider: gcp                     # Keyless GCP Workload Identity
 ```
 
-### Pattern B: Kubernetes Secret Reference
-If using API tokens or database passwords:
+### Pattern B: Kubernetes Secret reference
+For systems using API tokens or database connection strings:
 
 ```yaml
 apiVersion: keda.sh/v1alpha1
@@ -126,35 +126,33 @@ spec:
 
 ---
 
-## 4. Production Resilience & Cleanups
+## 4. Production resilience and cleanup
 
-When designing event-driven batch jobs, enforce these best practices:
-
-1. **Set `successfulJobsHistoryLimit` & `failedJobsHistoryLimit`:** Kubernetes stores finished Job metadata in `etcd`. Failing to set history limits will accumulate thousands of dead Job objects and degrade API server performance.
-2. **Set `activeDeadlineSeconds`:** Prevents rogue or hanging batch jobs from running indefinitely and exhausting cluster compute or cloud budgets.
-3. **Idempotency & Dead-Letter Queues (DLQ):** Ensure batch jobs can safely retry without creating duplicate side-effects (e.g. charging a credit card twice). If a message crashes a job repeatedly, move it to a DLQ.
+1. **Configure `successfulJobsHistoryLimit` and `failedJobsHistoryLimit`:** Kubernetes stores completed Job records in `etcd`. Omitting history limits causes dead Job objects to accumulate, increasing API server memory usage.
+2. **Set `activeDeadlineSeconds`:** Prevents hanging batch processes from running indefinitely.
+3. **Idempotency and Dead-Letter Queues (DLQ):** Ensure batch jobs can retry safely without duplicate side effects. If a poisoned message repeatedly fails processing, route it to a DLQ.
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. When should you choose a `ScaledJob` instead of a `ScaledObject`?
    - [ ] A) For discrete batch tasks that process an event and run to completion
    - [ ] B) For long-running HTTP microservices that accept live incoming connections
    
-   *Answer:* A) For discrete batch tasks that process an event and run to completion - Correct! `ScaledJob` is engineered for run-to-completion batch workloads (e.g., video transcoding, report generation), whereas `ScaledObject` manages long-running servers.
+   Answer: A. `ScaledJob` is designed for run-to-completion batch workloads (such as media processing and report generation), whereas `ScaledObject` manages persistent server processes.
 
 2. Why is using `TriggerAuthentication` with Cloud Workload Identity preferred over static API keys in GitOps?
    - [ ] A) It eliminates static credentials and uses short-lived cryptographic tokens
    - [ ] B) It automatically compiles application source code before scaling pods
    
-   *Answer:* A) It eliminates static credentials and uses short-lived cryptographic tokens - Correct! Workload Identity (GCP WIF, AWS IRSA) allows KEDA to authenticate to external cloud APIs keylessly without storing plaintext secrets in Git.
+   Answer: A. Workload Identity (GCP WIF, AWS IRSA) allows KEDA to authenticate to cloud APIs keylessly without storing plaintext secrets in Git.
 
 ---
 
-## Interactive Win: Inspecting ScaledJobs & Job History
+## Hands-on practice: Inspecting ScaledJobs and job history
 
-### Step 1: Check ScaledJob Status
+### Step 1: Check ScaledJob status
 ```bash
 # List all ScaledJobs and inspect active job counts
 kubectl get scaledjobs -n media-processing
@@ -164,7 +162,7 @@ kubectl get scaledjobs -n media-processing
 # video-transcoder-scaledjob   3        True    10m
 ```
 
-### Step 2: Inspect Generated Kubernetes Jobs
+### Step 2: Inspect generated Kubernetes Jobs
 ```bash
 # List active and completed jobs spawned by KEDA
 kubectl get jobs -n media-processing -l app.kubernetes.io/managed-by=keda-operator
@@ -172,23 +170,22 @@ kubectl get jobs -n media-processing -l app.kubernetes.io/managed-by=keda-operat
 
 ---
 
-## Module 4 Summary Checklist
+## Module 4 review checklist
 
-Congratulations on completing **Module 4: Event-Driven Autoscaling with KEDA & GitOps Synchronization**! You have mastered:
+Key autoscaling and GitOps concepts covered in Module 4:
 
-- [x] **KEDA Architecture:** Operator, external metrics adapter, and scale-to-zero mechanics ([Lesson 23](0023-keda-fundamentals-and-architecture.md)).
-- [x] **External Metric Scalers:** Prometheus PromQL, Kafka lag, RabbitMQ, and fallback resilience ([Lesson 24](0024-keda-external-metrics-scalers.md)).
-- [x] **Time-Based Scheduling:** Timezone-aware Cron scalers and multi-trigger MAX evaluation ([Lesson 25](0025-keda-cron-and-scheduled-scaling.md)).
-- [x] **GitOps Drift Resolution:** Solving the Replicas Tug-of-War with Argo CD `ignoreDifferences` and Rollouts ([Lesson 26](0026-keda-argocd-gitops-integration-and-drift.md)).
-- [x] **Batch Processing & Security:** Discrete `ScaledJobs` and keyless `TriggerAuthentication` ([Lesson 27](0027-keda-scaledjobs-and-batch-processing.md)).
+- [x] **KEDA architecture:** Operator, external metrics adapter, and scale-to-zero mechanics ([Lesson 23](0023-keda-fundamentals-and-architecture.md)).
+- [x] **External metric scalers:** Prometheus PromQL, Kafka lag, RabbitMQ, and fallback resilience ([Lesson 24](0024-keda-external-metrics-scalers.md)).
+- [x] **Scheduled autoscaling:** Timezone-aware Cron scalers and multi-trigger MAX evaluation ([Lesson 25](0025-keda-cron-and-scheduled-scaling.md)).
+- [x] **GitOps drift resolution:** Resolving replica conflicts with Argo CD `ignoreDifferences` and Rollouts ([Lesson 26](0026-keda-argocd-gitops-integration-and-drift.md)).
+- [x] **Batch processing and security:** Discrete `ScaledJobs` and keyless `TriggerAuthentication` ([Lesson 27](0027-keda-scaledjobs-and-batch-processing.md)).
+
+---
+
+## Recommended primary resources
+- [KEDA ScaledJob specification](https://keda.sh/docs/latest/concepts/scaling-jobs/)
+- [KEDA TriggerAuthentication reference](https://keda.sh/docs/latest/concepts/authentication/)
 
 ---
 
-## Recommended Primary Resource
-- [KEDA ScaledJob Specification](https://keda.sh/docs/latest/concepts/scaling-jobs/)
-- [KEDA TriggerAuthentication Reference](https://keda.sh/docs/latest/concepts/authentication/)
-
----
-**Building an event-driven platform or scaling batch ML workloads?** Ask in the chat, and we'll help design your end-to-end architecture!
-
-[← Lesson 26: KEDA + Argo CD Drift Resolution](./0026-keda-argocd-gitops-integration-and-drift.md) | [Return to Lessons Overview →](./index.md)
+[← Lesson 26: KEDA and Argo CD replica drift resolution](./0026-keda-argocd-gitops-integration-and-drift.md) | [Return to lessons overview →](./index.md)

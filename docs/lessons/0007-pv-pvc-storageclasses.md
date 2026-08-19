@@ -2,22 +2,22 @@
 icon: lucide/hard-drive
 ---
 
-# Lesson 0007: Persistent Volumes, PVCs & StorageClasses
+# Lesson 0007: Persistent volumes, PVCs, and StorageClasses
 
-## 🚀 Fast Interview Summary & Cheatsheet
+## Fast interview summary and cheatsheet
 
-| Primitive | Analogy | Scope | Responsibility |
+| Object | Analogy | Scope | Responsibility |
 | :--- | :--- | :--- | :--- |
-| **`StorageClass`** | Storage Blueprint / Factory | Cluster-wide | Defines the CSI provisioner, disk type (SSD/HDD), and `volumeBindingMode`. |
-| **`PersistentVolumeClaim` (PVC)** | Storage Ticket / Request | Namespace-scoped | Developer's request for storage capacity (e.g. `50Gi`) and access mode. |
-| **`PersistentVolume` (PV)** | Actual Disk Asset | Cluster-wide | Physical or cloud disk provisioned by CSI driver and bound to a PVC. |
-| **`CSI Driver`** | Storage Adapter Plugin | Node / Cluster | Standardized gRPC interface (Container Storage Interface) to attach/mount disks. |
+| **`StorageClass`** | Storage template | Cluster-wide | Defines the CSI provisioner, disk type (SSD/HDD), and `volumeBindingMode`. |
+| **`PersistentVolumeClaim` (PVC)** | Storage request | Namespace-scoped | Developer's request for storage capacity (such as `50Gi`) and access mode. |
+| **`PersistentVolume` (PV)** | Storage asset | Cluster-wide | Physical or cloud disk provisioned by CSI driver and bound to a PVC. |
+| **`CSI Driver`** | Storage plugin | Node / Cluster | Standardized gRPC interface (Container Storage Interface) to attach and mount disks. |
 
 ---
 
-## 1. Storage Abstraction Architecture
+## 1. Storage abstraction architecture
 
-Kubernetes separates storage infrastructure from application deployment via a 3-tier declarative architecture:
+Kubernetes separates storage infrastructure from application deployment through a three-layer architecture:
 
 ```mermaid
 graph TD
@@ -36,22 +36,22 @@ graph TD
 
 ---
 
-## 2. Access Modes & Reclaim Policies
+## 2. Access modes and reclaim policies
 
-### A. Volume Access Modes
+### A. Volume access modes
 
-| Access Mode | CLI Abbr | Description | Common Storage Backends |
+| Access mode | CLI abbreviation | Description | Common storage backends |
 | :--- | :--- | :--- | :--- |
 | **`ReadWriteOnce`** | `RWO` | Mounted read-write by a **single worker node** at a time. | GCP Persistent Disk, AWS EBS, Azure Disk (Block Storage) |
 | **`ReadOnlyMany`** | `ROX` | Mounted read-only concurrently by **many worker nodes**. | GCS Fuse, Read-only NFS |
-| **`ReadWriteMany`** | `RWX` | Mounted read-write concurrently by **many worker nodes**. | GCP Filestore, AWS EFS, NFS, CephFS (Shared File Storage) |
-| **`ReadWriteOncePod`** | `RWOP` | Mounted read-write by **strictly one single Pod** (K8s 1.27+). | Prevents dual-container corruption on the same node |
+| **`ReadWriteMany`** | `RWX` | Mounted read-write concurrently by **many worker nodes**. | GCP Filestore, AWS EFS, NFS, CephFS (Shared Filesystem) |
+| **`ReadWriteOncePod`** | `RWOP` | Mounted read-write by **strictly one single Pod** (K8s 1.27+). | Prevents multiple containers from corrupting the same volume |
 
 ---
 
-### B. Volume Reclaim Policies
+### B. Volume reclaim policies
 
-What happens to the actual underlying disk in the cloud when a developer deletes the PVC?
+When a user deletes a PVC, the reclaim policy determines what happens to the underlying storage disk:
 
 ```mermaid
 graph LR
@@ -64,14 +64,12 @@ graph LR
     end
 ```
 
-* **`Delete` (Default for dynamic provisioning):** Automatically deletes the `PersistentVolume` object and wipes the underlying cloud disk in GCP/AWS.
-* **`Retain`:** Retains the `PersistentVolume` and physical cloud disk. The PV transitions to the **`Released`** status, allowing administrators to recover or scrub data manually.
+* **`Delete` (Default for dynamic provisioning):** Deletes the `PersistentVolume` object and removes the underlying cloud disk in GCP/AWS.
+* **`Retain`:** Retains the `PersistentVolume` and cloud disk. The PV transitions to **`Released`** status, allowing administrators to recover or scrub data manually.
 
 ---
 
-## 3. The `volumeBindingMode` Dilemma: Immediate vs. WaitForFirstConsumer
-
-This is one of the most frequently asked Kubernetes storage interview questions:
+## 3. Volume binding modes: Immediate versus WaitForFirstConsumer
 
 ```mermaid
 graph TD
@@ -89,7 +87,8 @@ graph TD
     end
 ```
 
-### Production StorageClass Definition:
+### Production StorageClass definition
+
 ```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -104,43 +103,47 @@ parameters:
 
 ---
 
-## 🎯 Interview Deep-Dives & Scenarios
+## Interview deep-dives and scenarios
 
-??? question "Interview Question: Why is `volumeBindingMode: WaitForFirstConsumer` mandatory in multi-zone clusters?"
-    **Answer:**
-    - Cloud block storage disks (like Google Cloud Persistent Disks or AWS EBS volumes) are **zone-locked**; they cannot be attached to a virtual machine running in a different availability zone.
-    - If `volumeBindingMode: Immediate` is used, the CSI driver creates the disk immediately in an arbitrary zone (e.g. `zone-a`) before the Pod is scheduled.
-    - If the scheduler later decides to place the Pod in `zone-b` (due to CPU availability or zone anti-affinity), the Pod will remain permanently stuck in `FailedScheduling / VolumeNodeAffinityConflict` because the disk cannot cross zones.
-    - **`WaitForFirstConsumer` solves this:** It tells the CSI driver to wait until `kube-scheduler` chooses the exact node and zone for the Pod, guaranteeing the disk is provisioned in the identical zone.
+??? question "Interview question: Why is `volumeBindingMode: WaitForFirstConsumer` mandatory in multi-zone clusters?"
+    Cloud block storage disks (such as Google Cloud Persistent Disks or AWS EBS volumes) are tied to a single availability zone. They cannot attach to a virtual machine in a different zone.
+    
+    If you use `volumeBindingMode: Immediate`, the CSI driver creates the disk immediately in an arbitrary zone before the Pod schedules.
+    
+    If the scheduler later places the Pod in a different zone, the Pod stays permanently stuck in `FailedScheduling / VolumeNodeAffinityConflict`.
+    
+    `WaitForFirstConsumer` prevents this by waiting until `kube-scheduler` assigns the Pod to a node and zone before creating the disk, ensuring matching placement.
 
-??? question "Interview Scenario: What happens when you delete a PVC whose PV has a `Retain` reclaim policy?"
-    **Answer:**
+??? question "Interview scenario: What happens when you delete a PVC whose PV has a `Retain` reclaim policy?"
     1. The PVC is deleted.
-    2. The underlying PV object is **NOT deleted**; its status transitions to **`Released`**.
-    3. The physical disk in the cloud console remains completely intact with all its data.
-    4. **The Trap:** Another PVC *cannot immediately claim this released PV* because `PV.spec.claimRef` still points to the deleted PVC UID.
-    5. **To re-use the PV:** An administrator must manually edit the PV and remove the `claimRef` field, or take a snapshot and recreate the PVC.
+    2. The underlying PV object is not deleted; its status transitions to `Released`.
+    3. The physical disk in the cloud remains intact with all data.
+    4. Another PVC cannot claim this released PV immediately because `PV.spec.claimRef` still points to the deleted PVC UID.
+    5. To reuse the PV, an administrator must remove the `claimRef` field from the PV manifest or take a snapshot and create a new PVC.
 
-??? question "Interview Question: Can you dynamically resize a PersistentVolume without downtime?"
-    **Answer:**
-    - **Yes**, provided the `StorageClass` has `allowVolumeExpansion: true`.
-    - You simply edit the existing PVC manifest and increase `spec.resources.requests.storage` (e.g. from `50Gi` to `100Gi`).
-    - The CSI driver automatically resizes the underlying cloud disk, and `kubelet` expands the filesystem inside the running container without requiring a Pod restart!
-    - *Note:* Disks can only be expanded; Kubernetes does **not** support shrinking volume sizes.
-
----
-
-## ⚠️ Common Production Pitfalls & Interview Traps
-
-??? warning "Production Trap: Multi-Replica Deployment Mounting a ReadWriteOnce (RWO) Disk"
-    - `ReadWriteOnce` means the volume can be mounted by **only one worker node**.
-    - If you configure a stateless `Deployment` with `replicas: 3` and attach a single `RWO` PVC, all 3 Pods must land on the **exact same worker node**.
-    - If the scheduler attempts to place Replica 2 on a different node, the Pod will fail with `Multi-Attach error for volume`.
-    - **Fix:** Use a `StatefulSet` with `volumeClaimTemplates` (each replica gets its own disk) or use a Shared File System (NFS / Filestore) with `ReadWriteMany (RWX)`.
+??? question "Interview question: Can you dynamically resize a PersistentVolume without downtime?"
+    Yes, provided the `StorageClass` has `allowVolumeExpansion: true`.
+    
+    Edit the existing PVC manifest and increase `spec.resources.requests.storage` (for example from `50Gi` to `100Gi`).
+    
+    The CSI driver expands the underlying cloud disk, and `kubelet` resizes the filesystem inside the running container without requiring a Pod restart. Disks can only grow; Kubernetes does not support shrinking volumes.
 
 ---
 
-## 💻 Hands-on Verification & Diagnostic Toolkit
+## Common production pitfalls and interview traps
+
+??? warning "Production trap: Multi-replica Deployment mounting a ReadWriteOnce (RWO) disk"
+    `ReadWriteOnce` means the volume can be mounted by only one worker node at a time.
+    
+    If you configure a `Deployment` with `replicas: 3` and attach a single `RWO` PVC, all 3 Pods must schedule onto the same worker node.
+    
+    If the scheduler places any replica on a different node, the Pod fails with a `Multi-Attach error for volume`.
+    
+    Use a `StatefulSet` with `volumeClaimTemplates` (giving each replica its own disk) or a shared filesystem (NFS / Cloud Filestore) with `ReadWriteMany` (RWX).
+
+---
+
+## Hands-on verification and diagnostics
 
 ```bash
 # 1. Inspect all PersistentVolumes and their status (Bound, Released, Available)
@@ -152,33 +155,32 @@ kubectl get pvc -n <NAMESPACE>
 # 3. Check CSI volume attachment status on a worker node
 kubectl get volumeattachment
 
-# 4. Describe PVC to troubleshoot binding errors (e.g. WaitingForFirstConsumer)
+# 4. Describe PVC to troubleshoot binding errors
 kubectl describe pvc <PVC_NAME>
 ```
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. Why does `volumeBindingMode: WaitForFirstConsumer` prevent volume scheduling failures in multi-zone cloud clusters?
    - [ ] A) It provisions the cloud disk in the exact zone where the scheduler places the Pod
    - [ ] B) It forces worker nodes to replicate block storage data across all cloud regions
    
-   *Answer:* A) It provisions the cloud disk in the exact zone where the scheduler places the Pod - Correct! By delaying disk provisioning until the Pod is placed, the disk is created in the matching availability zone.
+   Answer: A. By delaying disk provisioning until the Pod is placed, the disk is created in the matching availability zone.
 
 2. A PersistentVolume with `persistentVolumeReclaimPolicy: Retain` enters which status after its associated PVC is deleted?
    - [ ] A) The Released status
    - [ ] B) The Available status
    
-   *Answer:* A) The Released status - Correct! The PV enters `Released` status to prevent other claims from overwriting historical data until an administrator scrubs it.
+   Answer: A. The PV enters `Released` status to prevent other claims from overwriting historical data until an administrator scrubs it.
 
 ---
 
-## Recommended Primary Resource
-- [Kubernetes Persistent Volumes & Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
-- [Kubernetes Storage Classes Specification](https://kubernetes.io/docs/concepts/storage/storage-classes/)
+## Recommended primary resources
+- [Kubernetes Persistent Volumes and Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+- [Kubernetes Storage Classes specification](https://kubernetes.io/docs/concepts/storage/storage-classes/)
 
 ---
-**Troubleshooting a VolumeNodeAffinity conflict or expanding a database disk?** Ask in chat, and we'll resolve the storage binding!
 
-[← Lesson 6: Ingress & GKE Load Balancing](./0006-ingress-gke-load-balancing.md) | [Lesson 8: GKE Gateway API →](./0008-gke-gateway-api.md)
+[← Lesson 6: Ingress and GKE load balancing](./0006-ingress-gke-load-balancing.md) | [Lesson 8: GKE Gateway API →](./0008-gke-gateway-api.md)

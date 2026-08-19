@@ -1,10 +1,10 @@
-# Lesson 16: Multi-Cluster & Multi-Tenant Scalability with ApplicationSets
+# Lesson 0016: Multi-cluster and multi-tenant management with ApplicationSets
 
-## 1. The Multi-Cluster & Multi-App Challenge
+## 1. Multi-cluster and multi-application challenges
 
-In an enterprise environment, you may have **50 microservices** running across **10 Kubernetes clusters** (Development, Staging, QA, Production across multiple regions). Writing and maintaining 500 individual `Application` CRD manifests is error-prone and unmaintainable.
+In an enterprise environment with dozens of microservices running across multiple Kubernetes clusters (development, staging, production across multiple regions), writing individual `Application` CRDs for every permutation is unmaintainable.
 
-**ApplicationSets** solve this problem by introducing automated templating and generation for Argo CD `Application` resources.
+**ApplicationSets** automate the generation of Argo CD `Application` resources using parameter generators.
 
 ```mermaid
 graph TD
@@ -20,8 +20,8 @@ graph TD
 ## 2. Anatomy of an ApplicationSet
 
 An `ApplicationSet` CRD consists of two main components:
-1. **`generators`**: Determine *what parameters* to extract (e.g., directory names, cluster URLs, environment metadata).
-2. **`template`**: An Argo CD `Application` manifest blueprint containing `{{ parameter }}` placeholders that get rendered dynamically.
+1. **`generators`**: Define how to produce parameters (such as directory paths, cluster labels, or environment metadata).
+2. **`template`**: An Argo CD `Application` manifest blueprint containing `{{ parameter }}` placeholders that are populated dynamically.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -62,24 +62,22 @@ spec:
 
 ---
 
-## 3. Core Generators Overview
+## 3. Core generators
 
-Argo CD provides several powerful generators to fit different operational topologies:
-
-| Generator | How It Works | Primary Use Case |
+| Generator | Operation | Primary use case |
 | :--- | :--- | :--- |
-| **List Generator** | Uses a static list of key-value maps inside the manifest | Small clusters or fixed environments |
-| **Cluster Generator** | Queries Argo CD cluster secrets using Kubernetes label selectors | Dynamically targeting all clusters labeled `env: prod` |
-| **Git Directory Generator** | Scans folders in a Git repository matching a path pattern | "One folder per microservice" repo designs |
-| **Git File Generator** | Reads JSON/YAML configuration files from a Git repo | Centralized cluster metadata registries |
-| **Matrix Generator** | Computes the Cartesian product of two child generators | Deploying *all apps in Git* to *all target clusters* |
-| **Merge Generator** | Combines two generators, using one to override another | Default configs with cluster-specific overrides |
+| **List Generator** | Uses a static list of key-value maps inside the manifest | Fixed environments or small cluster pools |
+| **Cluster Generator** | Queries Argo CD cluster secrets using label selectors | Targeting all clusters labeled `env: prod` |
+| **Git Directory Generator** | Scans directories in a Git repository matching a path pattern | Monorepo service layouts with one directory per service |
+| **Git File Generator** | Reads JSON/YAML configuration files from a Git repository | Centralized cluster configuration registries |
+| **Matrix Generator** | Computes the Cartesian product of two child generators | Deploying all applications in Git across all target clusters |
+| **Merge Generator** | Combines two generators, using one to override defaults in the other | Default configuration with cluster-specific overrides |
 
 ---
 
-## 4. The Matrix Generator: Git Folders × Multi-Clusters
+## 4. The Matrix generator: Git folders across multiple clusters
 
-The **Matrix Generator** is the standard enterprise pattern for deploying a suite of microservices across multiple target clusters simultaneously.
+The **Matrix Generator** deploys a collection of microservices across multiple target clusters simultaneously.
 
 ```mermaid
 graph LR
@@ -131,9 +129,9 @@ spec:
 
 ---
 
-## 5. Progressive Syncs with ApplicationSets
+## 5. Progressive syncs with ApplicationSets
 
-When upgrading a shared infrastructure service across dozens of clusters, you do not want to update all clusters simultaneously. **Progressive Syncs** enable rolling updates across stages.
+When upgrading shared infrastructure services across clusters, **Progressive Syncs** enable controlled, staged rollouts instead of updating all clusters at once.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -182,28 +180,26 @@ spec:
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
 1. Which ApplicationSet generator computes the Cartesian product of two different generators?
    - [ ] A) The Matrix Generator
    - [ ] B) The Merge Generator
    
-   *Answer:* A) The Matrix Generator - Correct! The Matrix generator combines two child generators to generate applications matching all combinatorial pairs.
+   Answer: A. The Matrix generator combines two child generators to produce applications matching all combinatorial pairs.
 
 2. In an ApplicationSet Progressive Sync strategy, what prevents production clusters from updating if staging fails?
    - [ ] A) Subsequent steps pause until current steps succeed
    - [ ] B) Rollback triggers immediately upon cluster drain
    
-   *Answer:* A) Subsequent steps pause until current steps succeed - Correct! Progressive sync steps execute sequentially; a failure in an earlier stage blocks promotion to the next stage.
+   Answer: A. Progressive sync steps execute sequentially; a failure in an earlier stage blocks promotion to subsequent stages.
 
 ---
 
-## Interactive Win: Creating a Directory-Based ApplicationSet
+## Hands-on practice: Creating a directory-based ApplicationSet
 
-Let's configure an ApplicationSet that watches a Git directory containing multiple sub-services and creates individual applications automatically.
-
-### Step 1: Write the ApplicationSet Manifest
-Save this as `appset-git-dirs.yaml`:
+### Step 1: Write the ApplicationSet manifest
+Save this manifest as `appset-git-dirs.yaml`:
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -242,7 +238,7 @@ spec:
 kubectl apply -f appset-git-dirs.yaml
 ```
 
-### Step 3: Inspect Generated Applications
+### Step 3: Inspect generated applications
 ```bash
 # View all generated Application resources
 kubectl get applications -n argocd
@@ -253,11 +249,10 @@ kubectl get applicationset guestbook-services -n argocd -o yaml
 
 ---
 
-## Recommended Primary Resource
-- [Argo CD ApplicationSet Official Documentation](https://argo-cd.readthedocs.io/en/stable/user-guide/application-set/)
-- [Progressive Syncs Specification](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Progressive-Syncs/)
+## Recommended primary resources
+- [Argo CD ApplicationSet documentation](https://argo-cd.readthedocs.io/en/stable/user-guide/application-set/)
+- [Progressive Syncs specification](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Progressive-Syncs/)
 
 ---
-**Working on multi-cluster setup or custom cluster generators?** Ask in chat, and we can configure your RBAC secret mappings together!
 
-[← Lesson 15: Argo CD with Helm, Kustomize & Sync Waves](./0015-argo-helm-kustomize-sync-waves.md) | [Lesson 17: Secret Management & Image Updater →](./0017-argocd-image-updater-and-vault-plugin.md)
+[← Lesson 15: Argo CD with Helm, Kustomize, and sync waves](./0015-argo-helm-kustomize-sync-waves.md) | [Lesson 17: Secret management with Vault plugin and automated image updates →](./0017-argocd-image-updater-and-vault-plugin.md)

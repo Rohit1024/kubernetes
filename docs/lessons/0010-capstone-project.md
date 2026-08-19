@@ -2,17 +2,17 @@
 icon: lucide/award
 ---
 
-# Lesson 0010: Capstone Project: Deploying a Multi-Tier Production Stack
+# Lesson 0010: Capstone project: Deploying a multi-tier production stack
 
-## 🚀 Fast Interview Summary & Architecture Blueprint
+## Fast interview summary and architecture blueprint
 
-| Tier | Workload Type | Storage & Networking | Availability & Resilience |
+| Tier | Workload type | Storage and networking | Availability and resilience |
 | :--- | :--- | :--- | :--- |
 | **Ingress / Gateway** | `Gateway` + `HTTPRoute` | Layer 7 Cloud Load Balancer (Port 80/443) | Managed SSL, URL Path Routing (`/`, `/api`) |
-| **Frontend Tier** | Stateless `Deployment` | `ClusterIP` Service + Container-Native NEG | `PodAntiAffinity`, `maxUnavailable: 0`, `preStop` hook |
-| **Backend API Tier** | Stateless `Deployment` | `ClusterIP` Service | `HPA` (CPU Autoscaling), Secret Injection, Probes |
-| **Database Tier** | Stateful `StatefulSet` | `Headless Service` (`clusterIP: None`) | `volumeClaimTemplates` (SSD RWO), `WaitForFirstConsumer` |
-| **Cluster Defense** | `PodDisruptionBudget` + `NetworkPolicy` | Namespace Zero-Trust Isolation | Prevents node drains from violating SLA; restricts DB access |
+| **Frontend tier** | Stateless `Deployment` | `ClusterIP` Service + Container-Native NEG | `PodAntiAffinity`, `maxUnavailable: 0`, `preStop` hook |
+| **Backend API tier** | Stateless `Deployment` | `ClusterIP` Service | `HPA` (CPU Autoscaling), Secret Injection, Probes |
+| **Database tier** | Stateful `StatefulSet` | `Headless Service` (`clusterIP: None`) | `volumeClaimTemplates` (SSD RWO), `WaitForFirstConsumer` |
+| **Cluster defense** | `PodDisruptionBudget` + `NetworkPolicy` | Namespace Zero-Trust Isolation | Prevents node drains from causing downtime; isolates DB access |
 
 ```mermaid
 graph TD
@@ -47,9 +47,9 @@ graph TD
 
 ---
 
-## 1. Complete Production Manifest Stack
+## 1. Complete production manifest stack
 
-Below is the complete, integrated production manifest stack demonstrating all primitives learned in Module 1.
+Below is the complete, integrated production manifest stack demonstrating the core workload patterns:
 
 ```yaml
 # ============================================================================
@@ -138,7 +138,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 25%
-      maxUnavailable: 0              # Zero downtime guarantee!
+      maxUnavailable: 0              # Zero downtime guarantee
   selector:
     matchLabels:
       app: api-backend
@@ -228,17 +228,15 @@ spec:
 
 ---
 
-## 🎯 Interview Deep-Dives & Scenarios
+## Interview deep-dives and scenarios
 
-??? question "Interview Question: What is a Pod Disruption Budget (PDB), and why is it mandatory in production?"
-    **Answer:**
-    - **Voluntary Disruptions:** Occur when an administrator or automated system drains a node (e.g. GKE node upgrades, Cluster Autoscaler scale-down, `kubectl drain`).
-    - **Without a PDB:** A node drain might terminate all replicas of a service simultaneously, causing an unexpected outage.
-    - **With a PDB (`minAvailable: 1` or `maxUnavailable: 1`):** The Kubernetes Eviction API checks the PDB *before* allowing the node to terminate a Pod. If evicting the Pod would violate the budget, the eviction is blocked until new replicas are healthy on other nodes.
+??? question "Interview question: What is a Pod Disruption Budget (PDB), and why is it needed in production?"
+    - **Voluntary disruptions:** Occur when an administrator or automated system drains a node (such as GKE node upgrades, Cluster Autoscaler scale-downs, or `kubectl drain`).
+    - **Without a PDB:** A node drain can terminate all replicas of a service simultaneously, causing an unexpected outage.
+    - **With a PDB (`minAvailable: 1` or `maxUnavailable: 1`):** The Kubernetes Eviction API checks the PDB before allowing the node to terminate a Pod. If evicting the Pod would violate the budget, the eviction is blocked until new replicas are healthy on other nodes.
 
-??? question "Interview Scenario: How do you prevent the Frontend tier from communicating directly with the Database tier?"
-    **Answer:**
-    Deploy a Kubernetes **`NetworkPolicy`** that enforces default-deny and allows ingress to the database *only* from Pods bearing the label `app: api-backend`:
+??? question "Interview scenario: How do you prevent the frontend tier from communicating directly with the database tier?"
+    Deploy a Kubernetes `NetworkPolicy` that enforces default-deny and allows ingress to the database only from Pods with label `app: api-backend`:
     ```yaml
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
@@ -254,7 +252,7 @@ spec:
         - from:
             - podSelector:
                 matchLabels:
-                  app: api-backend     # Only API pods allowed! Frontend blocked.
+                  app: api-backend     # Only API pods allowed
           ports:
             - protocol: TCP
               port: 5432
@@ -262,51 +260,50 @@ spec:
 
 ---
 
-## ⚠️ Common Production Pitfalls & Interview Traps
+## Common production pitfalls and interview traps
 
-??? warning "Production Trap: Setting `minAvailable: 100%` on a PDB"
-    If you set `minAvailable: 100%` (or `minAvailable: 2` on a 2-replica deployment), **`kubectl drain` and automated GKE cluster upgrades will hang forever**. Because all replicas must remain active, the eviction API will refuse to terminate any pod. Always leave headroom (e.g. `minAvailable: 1` or `maxUnavailable: 25%`).
-
----
-
-## 🎓 Module 1 Master Interview Checklist
-
-You have mastered the foundational core of Kubernetes Architecture & Workloads:
-
-- [x] **Control Plane & Node Architecture:** `kube-apiserver`, `etcd` Raft quorum, `kubelet` PLEG, and CRI/CNI/CSI ([Lesson 1](0001-what-is-kubernetes-and-prerequisites.md)).
-- [x] **Pod Anatomy & Lifecycles:** Pause containers, native sidecars, exit codes (137 OOMKilled vs 143 SIGTERM) ([Lesson 2](0002-pod-anatomy.md)).
-- [x] **Advanced Scheduling & Rollouts:** Node Affinity, Topology Spread Constraints, Taints (`NoExecute`), and Zero-Downtime Rollouts ([Lesson 3](0003-node-scheduling-deployment-strategies-autoscaling.md)).
-- [x] **Service Discovery & Networking:** Virtual ClusterIPs, `IPVS` vs `iptables`, EndpointSlices, Headless Services, and CoreDNS `ndots` ([Lesson 4](0004-service-communication.md)).
-- [x] **StatefulSets & Secrets:** Ordinal identities, ConfigMap volume live reloading, and GCP Secret Manager via ESO ([Lesson 5](0005-stateless-stateful-secrets-gcp.md)).
-- [x] **Ingress & GKE Load Balancing:** Container-Native NEGs, edge TLS termination, `FrontendConfig`, and `BackendConfig` ([Lesson 6](0006-ingress-gke-load-balancing.md)).
-- [x] **Storage Architecture:** `StorageClasses`, `WaitForFirstConsumer` multi-zone binding, access modes, and volume expansion ([Lesson 7](0007-pv-pvc-storageclasses.md)).
-- [x] **Gateway API:** Role-oriented design, Canary traffic weighting, Header routing, and `ReferenceGrant` multi-tenancy ([Lesson 8](0008-gke-gateway-api.md)).
-- [x] **Probes & Graceful Shutdown:** QoS eviction classes (`Guaranteed`, `Burstable`, `BestEffort`), probe design, and `preStop` sleep race conditions ([Lesson 9](0009-resources-probes-graceful-shutdown.md)).
-- [x] **Multi-Tier Capstone Integration:** PDBs, NetworkPolicies, and end-to-end production readiness ([Lesson 10](0010-capstone-project.md)).
+??? warning "Production trap: Setting `minAvailable: 100%` on a PDB"
+    If you set `minAvailable: 100%` (or `minAvailable: 2` on a 2-replica deployment), `kubectl drain` and automated GKE node pool upgrades will hang indefinitely. Because all replicas must stay active, the eviction API refuses to evict any pod. Always leave headroom (such as `minAvailable: 1` or `maxUnavailable: 25%`).
 
 ---
 
-## Test Your Knowledge
+## Module 1 review checklist
+
+Key architecture concepts covered in Module 1:
+
+- [x] **Control plane and node architecture:** `kube-apiserver`, `etcd` Raft quorum, `kubelet` PLEG, and CRI/CNI/CSI ([Lesson 1](0001-what-is-kubernetes-and-prerequisites.md)).
+- [x] **Pod anatomy and lifecycles:** Pause containers, native sidecars, exit codes (137 OOMKilled vs 143 SIGTERM) ([Lesson 2](0002-pod-anatomy.md)).
+- [x] **Scheduling and rollouts:** Node affinity, topology spread constraints, taints (`NoExecute`), and zero-downtime rollouts ([Lesson 3](0003-node-scheduling-deployment-strategies-autoscaling.md)).
+- [x] **Service discovery and networking:** Virtual ClusterIPs, `IPVS` vs `iptables`, EndpointSlices, Headless Services, and CoreDNS `ndots` ([Lesson 4](0004-service-communication.md)).
+- [x] **StatefulSets and secrets:** Ordinal identities, ConfigMap volume live updates, and GCP Secret Manager via ESO ([Lesson 5](0005-stateless-stateful-secrets-gcp.md)).
+- [x] **Ingress and GKE load balancing:** Container-Native NEGs, edge TLS termination, `FrontendConfig`, and `BackendConfig` ([Lesson 6](0006-ingress-gke-load-balancing.md)).
+- [x] **Storage architecture:** `StorageClasses`, `WaitForFirstConsumer` multi-zone binding, access modes, and volume expansion ([Lesson 7](0007-pv-pvc-storageclasses.md)).
+- [x] **Gateway API:** Role-oriented design, canary traffic weighting, header routing, and `ReferenceGrant` multi-tenancy ([Lesson 8](0008-gke-gateway-api.md)).
+- [x] **Probes and graceful shutdown:** QoS eviction classes (`Guaranteed`, `Burstable`, `BestEffort`), probe design, and `preStop` race conditions ([Lesson 9](0009-resources-probes-graceful-shutdown.md)).
+- [x] **Multi-tier capstone integration:** PDBs, NetworkPolicies, and end-to-end production readiness ([Lesson 10](0010-capstone-project.md)).
+
+---
+
+## Test your knowledge
 
 1. Why is setting `minAvailable: 1` in a `PodDisruptionBudget` recommended for production Deployments?
    - [ ] A) It ensures node drain and upgrade operations never terminate all replicas simultaneously
    - [ ] B) It forces the cluster autoscaler to maintain at least one node running in every zone
    
-   *Answer:* A) It ensures node drain and upgrade operations never terminate all replicas simultaneously - Correct! PDBs instruct the Kubernetes eviction API to maintain service availability during voluntary disruptions like node upgrades.
+   Answer: A. PDBs instruct the Kubernetes eviction API to maintain service availability during voluntary disruptions like node upgrades.
 
 2. In a multi-tier architecture, what Kubernetes resource prevents a compromised frontend container from executing queries directly against the backend PostgreSQL database?
    - [ ] A) A NetworkPolicy declaring ingress rules restricted to API backend pod selectors
    - [ ] B) A StorageClass configured with WaitForFirstConsumer volume binding mode
    
-   *Answer:* A) A NetworkPolicy declaring ingress rules restricted to API backend pod selectors - Correct! NetworkPolicies implement zero-trust network segmentation, enforcing that only authorized backend pods can connect to the database port.
+   Answer: A. NetworkPolicies implement network segmentation, enforcing that only authorized backend pods can connect to the database port.
 
 ---
 
-## Recommended Primary Resource
-- [Kubernetes Production Best Practices Guide](https://kubernetes.io/docs/setup/best-practices/)
+## Recommended primary resources
+- [Kubernetes production best practices](https://kubernetes.io/docs/setup/best-practices/)
 - [Kubernetes Pod Disruption Budgets](https://kubernetes.io/docs/tasks/run-application/configure-pdb/)
 
 ---
-**Ready to move on to packaging and automated delivery?** Proceed to Module 2!
 
-[← Lesson 9: Resources, Probes & Graceful Shutdown](./0009-resources-probes-graceful-shutdown.md) | [Lesson 11: Helm Package Manager →](./0011-helm-package-manager.md)
+[← Lesson 9: Resources, probes, and graceful shutdown](./0009-resources-probes-graceful-shutdown.md) | [Lesson 11: Helm package manager →](./0011-helm-package-manager.md)
