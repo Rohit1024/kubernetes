@@ -4,11 +4,15 @@ icon: lucide/terminal
 
 # Cheatsheets
 
-A list of available Kubernetes and GitOps cheatsheets.
+Quick-reference command sheets, manifest blueprints, and diagnostic workflows.
 
-* **[kubectl Debugging Cheat Sheet](kubectl-debugging-cheat-sheet.md)**: A visual walkthrough and command reference for diagnosing workload issues.
-* **[Image Pull & Verification Debugging Cheat Sheet](image-pull-debugging-cheat-sheet.md)**: A diagnostic guide for ImagePullBackOff, RegistryUnavailable, and validation errors.
-* **[Docker Complete Cheatsheet](docker-cheatsheet.md)**: All Docker CLI commands, global & command flags, Dockerfile reference, Compose, Swarm, Buildx, grep combos, one-liners, and interview Q&A.
-* **[Kubernetes Complete Cheatsheet](kubernetes-cheatsheet.md)**: All kubectl commands, global & command flags, resource types, RBAC, Helm, networking, storage, grep combos, JSONPath, one-liners, and interview Q&A.
-* **[GitOps, Argo CD & Flux CD Cheatsheet](gitops-argocd-flux-cheatsheet.md)**: Command references, CRD manifest snippets, troubleshooting matrices, and CLI workflows for Argo CD, Argo Rollouts, Argo Workflows, and Flux CD.
-* **[KEDA & Event-Driven Autoscaling Cheatsheet](keda-autoscaling-cheatsheet.md)**: Command references, CRD blueprints (Prometheus, RabbitMQ, SQS, Cron, ScaledJob), and Argo CD drift resolution patterns.
+* **[kubectl debugging cheat sheet](kubectl-debugging-cheat-sheet.md)**: Command reference and workflow for diagnosing workload issues.
+* **[Image pull debugging cheat sheet](image-pull-debugging-cheat-sheet.md)**: Diagnostic reference for ImagePullBackOff, registry authentication, and tag errors.
+* **[Docker cheatsheet](docker-cheatsheet.md)**: Docker CLI commands, flags, Dockerfile syntax, Compose, Buildx, and one-liners.
+* **[Kubernetes cheatsheet](kubernetes-cheatsheet.md)**: kubectl commands, resource flags, RBAC, Helm, networking, storage, JSONPath expressions, and one-liners.
+* **[GitOps, Argo CD, and Flux CD cheatsheet](gitops-argocd-flux-cheatsheet.md)**: Command references, CRD manifest snippets, and CLI workflows for Argo CD, Argo Rollouts, Argo Workflows, and Flux CD.
+* **[KEDA autoscaling cheatsheet](keda-autoscaling-cheatsheet.md)**: Scaler blueprints (Prometheus, RabbitMQ, SQS, Cron, ScaledJob) and Argo CD drift resolution patterns.
+
+---
+
+[← Home](../index.md)

@@ -2,22 +2,22 @@
 icon: lucide/network
 ---
 
-# Networking Blackholes & DNS Mysteries
+# Networking blackholes and DNS mysteries
 
-This section covers interview questions related to Kubernetes Services, networking quirks, and DNS resolution issues. These range from simple misconfigurations to deeply complex Linux kernel and DNS protocol interactions.
+Interview scenarios involving Kubernetes Services, packet routing, CoreDNS resolution timeouts, and Linux networking stack behavior.
 
 ---
 
-## Scenario 1: The Disconnected Service (Simple)
+## Scenario 1: The disconnected Service
 
-> **The Question:**
-> "You've deployed a backend Pod and exposed it via a `ClusterIP` Service. When you `curl` the Service IP from another Pod, the connection immediately refuses or times out. However, if you `curl` the backend Pod's IP directly, it works perfectly. What is the most likely cause?"
+> **The question:**
+> "You deploy a backend Pod and expose it with a `ClusterIP` Service. When you `curl` the Service IP from another Pod, the request times out or receives connection refused. However, connecting directly to the backend Pod IP succeeds. What is the cause?"
 
-### 🔍 Troubleshooting Steps
-If connecting directly to the Pod works, the network fabric (CNI) is healthy. The issue exists strictly within the routing rules managed by the Service.
+### Troubleshooting steps
+If connecting directly to the Pod IP succeeds, CNI routing between nodes is healthy. The issue lies in the Service routing configuration:
 
-1. Check the endpoints of the Service: `kubectl get endpoints <service-name>`
-2. You will likely see `<none>` under the endpoints column.
+1. Check the endpoints of the Service: `kubectl get endpoints <service-name>`.
+2. Inspect if `<none>` is displayed in the endpoints column.
 
 ```mermaid
 graph LR
@@ -31,21 +31,21 @@ graph LR
     linkStyle 1 stroke:#ff4d4f,stroke-width:2px;
 ```
 
-### 💡 Root Cause
-A **Selector Mismatch**. The `selector` labels defined in the Service YAML do not perfectly match the `labels` defined in the Pod's metadata. Services do not automatically route traffic; they dynamically look for Pods with matching labels and add their IPs to an `Endpoints` object. If the labels don't match, the Service has nowhere to route the traffic.
+### Root cause
+A **selector mismatch**. The labels defined in `spec.selector` on the Service manifest do not match the `metadata.labels` on the target Pods. Services populate `Endpoints` and `EndpointSlices` dynamically by matching these labels. Without a match, the Service has no destination IP addresses to route to.
 
-### 🛠️ The Fix
-Compare `kubectl get pods --show-labels` with the selector in `kubectl get service <service-name> -o yaml`. Ensure the keys and values match exactly.
+### The fix
+Compare `kubectl get pods --show-labels` with `kubectl get service <service-name> -o yaml` and align the label key-value pairs.
 
 ---
 
-## Scenario 2: The Dropped NodePort (Medium)
+## Scenario 2: The dropped NodePort connection
 
-> **The Question:**
-> "You expose an application via a `NodePort` Service to the outside world. When external traffic hits the nodes, it works fine about 70% of the time. The other 30% of the time, the connection just hangs and eventually drops. What is happening?"
+> **The question:**
+> "You expose an application through a `NodePort` Service. External client requests succeed approximately 70% of the time, while the remaining 30% of requests hang and time out. What causes this asymmetric behavior?"
 
-### 🔍 Troubleshooting Steps
-Intermittent network failures usually point to load-balancing across unevenly distributed replicas.
+### Troubleshooting steps
+Intermittent network timeouts across nodes point to load balancing across nodes that lack local Pod replicas:
 
 ```mermaid
 graph TD
@@ -65,34 +65,46 @@ graph TD
     class Blackhole error;
 ```
 
-### 💡 Root Cause
-The Service is configured with `externalTrafficPolicy: Local`, but you have fewer Pod replicas than you have Worker Nodes. 
+### Root cause
+The Service is configured with `externalTrafficPolicy: Local`, and the number of Pod replicas is smaller than the number of worker nodes.
 
-By default, Kubernetes uses `externalTrafficPolicy: Cluster`, meaning if a request hits Node 3 (which has no Pods), `kube-proxy` will forward the traffic to Node 1 or Node 2. However, when set to `Local`, the node drops the connection if it doesn't host a replica of the Pod locally. If an external Load Balancer round-robins traffic across all 3 nodes, the requests hitting Node 3 will be silently dropped.
+With `externalTrafficPolicy: Local`, a node does not forward incoming NodePort traffic to other nodes in the cluster. If an external load balancer directs traffic to Node 3 (which hosts no replica for that service), the node drops the connection.
 
-### 🛠️ The Fix
-Either scale the Deployment to run a replica on every node (often handled via a `DaemonSet` instead of a Deployment), or configure the external Load Balancer's health checks to only route traffic to nodes that are actively reporting healthy Pod endpoints.
+### The fix
+* Configure the external load balancer health checks to query the node health-check port (`healthCheckNodePort`), routing only to nodes with active local replicas.
+* Or change `externalTrafficPolicy` back to `Cluster` if source IP preservation is not required.
+* Or scale the workload with a `DaemonSet` to guarantee a replica on every node.
 
 ---
 
-## Scenario 3: The 5-Second DNS Delay (Complex)
+## Scenario 3: The 5-second DNS delay
 
-> **The Question:**
-> "A microservice built on an Alpine Linux base image is making HTTP requests to an external API. Intermittently, requests take exactly 5 seconds longer than usual. You've confirmed the external API is fast, and network latency is low. What is causing this exact 5-second delay?"
+> **The question:**
+> "A microservice built on Alpine Linux makes HTTP calls to external APIs. Intermittently, DNS requests add an exact 5-second delay to response latency. The external API and network links are fast. What causes this 5-second delay?"
 
-### 🔍 Troubleshooting Steps
-A precise, reproducible 5-second delay is a massive clue. It strongly points to a hardcoded network timeout, most notoriously the DNS resolution timeout in the Linux kernel (`resolv.conf`).
+### Troubleshooting steps
+An exact 5-second delay is the default DNS resolver query timeout in the Linux standard library.
 
-### 💡 Root Cause
-This is the infamous **ndots:5 & A/AAAA Race Condition**. 
+### Root cause
+This issue stems from the **`ndots:5` setting combined with parallel A and AAAA DNS queries**:
 
-1. By default, Kubernetes configures container `/etc/resolv.conf` with `ndots:5`. This means any domain with fewer than 5 dots (e.g., `api.external.com`) will append the cluster's internal search domains (`.default.svc.cluster.local`, etc.) before trying the external name.
-2. Alpine Linux uses the `musl` libc library, which sends both IPv4 (`A`) and IPv6 (`AAAA`) DNS requests **in parallel**.
-3. Due to a bug in older versions of CoreDNS or race conditions in `musl` libc, the DNS responses overlap, causing the `musl` resolver to drop the response.
-4. The resolver waits for a timeout. The default DNS timeout in Linux? **Exactly 5 seconds**. After 5 seconds, it retries, and the second attempt usually succeeds.
+1. By default, Kubernetes sets `ndots:5` in container `/etc/resolv.conf`. Any hostname with fewer than 5 dots (such as `api.github.com`) first searches through internal search domains (`.default.svc.cluster.local`, `.svc.cluster.local`, `.cluster.local`) before querying the fully qualified name.
+2. Alpine Linux uses the `musl` libc resolver, which issues IPv4 (`A`) and IPv6 (`AAAA`) queries simultaneously over UDP.
+3. In earlier versions of CoreDNS or conntrack tables with race conditions, parallel queries sharing the same source port cause one reply packet to be dropped by Linux netfilter.
+4. The resolver waits for the query timeout, which is **5 seconds**. After 5 seconds, the resolver retries and succeeds.
 
-### 🛠️ The Fix
-There are several ways to fix this depending on the environment:
-1. **The App Fix:** Change the base image from `alpine` to a `debian` or `ubuntu` based image (which uses `glibc` instead of `musl`).
-2. **The Config Fix:** Change the `dnsConfig` in the Pod spec to reduce the `ndots` value from `5` to `2` (if you don't need heavy internal cluster DNS resolution).
-3. **The DNS Fix:** Enable the `NodeLocal DNSCache` addon in the cluster to cache resolutions locally on the node, drastically reducing UDP packet loss.
+### The fix
+1. **Container image change:** Switch the base image to a Debian or Ubuntu base image using `glibc` instead of `musl`.
+2. **Pod DNS configuration:** Override `dnsConfig` in the Pod spec to lower `ndots` (e.g., `ndots: 2`) when heavy internal Service suffix searching is not needed:
+   ```yaml
+   spec:
+     dnsConfig:
+       options:
+         - name: ndots
+           value: "2"
+   ```
+3. **Cluster addon:** Enable `NodeLocal DNSCache` to run a caching DNS daemon on each node, avoiding iptables conntrack race conditions for UDP queries.
+
+---
+
+[← Tricky Pod restarts and silent crashes](./01-tricky-pod-restarts.md) | [Scheduling and storage anomalies →](./03-scheduling-storage.md)

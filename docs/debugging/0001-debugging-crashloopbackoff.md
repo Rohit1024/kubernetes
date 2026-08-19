@@ -2,23 +2,23 @@
 icon: lucide/bug
 ---
 
-# Debugging: Troubleshooting CrashLoopBackOff
+# Troubleshooting CrashLoopBackOff
 
-One of the most frequent errors encountered when running workloads in a Kubernetes cluster is **`CrashLoopBackOff`**. This guide covers what the status actually means, how to run the diagnostic sequence, and how to fix the underlying issues.
+`CrashLoopBackOff` is one of the most common status codes encountered in Kubernetes. This guide explains what the status means, how to run the diagnostic sequence, and how to fix the underlying errors.
 
 ---
 
 ## 1. What is CrashLoopBackOff?
 
-`CrashLoopBackOff` is **not** an error code returned by your application. It is a status message from Kubernetes indicating that:
+`CrashLoopBackOff` is not an error code returned by your application process. It is a status message from Kubernetes indicating that:
 
 1. The container started.
-2. The container exited or crashed.
-3. The cluster tried to restart it (due to its `restartPolicy`).
+2. The process exited or crashed.
+3. The cluster attempted a restart based on `restartPolicy`.
 4. The container crashed again.
-5. Kubernetes enters a **backoff** loop, waiting before trying to start the container again.
+5. Kubernetes enters an exponential **backoff** delay before attempting the next restart.
 
-To prevent overloading the host node with infinite reboot loops, Kubernetes delays restarts exponentially: 10 seconds, 20 seconds, 40 seconds, up to a maximum delay of **5 minutes**.
+To avoid overloading host nodes with continuous restart loops, Kubernetes delays retries exponentially: 10s, 20s, 40s, 80s, 160s, up to a maximum delay of **5 minutes (300s)**.
 
 ```mermaid
 stateDiagram-v2
@@ -33,53 +33,51 @@ stateDiagram-v2
 
 ---
 
-## 2. The 3-Step Diagnostic Workflow
+## 2. Three-step diagnostic workflow
 
-When a Pod exhibits `CrashLoopBackOff`, execute this command sequence in your terminal to pinpoint the root cause:
+When a Pod enters `CrashLoopBackOff`, run this sequence in your terminal to isolate the root cause:
 
 ### Step A: Identify the failing Pod
-List the pods in your namespace and check the `STATUS` and `RESTARTS` count:
+List pods in your namespace and check the `STATUS` and `RESTARTS` columns:
 ```bash
 kubectl get pods
 ```
 
-### Step B: Inspect Pod Lifecycle & Events
-Look at the metadata, state changes, and events of the Pod:
+### Step B: Inspect Pod lifecycle and events
+Inspect the metadata, state changes, and events of the Pod:
 ```bash
 kubectl describe pod <pod-name>
 ```
-Scroll to the **Events** section at the bottom. Check the **State** of the container, paying close attention to:
+Scroll to the **Events** section and check the container **State**:
 
-* **Exit Code:** A non-zero exit code (e.g. `1`, `137`, `139`) indicates the app crashed.
-* **Reason:** Look for `OOMKilled` or `Error`.
+* **Exit Code:** A non-zero code (such as `1`, `137`, `139`) indicates the process terminated abnormally.
+* **Reason:** Check for `OOMKilled` or `Error`.
 
-### Step C: Retrieve the Logs
-If the app crashed, check its standard stdout/stderr logs.
+### Step C: Retrieve the logs
+Inspect standard output and standard error:
 ```bash
-# Get logs of the currently starting container
+# Get logs of the currently running container
 kubectl logs <pod-name>
 
-# CRUCIAL: Retrieve logs from the previous instance that actually crashed
+# Retrieve logs from the previous instance that crashed
 kubectl logs <pod-name> --previous
 ```
-*Tip: Standard `kubectl logs` only shows logs for the current container execution. If it has just restarted and is waiting, the logs may be blank. Passing the `--previous` flag gets logs from the crashed container before it was rebooted.*
+Standard `kubectl logs` only displays output from the current container instance. If the container recently restarted and is waiting, output may be empty. The `--previous` flag pulls logs from the crashed instance before it restarted.
 
 ---
 
-## 3. Common Root Causes
+## 3. Common root causes
 
-* **Exit Code 1 / 255 (Application Error):** Missing environment variables, database connection failures, incorrect startup flags, or syntax errors.
-* **Exit Code 137 (OOMKilled):** The container consumed more memory than allowed by its `limits.memory` resource boundaries and was terminated by the OS kernel.
-* **Exit Code 0 (Completed too quickly):** The container ran a quick task (like a shell script) and finished. Kubernetes expects web servers/APIs to run indefinitely, so it interprets quick completion as a crash and restarts it. Keep the main process foregrounded!
+* **Exit Code 1 / 255 (Application Error):** Missing environment variables, database connection timeouts, invalid CLI flags, or uncaught runtime exceptions.
+* **Exit Code 137 (OOMKilled):** The container exceeded memory limits set in `limits.memory` and was terminated by the Linux kernel.
+* **Exit Code 0 (Completed prematurely):** The container ran a short script and exited cleanly. Kubernetes expects long-running processes (like web servers or background workers) to remain running in the foreground; exiting with 0 triggers a restart if `restartPolicy: Always`.
 
 ---
 
-## Hands-on Lab: Deploy & Resolve a Broken Pod
-
-Let's deploy a container deliberately configured to crash, diagnose it, and patch it.
+## Hands-on practice: Deploy and resolve a broken Pod
 
 ### Step 1: Deploy the broken container
-Save the following configuration to `broken-pod.yaml` and apply it:
+Save the following configuration as `broken-pod.yaml`:
 
 ```yaml
 apiVersion: v1
@@ -100,19 +98,20 @@ kubectl apply -f broken-pod.yaml
 ```
 
 ### Step 2: Run diagnostic steps
-Monitor the status until it enters `CrashLoopBackOff`:
+Watch the Pod enter `CrashLoopBackOff`:
 ```bash
 kubectl get pods -w
 ```
-Run `kubectl describe` to see the exit code:
+
+Inspect the exit code:
 ```bash
 kubectl describe pod debug-challenge-pod
 ```
-Retrieve the error message from the crashed container logs:
+
+Pull the error log from the crashed instance:
 ```bash
 kubectl logs debug-challenge-pod --previous
 ```
-You should see: `Error: DB_PASSWORD not found!`.
 
 ### Step 3: Clean up
 ```bash
@@ -121,21 +120,15 @@ kubectl delete -f broken-pod.yaml
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
-### 1. Which command retrieves the logs of the container instance that crashed right before the current restart loop?
-- [ ] **A.** `kubectl logs <pod> --all`
-- [ ] **B.** `kubectl logs <pod> --previous`
-- [ ] **C.** `kubectl describe pod <pod>`
+1. Which command retrieves the logs of the container instance that crashed immediately prior to the current restart?
+   - [ ] A) `kubectl logs <pod> --all`
+   - [ ] B) `kubectl logs <pod> --previous`
+   - [ ] C) `kubectl describe pod <pod>`
 
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-**Explanation:** The `--previous` flag fetches stdout/stderr output from the container that actually crashed, which is key to finding application runtime errors.
-</details>
+   Answer: B. The `--previous` flag fetches stdout and stderr output from the container instance that terminated before the restart.
 
 ---
 
-[← Cheatsheets Index](../cheatsheet/index.md) | [DNS & Network Troubleshooting →](./0002-dns-networking-troubleshooting.md)
+[← Debugging overview](./index.md) | [Troubleshooting DNS and service routing →](./0002-dns-networking-troubleshooting.md)

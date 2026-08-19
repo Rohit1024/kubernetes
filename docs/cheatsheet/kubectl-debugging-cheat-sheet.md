@@ -1,8 +1,8 @@
-# Kubectl Debugging Cheat Sheet
+# kubectl debugging cheat sheet
 
-A visual walkthrough and command reference for diagnosing workload issues.
+Command reference and workflow for diagnosing Kubernetes workload issues.
 
-### Diagnostic Workflow Decision-Tree
+### Diagnostic workflow decision tree
 
 ```mermaid
 graph TD
@@ -19,53 +19,53 @@ graph TD
 
 ---
 
-## 1. The Diagnostic Workflow
+## 1. Diagnostic workflow
 
-1. **Inspect Status**  
-   Identify which Pods are not in the `Running` or `Completed` state.
+1. **Inspect status**  
+   Identify Pods that are not in the `Running` or `Completed` state:
    ```bash
    kubectl get pods
    ```
 
 2. **Describe the Pod**  
-   Inspect lifecycle Events and State details. Look for Exit Codes, OOMKills, or failed probes.
+   Inspect lifecycle Events and container State. Check for exit codes, OOMKills, or failing probes:
    ```bash
    kubectl describe pod <pod-name>
    ```
 
-3. **Check logs of the current run**  
-   Fetch stdout/stderr of the running (or terminated) container.
+3. **Check logs of the current container**  
+   Fetch stdout and stderr from the container:
    ```bash
    kubectl logs <pod-name>
    ```
 
-4. **Check logs of the previous crashed run**  
-   *Crucial for CrashLoopBackOff:* See why the container crashed before K8s restarted it.
+4. **Check logs of the previous container instance**  
+   Inspect output from the crashed container before restart:
    ```bash
    kubectl logs <pod-name> --previous
    ```
 
 ---
 
-## 2. Common Pod Statuses
+## 2. Common Pod statuses
 
-| Status | Description | Primary Cause |
+| Status | Description | Primary cause |
 | :--- | :--- | :--- |
-| **CrashLoopBackOff** | The container starts, but repeatedly crashes or exits. K8s waits for an increasing backoff period before attempting to restart it again. | Application config errors, missing environment vars, DB connection failure, or permission errors. |
-| **ImagePullBackOff** | The container image cannot be fetched from the registry. | Typo in image name/tag, private registry authentication credentials not configured (`imagePullSecrets`). |
-| **OOMKilled** | The container process consumed more memory than its limit allowed, and was terminated by the Linux kernel Out-Of-Memory killer. | Insufficient memory limit configuration or application memory leaks. |
-| **Pending** | The Pod has been accepted by the cluster, but one or more containers are not yet created or scheduled. | Insufficient CPU/Memory resources on nodes, unschedulable taints, or waiting for persistent volumes. |
+| **CrashLoopBackOff** | The container starts and repeatedly exits. Kubernetes enters an exponential backoff delay before restarting. | Missing environment variables, database connection timeouts, syntax errors, or invalid flags. |
+| **ImagePullBackOff** | The container image cannot be pulled from the registry. | Typo in repository name or tag, missing `imagePullSecrets`, or rate limits. |
+| **OOMKilled** | The container process exceeded its memory limit and was killed by the Linux kernel OOM killer. | Low `limits.memory` setting or application memory leak. |
+| **Pending** | The Pod was created but has not been bound to a node. | Insufficient CPU/memory resources on nodes, node taints, or unbound PersistentVolumeClaims. |
 
 ---
 
-## 3. Advanced Diagnostic Commands
+## 3. Advanced diagnostic commands
 
-### Execute a command in a running pod
+### Execute an interactive shell in a running pod
 ```bash
 kubectl exec -it <pod-name> -- /bin/sh
 ```
 
-### Stream logs in real-time
+### Stream logs in real time
 ```bash
 kubectl logs -f <pod-name>
 ```
@@ -77,4 +77,4 @@ kubectl logs <pod-name> -c <container-name>
 
 ---
 
-Part of the Kubernetes learning workspace. Back to [mission.md](../mission.md).
+[← Cheatsheets overview](./index.md) | [Image pull debugging cheat sheet →](./image-pull-debugging-cheat-sheet.md)

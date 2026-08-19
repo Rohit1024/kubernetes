@@ -1,12 +1,12 @@
-# KEDA & Event-Driven Autoscaling Cheatsheet
+# KEDA autoscaling cheatsheet
 
-A concise, command-focused reference for managing event-driven autoscaling in Kubernetes using **KEDA**, external metrics, scheduled cron triggers, and solving GitOps drift with **Argo CD**.
+Command reference and manifest blueprints for managing event-driven autoscaling in Kubernetes using **KEDA**, external metrics, scheduled cron triggers, and resolving GitOps drift with **Argo CD**.
 
 ---
 
-## 1. Essential `kubectl` Commands for KEDA
+## 1. Essential kubectl commands for KEDA
 
-### Inspecting ScaledObjects & Status
+### Inspecting ScaledObjects and status
 ```bash
 # List all ScaledObjects across all namespaces
 kubectl get scaledobject -A
@@ -25,7 +25,7 @@ kubectl describe scaledjob <JOB_SCALER_NAME> -n <NAMESPACE>
 kubectl get triggerauthentication,clustertriggerauthentication -A
 ```
 
-### Checking KEDA Controller Health & Metrics
+### Checking KEDA controller health and metrics
 ```bash
 # Verify KEDA operator and metrics API server pods
 kubectl get pods -n keda
@@ -42,7 +42,7 @@ kubectl get --raw "/apis/external.metrics.k8s.io/v1beta1" | jq .
 
 ---
 
-## 2. Declarative CRD Manifest Blueprints
+## 2. Declarative CRD manifest blueprints
 
 ### A. Prometheus PromQL ScaledObject
 ```yaml
@@ -70,7 +70,7 @@ spec:
         activationThreshold: '10'     # Activation threshold
 ```
 
-### B. Timezone-Aware Cron Scaler (Pre-Warming)
+### B. Timezone-aware Cron scaler (Pre-warming)
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
@@ -91,7 +91,7 @@ spec:
         desiredReplicas: '10'
 ```
 
-### C. Multi-Trigger Composition (Cron + Metrics + Fallback)
+### C. Multi-trigger composition (Cron, metrics, and fallback)
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
@@ -125,7 +125,7 @@ spec:
         activationQueueLength: '1'
 ```
 
-### D. Discrete Batch `ScaledJob`
+### D. Discrete batch ScaledJob
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ScaledJob
@@ -159,9 +159,9 @@ spec:
 
 ---
 
-## 3. Argo CD + KEDA Drift Solutions
+## 3. Argo CD and KEDA drift solutions
 
-### Prevent Replicas Flapping in Argo CD `Application`
+### Prevent replicas flapping in Argo CD Application
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -184,7 +184,7 @@ spec:
         - /spec/replicas
 ```
 
-### Global System-Wide Config (`argocd-cm` ConfigMap)
+### Global system configuration (argocd-cm ConfigMap)
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -199,16 +199,16 @@ data:
 
 ---
 
-## 4. Troubleshooting Matrix
+## 4. Troubleshooting matrix
 
-| Symptom | Root Cause | Solution |
+| Symptom | Root cause | Solution |
 | :--- | :--- | :--- |
-| **Workload stuck at 0 replicas** | `activationThreshold` not reached or trigger metric returning 0. | Run `kubectl describe scaledobject` and check trigger query. |
-| **Argo CD constantly reverting replicas** | Argo CD `selfHeal: true` is fighting dynamic scaling without `ignoreDifferences`. | Add `jsonPointers: [/spec/replicas]` to the Argo CD Application. |
-| **Duplicate HPAs fighting over workload** | Manual `HorizontalPodAutoscaler` committed in Git alongside `ScaledObject`. | Delete manual HPA manifest from Git; let KEDA manage the HPA. |
+| **Workload stuck at 0 replicas** | `activationThreshold` not reached or trigger metric returning 0. | Run `kubectl describe scaledobject` and inspect trigger query. |
+| **Argo CD constantly reverting replicas** | Argo CD `selfHeal: true` is overwriting dynamic scaling without `ignoreDifferences`. | Add `jsonPointers: [/spec/replicas]` to the Argo CD Application. |
+| **Duplicate HPAs fighting over workload** | Manual `HorizontalPodAutoscaler` committed in Git alongside `ScaledObject`. | Remove manual HPA manifest from Git; let KEDA manage the HPA. |
 | **`ScaledObject` shows `Ready: False`** | Authentication failure or unreachable metric server address. | Verify `TriggerAuthentication` credentials and network connectivity. |
 | **Cron scaler triggering at wrong time** | Missing or incorrect IANA timezone string in metadata. | Set explicit `timezone: <IANA_NAME>` (e.g. `America/New_York`). |
 
 ---
 
-[← Return to Cheatsheets Overview](./index.md)
+[← Cheatsheets overview](./index.md)

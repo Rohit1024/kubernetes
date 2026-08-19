@@ -1,12 +1,12 @@
-# GitOps, Argo CD & Flux CD Complete Cheatsheet
+# GitOps, Argo CD, and Flux CD cheatsheet
 
-A concise, practical reference for managing Kubernetes GitOps pipelines with **Argo CD**, **Argo Rollouts**, **Argo Workflows**, **Argo Events**, and **Flux CD**.
+Practical command reference and manifest blueprints for **Argo CD**, **Argo Rollouts**, **Argo Workflows**, **Argo Events**, and **Flux CD**.
 
 ---
 
-## 1. Argo CD CLI (`argocd`) Quick Reference
+## 1. Argo CD CLI (argocd) quick reference
 
-### Authentication & Cluster Management
+### Authentication and cluster management
 ```bash
 # Login to Argo CD server
 argocd login <ARGOCD_SERVER_IP>:443 --username admin --password <PASSWORD> --insecure
@@ -21,7 +21,7 @@ argocd cluster add <CONTEXT_NAME> --name prod-us-east
 argocd cluster list
 ```
 
-### Application Lifecycle Operations
+### Application lifecycle operations
 ```bash
 # Create an application declaratively from CLI
 argocd app create guestbook \
@@ -33,7 +33,7 @@ argocd app create guestbook \
 # List all applications and health status
 argocd app list
 
-# Get detailed info & live resource tree
+# Get detailed info and live resource tree
 argocd app get guestbook
 
 # Trigger a manual sync
@@ -45,11 +45,11 @@ argocd app sync guestbook --force --prune
 # Roll back an application to a previous revision
 argocd app rollback guestbook <REVISION_ID>
 
-# Delete an application (with or without cascade)
+# Delete an application
 argocd app delete guestbook --cascade
 ```
 
-### Manifest Diff & Troubleshooting
+### Manifest diff and troubleshooting
 ```bash
 # View live diff between Git desired state and live cluster
 argocd app diff guestbook
@@ -63,13 +63,13 @@ argocd app set guestbook -p image.tag=v2.1.0
 
 ---
 
-## 2. Argo Rollouts CLI (`kubectl argo rollouts`)
+## 2. Argo Rollouts CLI (kubectl argo rollouts)
 
 ```bash
 # Get live visual status of a rollout
 kubectl argo rollouts get rollout <ROLLOUT_NAME> --watch
 
-# Update image (triggers canary/blue-green rollout)
+# Update image (triggers canary or blue-green rollout)
 kubectl argo rollouts set image <ROLLOUT_NAME> <CONTAINER_NAME>=<IMAGE>:<TAG>
 
 # Promote a paused canary rollout to next step
@@ -84,15 +84,15 @@ kubectl argo rollouts abort <ROLLOUT_NAME>
 # Retry an aborted rollout
 kubectl argo rollouts retry <ROLLOUT_NAME>
 
-# Launch the interactive local Web UI
+# Launch the local Web UI
 kubectl argo rollouts dashboard
 ```
 
 ---
 
-## 3. Flux CD CLI (`flux`) Quick Reference
+## 3. Flux CD CLI (flux) quick reference
 
-### Cluster Verification & Bootstrap
+### Cluster verification and bootstrap
 ```bash
 # Pre-flight cluster checks
 flux check --pre
@@ -106,7 +106,7 @@ flux bootstrap github \
   --personal
 ```
 
-### Sources & Reconciliations
+### Sources and reconciliations
 ```bash
 # List all Git, Helm, and OCI sources
 flux get sources all
@@ -122,16 +122,16 @@ flux reconcile source git <SOURCE_NAME>
 flux reconcile kustomization <APP_NAME> --with-source
 flux reconcile helmrelease <RELEASE_NAME> --with-source
 
-# Suspend / Resume reconciliation
+# Suspend or resume reconciliation
 flux suspend kustomization <APP_NAME>
 flux resume kustomization <APP_NAME>
 ```
 
 ---
 
-## 4. Key CRD YAML Snippets
+## 4. Key custom resource YAML snippets
 
-### A. Argo CD Application (with Auto-Sync & Self-Heal)
+### A. Argo CD Application (with auto-sync and self-heal)
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -154,7 +154,7 @@ spec:
       selfHeal: true
 ```
 
-### B. Argo Rollout (Canary with Analysis)
+### B. Argo Rollout (Canary with analysis)
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
@@ -185,7 +185,7 @@ spec:
         image: app:v2.0.0
 ```
 
-### C. Flux v2 GitRepository & Kustomization
+### C. Flux v2 GitRepository and Kustomization
 ```yaml
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
@@ -214,16 +214,16 @@ spec:
 
 ---
 
-## 5. Common Troubleshooting & Debugging
+## 5. Common troubleshooting and debugging
 
-| Symptom / Issue | Potential Cause | Fix / Remediation |
+| Symptom / issue | Potential cause | Fix / remediation |
 | :--- | :--- | :--- |
-| **Argo CD `OutOfSync` & Won't Self-Heal** | Live cluster mutation or invalid CRD schema | Check `argocd app diff <app>` and examine mutating webhooks or ignored differences. |
-| **Sync Waves Blocked** | Previous wave resource never reached `Healthy` | Check `kubectl describe` on pods in the earlier wave; fix failing Readiness probes. |
-| **Rollout Stuck in `Paused`** | Waiting for step duration or manual promotion | Run `kubectl argo rollouts get rollout <name>` to inspect paused timer or metric evaluation. |
+| **Argo CD `OutOfSync` and will not self-heal** | Live cluster mutation or invalid CRD schema | Check `argocd app diff <app>` and examine mutating webhooks or ignored differences. |
+| **Sync waves blocked** | Earlier wave resource never reached `Healthy` | Run `kubectl describe` on pods in the earlier wave; resolve failing readiness probes. |
+| **Rollout stuck in `Paused`** | Waiting for step duration or manual promotion | Run `kubectl argo rollouts get rollout <name>` to inspect paused timer or metric evaluation. |
 | **Flux `ArtifactFailed`** | Invalid Git credentials or unreachable repo | Run `flux get sources git` and verify Secret reference or SSH deploy key permissions. |
-| **Argo CD Vault Plugin Missing Values** | Misconfigured CMP sidecar or missing Secret path | Check `kubectl logs -n argocd -l app.kubernetes.io/name=argocd-repo-server -c avp` and verify Vault token. |
+| **Argo CD Vault Plugin missing values** | Misconfigured CMP sidecar or missing Secret path | Check `kubectl logs -n argocd -l app.kubernetes.io/name=argocd-repo-server -c avp` and verify Vault token. |
 
 ---
 
-[← Cheatsheets Overview](./index.md)
+[← Cheatsheets overview](./index.md) | [KEDA autoscaling cheatsheet →](./keda-autoscaling-cheatsheet.md)

@@ -2,22 +2,22 @@
 icon: lucide/refresh-cw
 ---
 
-# Tricky Pod Restarts & Silent Crashes
+# Tricky Pod restarts and silent crashes
 
-This section covers interview questions involving Pods that crash or restart in non-obvious ways. These scenarios test your ability to look past simple log files and understand the underlying Kubernetes control loop and Linux kernel interactions.
+Interview scenarios involving Pods that crash or restart in non-obvious ways, testing your understanding of Kubernetes controllers, signals, and Linux kernel behavior.
 
 ---
 
-## Scenario 1: The "Silent" OOMKilled
+## Scenario 1: The silent OOMKilled
 
-> **The Question:**
-> "You deploy an application, and it crashes roughly every 60 seconds. You run `kubectl logs <pod-name>`, but the logs say absolutely nothing—not a single error line or stack trace. Why is this happening, and how do you solve it?"
+> **The question:**
+> "You deploy an application, and it crashes roughly every 60 seconds. You run `kubectl logs <pod-name>`, but the logs show no output and no stack trace. Why is this happening, and how do you solve it?"
 
-### 🔍 Troubleshooting Steps
-If an application is crashing but leaving zero traces in standard output, it means the process was terminated instantly by the host's kernel, skipping the application's internal error handling.
+### Troubleshooting steps
+When an application crashes leaving zero output in stdout or stderr, the process was terminated directly by the Linux kernel, bypassing application-level signal handlers and logging frameworks:
 
-1. Run `kubectl describe pod <pod-name>` and look specifically at the `Containers -> State` section.
-2. Check the `Reason` and `Exit Code` of the `Last State`.
+1. Run `kubectl describe pod <pod-name>` and check the `Containers -> State` section.
+2. Inspect the `Reason` and `Exit Code` of the `Last State`.
 
 ```mermaid
 graph TD
@@ -33,31 +33,31 @@ graph TD
     class E highlight;
 ```
 
-### 💡 Root Cause
-The container exceeded its `resources.limits.memory`. When this happens, the Linux kernel invokes the OOM (Out of Memory) Killer, which terminates the container process immediately using a `SIGKILL` (Signal 9). 
+### Root cause
+The container exceeded its `resources.limits.memory`. When memory reaches this boundary, the Linux kernel Out-Of-Memory (OOM) Killer terminates the container process immediately with `SIGKILL` (Signal 9).
 
-Because `SIGKILL` cannot be intercepted by the application, it has absolutely no time to write a final log or stack trace. The exit code will be `137` (128 + 9).
+Because `SIGKILL` cannot be caught or handled by user code, the application cannot flush logs or write stack traces. The resulting exit code is `137` (128 + 9).
 
-### 🛠️ The Fix
-* **Immediate Mitigation:** Increase the `resources.limits.memory` in the Pod manifest.
-* **Long-term Fix:** Profile the application code for memory leaks (e.g., using a heap dump) and ensure it's properly garbage collecting.
+### The fix
+* **Immediate mitigation:** Increase the `resources.limits.memory` in the Pod or Deployment manifest.
+* **Long-term fix:** Profile application memory usage (e.g. heap dumps or memory profilers) to locate leaks or unconstrained cache growth.
 
 ---
 
-## Scenario 2: The "Successful" Crash Loop
+## Scenario 2: The successful crash loop
 
-> **The Question:**
-> "A Pod keeps restarting exactly every 47 seconds. You check `kubectl logs` and it's empty. You run `kubectl describe` and there are no errors or OOM events. The liveness probe looks perfectly fine. What do you check first to reveal the root cause, and how do you fix it?"
+> **The question:**
+> "A Pod keeps restarting at an exact 45-second interval. `kubectl logs` is empty, and `kubectl describe` shows no errors or OOM events. The liveness probe is healthy. What do you check first to identify the root cause?"
 
-### 🔍 Troubleshooting Steps
-When a Pod restarts on a highly predictable, exact interval with *no errors*, it usually means the application isn't actually crashing—it's finishing its job.
+### Troubleshooting steps
+When a Pod restarts repeatedly on a predictable schedule with clean exits, the process is completing its execution rather than failing:
 
 1. Run `kubectl describe pod <pod-name>` and check the `Exit Code` of the `Last State`.
-2. Look for `Exit Code: 0` and `Reason: Completed`.
+2. Check for `Exit Code: 0` and `Reason: Completed`.
 
 ```mermaid
 graph TD
-    Start[Container Starts] --> Process[Executes Script for 47s]
+    Start[Container Starts] --> Process[Executes Script for 45s]
     Process --> ExitZero[Process Exits Successfully: Code 0]
     
     ExitZero --> ControlLoop{Check RestartPolicy}
@@ -74,23 +74,23 @@ graph TD
     class ControlLoop warning;
 ```
 
-### 💡 Root Cause
-The container is executing a finite task (like a database migration script, a backup routine, or a simple batch script). Once the script finishes, it exits gracefully with an exit code of `0`.
+### Root cause
+The container runs a finite script (such as a database schema migration or batch backup). When the script finishes, the process exits cleanly with exit code `0`.
 
-However, the user deployed this container as a `Deployment` (or a raw `Pod` with default settings). A `Deployment` enforces a `RestartPolicy` of `Always`. Kubernetes assumes the container is a long-running web server that stopped unexpectedly, so it immediately restarts it, creating an infinite, "successful" crash loop.
+However, the workload was created as a `Deployment` (which enforces `restartPolicy: Always`). Kubernetes treats an exited process as a stopped service and restarts it immediately, producing a recurring restart loop.
 
-### 🛠️ The Fix
-Change the workload type from a `Deployment` to a `Job` (or a `CronJob` if it needs to run on a schedule). A `Job` controller has a `RestartPolicy` of `OnFailure` or `Never`, meaning once the script exits with `0`, the Pod enters a `Completed` state and stays there.
+### The fix
+Change the workload resource from a `Deployment` to a `Job` (or a `CronJob` for periodic tasks). A `Job` supports `restartPolicy: OnFailure` or `restartPolicy: Never`, moving the Pod to `Completed` upon exit code 0.
 
 ---
 
-## Scenario 3: Liveness Probe Masking a Deadlock
+## Scenario 3: Liveness probe masking a deadlock
 
-> **The Question:**
-> "A Pod is in a restart loop. The application logs show that it handles traffic normally for a few minutes, but then the logs just abruptly stop—no crash, no errors. `kubectl describe` shows Liveness Probe failures. Why isn't the application logging any internal errors?"
+> **The question:**
+> "A Pod enters a restart loop. Application logs show normal request handling for a few minutes, after which logging stops abruptly with no stack trace or crash report. `kubectl describe` shows liveness probe failures. Why does the application fail to log errors?"
 
-### 🔍 Troubleshooting Steps
-If an application stops processing but doesn't crash on its own, it is likely frozen.
+### Troubleshooting steps
+When a process remains active in the process table but stops responding to network requests, the runtime is likely blocked on a deadlock or starvation condition:
 
 ```mermaid
 graph TD
@@ -108,11 +108,15 @@ graph TD
     class Timeout,Kill,Restart error;
 ```
 
-### 💡 Root Cause
-The application has entered a **thread deadlock**, an **infinite loop**, or its connection pool has been completely exhausted. The process is still technically running (so the kernel doesn't kill it), but it's completely locked up and cannot execute the code required to throw an error or print a log.
+### Root cause
+The application entered a **thread deadlock**, an **infinite loop**, or exhausted its database connection pool. The process remains alive in the operating system, but worker threads are blocked from executing request handlers or writing logs.
 
-Because it's locked up, the Kubernetes Liveness Probe times out. After reaching the `failureThreshold`, Kubernetes decides the container is unrecoverable and forcibly restarts it. The probe is actually *saving* the system, but hiding the deadlock from the logs.
+Because the HTTP health endpoint is unresponsive, the kubelet liveness probe times out. Once consecutive failures reach `failureThreshold`, the kubelet sends `SIGTERM` followed by `SIGKILL` to restart the unresponsive container.
 
-### 🛠️ The Fix
-* **To Debug:** Temporarily disable or increase the threshold of the Liveness Probe. Exec into the container while it's frozen and trigger a thread dump (e.g., `jstack` for Java, `py-spy` for Python) to see exactly which function the threads are stuck on.
-* **To Fix:** Refactor the application code to eliminate the deadlock, implement proper connection pool timeouts, or add circuit breakers.
+### The fix
+* **Diagnostic step:** Temporarily increase `failureThreshold` or `timeoutSeconds` on the liveness probe. Exec into the container during the hang and take a thread dump (`jstack`, `gdb`, or language profiler) to pinpoint where execution is blocked.
+* **Remediation:** Fix thread synchronization locks, configure explicit connection pool checkout timeouts, and add health probe endpoints on dedicated background threads.
+
+---
+
+[← Interview scenarios overview](./index.md) | [Networking blackholes and DNS mysteries →](./02-networking-blackholes.md)

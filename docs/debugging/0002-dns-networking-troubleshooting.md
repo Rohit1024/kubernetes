@@ -2,11 +2,11 @@
 icon: lucide/unplug
 ---
 
-# Debugging: Troubleshooting DNS & Service Routing
+# Troubleshooting DNS and service routing
 
-If a client container fails to connect to another workload within a cluster using its service name, the issue is typically a Service misconfiguration, DNS failure, or a network policy block. 
+When a client container fails to connect to another workload using its service name, the cause is usually a Service selector mismatch, CoreDNS failure, port configuration error, or NetworkPolicy block.
 
-This guide provides a systematic workflow to diagnose and resolve service connection errors.
+This guide provides a step-by-step diagnostic sequence to isolate service connection errors.
 
 ---
 
@@ -27,22 +27,24 @@ graph TD
 
 ---
 
-## 2. Troubleshooting Steps
+## 2. Troubleshooting steps
 
-### Step 1: Verify Service Endpoints
-Ensure the Service is successfully pointing to healthy Pods. If the Service cannot find any Pods matching its selector, it will have no endpoints.
+### Step 1: Verify Service endpoints
+Check if the Service is pointing to healthy Pods. If the Service cannot find any Pods matching its selector, its endpoint list remains empty:
 ```bash
 kubectl get endpoints <service-name>
 ```
-* **If it says `<none>` or is empty:** The selector in the Service's `spec.selector` does not match the labels in the Pod's `metadata.labels`, or the Pods are not in a `Running` and `Ready` state (failing readiness probes).
+If output displays `<none>` or is empty:
+- The `spec.selector` in the Service manifest does not match the `metadata.labels` on the target Pods.
+- Or the matching Pods are not in `Running` and `Ready` state (such as failing readiness probes).
 
-### Step 2: Test DNS Resolution
-Deploy a temporary test container inside the cluster to check if DNS is functioning.
+### Step 2: Test DNS resolution
+Deploy a test container inside the cluster to check DNS resolution:
 ```bash
 # Launch a curl-enabled test pod
 kubectl run net-test --rm -it --image=radial/busyboxplus:curl --restart=Never
 ```
-Once inside the shell, test DNS resolution:
+From inside the test container:
 ```bash
 # Resolve local service
 nslookup <service-name>
@@ -51,8 +53,8 @@ nslookup <service-name>
 nslookup <service-name>.<namespace>.svc.cluster.local
 ```
 
-### Step 3: Check CoreDNS Health
-If `nslookup` fails completely, the cluster's internal DNS daemon (CoreDNS) may be down or experiencing issues.
+### Step 3: Check CoreDNS health
+If `nslookup` fails completely, check the cluster internal DNS deployment:
 ```bash
 # Verify CoreDNS pods are running
 kubectl get pods -n kube-system -l k8s-app=kube-dns
@@ -62,29 +64,27 @@ kubectl logs -n kube-system -l k8s-app=kube-dns
 ```
 
 ### Step 4: Bypass the Service
-Retrieve the raw IP of one of the backend Pods:
+Retrieve the direct IP address of a backend Pod:
 ```bash
 kubectl get pods -o wide
 ```
-From your test container, try connecting to the Pod IP directly (e.g. `curl http://<pod-ip>:<container-port>`).
+From the test container, attempt a direct connection to the Pod IP (for example, `curl http://<pod-ip>:<container-port>`).
 
-* **If direct connection works but Service fails:** You have a port mismatch in your Service definition (`port` vs `targetPort`).
-* **If direct connection fails:** The containerized application is not running on that port, has crashed, or is blocked by network policies.
+* **If direct connection succeeds but Service fails:** Check for a port mismatch between `spec.ports[].port` and `spec.ports[].targetPort` in the Service manifest.
+* **If direct connection fails:** The target process is not listening on that port, has crashed, or is blocked by firewall rules or network policies.
 
-### Step 5: Check Network Policies
-Network Policies act as firewalls inside the cluster. Check if there are active policies blocking ingress or egress communication:
+### Step 5: Check network policies
+Check if any NetworkPolicies enforce default-deny or block ingress/egress:
 ```bash
 kubectl get networkpolicies -A
 ```
 
 ---
 
-## Hands-on Lab: Fix a Broken Service Selector
-
-Let's simulate a broken connection scenario caused by mismatched labels, diagnose it, and patch it.
+## Hands-on practice: Fix a broken Service selector
 
 ### Step 1: Deploy the broken setup
-Save the following configuration to `broken-service.yaml` and apply it:
+Save the following manifest as `broken-service.yaml`:
 
 ```yaml
 apiVersion: apps/v1
@@ -114,7 +114,7 @@ metadata:
   name: billing-service
 spec:
   selector:
-    app: billing-wrong-label # Label mismatch!
+    app: billing-wrong-label # Label mismatch
   ports:
   - port: 80
     targetPort: 5678
@@ -124,28 +124,27 @@ spec:
 kubectl apply -f broken-service.yaml
 ```
 
-### Step 2: Diagnosing the endpoint mismatch
+### Step 2: Diagnose the endpoint mismatch
 Check the endpoints for the service:
 ```bash
 kubectl get endpoints billing-service
 ```
-Notice the `ENDPOINTS` output is empty.
+The `ENDPOINTS` column will be `<none>`.
 
-### Step 3: Fix the Service Selector
-Edit the service inside `broken-service.yaml` to fix the selector:
+### Step 3: Fix the Service selector
+Update the service selector inside `broken-service.yaml`:
 ```diff
 -   app: billing-wrong-label
 +   app: billing-backend
 ```
-Apply the fix:
+Apply the update:
 ```bash
 kubectl apply -f broken-service.yaml
 ```
-Verify endpoints are now populated:
+Verify the endpoint is registered:
 ```bash
 kubectl get endpoints billing-service
 ```
-You should now see the Pod IP registered.
 
 ### Step 4: Clean up
 ```bash
@@ -154,21 +153,15 @@ kubectl delete -f broken-service.yaml
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
-### 1. If 'kubectl get endpoints web-service' returns '<none>', which command helps you inspect the current labels applied to your running pods?
-- [ ] **A.** `kubectl get pods --show-labels`
-- [ ] **B.** `kubectl describe service web-service`
-- [ ] **C.** `kubectl get pods -o json`
+1. If `kubectl get endpoints web-service` returns `<none>`, which command displays the active labels on running pods?
+   - [ ] A) `kubectl get pods --show-labels`
+   - [ ] B) `kubectl describe service web-service`
+   - [ ] C) `kubectl get pods -o json`
 
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** A
-
-**Explanation:** The `--show-labels` flag displays all active key-value labels attached to each Pod, allowing you to easily cross-reference them with the Service selector.
-</details>
+   Answer: A. The `--show-labels` flag displays active labels on each Pod, allowing direct comparison with the Service selector.
 
 ---
 
-[← CrashLoopBackOff Troubleshooting](./0001-debugging-crashloopbackoff.md) | [Cheatsheets Index](../cheatsheet/index.md)
+[← Troubleshooting CrashLoopBackOff](./0001-debugging-crashloopbackoff.md) | [Troubleshooting ImagePullBackOff →](./0003-debugging-imagepullbackoff.md)

@@ -2,22 +2,21 @@
 icon: lucide/bug
 ---
 
-# Debugging: Troubleshooting ImagePullBackOff
+# Troubleshooting ImagePullBackOff
 
-One of the most frequent errors encountered when deploying new workloads in a Kubernetes cluster is **`ImagePullBackOff`** (or its precursor, **`ErrImagePull`**). This guide covers what this status actually means, how to run the diagnostic sequence, and how to fix the underlying issues.
+`ImagePullBackOff` (and its precursor, `ErrImagePull`) occurs when a node cannot pull a requested container image from the container registry. This guide covers how to inspect pull failures, verify credentials, and resolve image errors.
 
 ---
 
 ## 1. What is ImagePullBackOff?
 
-`ImagePullBackOff` is a status message from Kubernetes indicating that the kubelet on a worker node is unable to pull the requested container image from the container registry. 
+`ImagePullBackOff` indicates that the `kubelet` on a worker node failed to pull the requested container image from a registry.
 
-When a pod is scheduled, the process looks like this:
+The process unfolds in these stages:
 1. The node attempts to pull the container image.
-2. The pull fails, and the status is set to `ErrImagePull`.
-3. Kubernetes waits, then tries to pull the image again.
-4. The pull fails again.
-5. Kubernetes enters a **backoff** loop (`ImagePullBackOff`), exponentially increasing the delay between retry attempts (up to 5 minutes) to avoid overloading the registry or network.
+2. The pull fails, transitioning the Pod status to `ErrImagePull`.
+3. Kubernetes waits and retries the pull.
+4. If the retry fails, Kubernetes enters an exponential backoff loop (`ImagePullBackOff`), increasing delays between retries up to 5 minutes to avoid overwhelming the container registry.
 
 ```mermaid
 stateDiagram-v2
@@ -32,49 +31,47 @@ stateDiagram-v2
 
 ---
 
-## 2. The 3-Step Diagnostic Workflow
+## 2. Three-step diagnostic workflow
 
-When a Pod is stuck in `ImagePullBackOff`, execute this command sequence in your terminal to pinpoint the root cause:
+When a Pod enters `ImagePullBackOff`, use this diagnostic sequence:
 
 ### Step A: Identify the failing Pod
-List the pods in your namespace and check the `STATUS`:
+List pods in your namespace and check the `STATUS` column:
 ```bash
 kubectl get pods
 ```
 
-### Step B: Inspect Pod Lifecycle & Events
-Look at the metadata, state changes, and events of the Pod:
+### Step B: Inspect Pod lifecycle and events
+Inspect the metadata and event stream of the Pod:
 ```bash
 kubectl describe pod <pod-name>
 ```
-Scroll to the **Events** section at the bottom. This is where the kubelet logs why the image pull failed. Look for reasons like:
+Scroll to the **Events** section at the bottom to find the exact error message from `kubelet`:
 * `Failed to pull image "my-image:tag": rpc error: code = Unknown desc = Error response from daemon: manifest for my-image:tag not found`
 * `pull access denied for my-image, repository does not exist or may require 'docker login'`
 
-### Step C: Verify the Image Name and Tag
-Check the container specification in your deployment or pod definition. 
+### Step C: Verify the image name and tag
+Check the exact image specification requested by the workload:
 ```bash
 kubectl get pod <pod-name> -o=jsonpath='{.spec.containers[*].image}'
 ```
-Ensure there are no typos in the registry URL, image name, or the tag.
+Check for typos in the registry hostname, repository path, or tag string.
 
 ---
 
-## 3. Common Root Causes
+## 3. Common root causes
 
-* **Invalid Image Name or Tag:** A typo in the image name or specifying a tag that hasn't been pushed to the registry (e.g., `v1.0.0` instead of `v1.0`).
-* **Missing Authentication (Private Registry):** The image is hosted in a private registry, but the Pod is missing the `imagePullSecrets` configuration, or the secret contains expired/invalid credentials.
-* **Network Issues / Air-gapped Cluster:** The worker node doesn't have internet access to reach external registries like Docker Hub or Quay.
-* **Rate Limiting:** Pulling images from public registries like Docker Hub anonymously can hit rate limits (`toomanyrequests`), causing temporary pull failures.
+* **Invalid image name or tag:** Typo in the repository path or specifying a tag that has not been pushed.
+* **Missing authentication (private registry):** The image is hosted in a private registry and the Pod lacks `imagePullSecrets`, or the secret credentials expired.
+* **Network routing and firewalls:** The worker node lacks internet egress or VPC routing to connect to external registries (Docker Hub, Quay, Artifact Registry).
+* **Registry rate limits:** Pulling anonymously from public registries can hit IP-based rate limits (`toomanyrequests`).
 
 ---
 
-## Hands-on Lab: Deploy & Resolve a Broken Pod
-
-Let's deploy a container deliberately configured with a non-existent image tag to trigger this error.
+## Hands-on practice: Deploy and resolve a broken Pod
 
 ### Step 1: Deploy the broken container
-Save the following configuration to `broken-image-pod.yaml` and apply it:
+Save the configuration as `broken-image-pod.yaml`:
 
 ```yaml
 apiVersion: v1
@@ -92,15 +89,14 @@ kubectl apply -f broken-image-pod.yaml
 ```
 
 ### Step 2: Run diagnostic steps
-Monitor the status until it enters `ErrImagePull` and then `ImagePullBackOff`:
+Watch the status transition into `ImagePullBackOff`:
 ```bash
 kubectl get pods -w
 ```
-Run `kubectl describe` to see the exact error in the Events section:
+Inspect the events to view the missing manifest error:
 ```bash
 kubectl describe pod debug-imagepull-pod
 ```
-You should see a message indicating the manifest is not found.
 
 ### Step 3: Clean up
 ```bash
@@ -109,21 +105,15 @@ kubectl delete -f broken-image-pod.yaml
 
 ---
 
-## Test Your Knowledge
+## Test your knowledge
 
-### 1. Where is the best place to look to find the exact reason why an image pull failed?
-- [ ] **A.** `kubectl logs <pod-name>`
-- [ ] **B.** `kubectl describe pod <pod-name>`
-- [ ] **C.** `kubectl get pod <pod-name> -o yaml`
+1. Where should you look to find the exact failure reason when an image pull fails?
+   - [ ] A) `kubectl logs <pod-name>`
+   - [ ] B) `kubectl describe pod <pod-name>`
+   - [ ] C) `kubectl get pod <pod-name> -o yaml`
 
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-**Explanation:** `kubectl describe pod <pod-name>` shows the Kubernetes Events for the pod at the bottom of the output. This is where the kubelet reports exactly why it failed to pull the image (e.g., authorization failure, not found). `kubectl logs` will not work because the container hasn't started running yet.
-</details>
+   Answer: B. `kubectl describe pod <pod-name>` displays the Kubernetes Events at the bottom of the output, where `kubelet` records registry errors and pull failures. `kubectl logs` does not work because the container has not started.
 
 ---
 
-[← DNS & Network Troubleshooting](./0002-dns-networking-troubleshooting.md) | [Cheatsheets Index →](../cheatsheet/index.md)
+[← Troubleshooting DNS and service routing](./0002-dns-networking-troubleshooting.md) | [Troubleshooting database connectivity on GKE →](./0004-database-connectivity-gke.md)

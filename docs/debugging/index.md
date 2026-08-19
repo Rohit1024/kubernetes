@@ -2,23 +2,23 @@
 icon: lucide/bug
 ---
 
-# Debugging Workloads & Networking
+# Debugging workloads and networking
 
-Welcome to the debugging section. When applications fail to boot, crash, or fail to communicate inside the cluster, use these step-by-step diagnostic playbooks to isolate and fix the root causes.
+Diagnostic playbooks for investigating container crashes, network timeouts, failed image pulls, and database connection issues in Kubernetes.
 
-## Diagnostic Guides
+## Diagnostic guides
 
 1. **[Troubleshooting CrashLoopBackOff](0001-debugging-crashloopbackoff.md)**
-   : What the status means, how to check container exit codes, and retrieving previous logs.
+   Investigate container exit codes, termination signals, and previous application crash logs.
 
-2. **[Troubleshooting DNS & Service Routing](0002-dns-networking-troubleshooting.md)**
-   : Checking service endpoints, resolving CoreDNS service names, bypassing service routing, and checking network policies.
+2. **[Troubleshooting DNS and service routing](0002-dns-networking-troubleshooting.md)**
+   Verify Service endpoints, resolve CoreDNS service names, test direct Pod IP routing, and inspect NetworkPolicies.
 
 3. **[Troubleshooting ImagePullBackOff](0003-debugging-imagepullbackoff.md)**
-   : Diagnosing image pull failures, verifying tags, authentication, and network issues.
+   Diagnose container registry authentication failures, image tag typos, and VPC network egress limits.
 
-4. **[Troubleshooting Database Connectivity](0004-database-connectivity-gke.md)**
-   : Diagnosing app-to-database connection failures, checking DNS, firewalls, Workload Identity, and the Cloud SQL Auth Proxy.
+4. **[Troubleshooting database connectivity on GKE](0004-database-connectivity-gke.md)**
+   Diagnose application-to-database connection errors, firewall rules, Workload Identity permissions, and Cloud SQL Auth Proxy sidecars.
 
 ---
 

@@ -1,12 +1,12 @@
-# Debugging Database Connectivity from GKE
+# Debugging database connectivity from GKE
 
-When an application running in a Google Kubernetes Engine (GKE) cluster fails to connect to a database (such as Cloud SQL, AlloyDB, or a self-hosted database on Compute Engine), the issue typically falls into one of three categories: Configuration, Networking, or Authentication.
+When an application running in a Google Kubernetes Engine (GKE) cluster fails to connect to a database (such as Cloud SQL, AlloyDB, or a database on Compute Engine), the error usually stems from configuration, network routing, or IAM authentication.
 
-Use this guide to systematically diagnose and fix database connection errors.
+Use this guide to diagnose and resolve database connection failures.
 
-## Diagnostic Flowchart
+---
 
-Follow this process to isolate the root cause of the connectivity failure:
+## Diagnostic flowchart
 
 ```mermaid
 flowchart TD
@@ -28,68 +28,85 @@ flowchart TD
     DNS --> Exec[Run `nslookup` inside Pod]
 ```
 
-## Step 1: Verify the Application Error
-First, look at the exact error message the application is throwing.
+---
+
+## Step 1: Verify the application error
+
+Inspect the stdout/stderr logs from the application pod:
 
 ```bash
 kubectl logs <pod-name> -n <namespace>
 ```
-- **"Unknown host" or "Name or service not known"**: Points to a DNS issue.
-- **"Connection timed out"**: Points to a network routing or firewall issue.
-- **"Connection refused"**: The network reached the destination, but the database port is closed or not listening on that IP.
-- **"Access denied" / "Authentication failed"**: Network is fine, but credentials or IAM permissions are incorrect.
+- **"Unknown host" or "Name or service not known":** DNS resolution failure.
+- **"Connection timed out":** Network routing issue, missing VPC firewall rule, or unrouted subnet.
+- **"Connection refused":** The destination host was reached, but no process is listening on that port or it is bound only to localhost.
+- **"Access denied" or "Authentication failed":** Network connectivity works, but database credentials or IAM permissions are invalid.
 
-## Step 2: Validate the Connection String
-Ensure the Pod is receiving the correct connection string, username, and password. These are typically injected via ConfigMaps and Secrets.
+---
+
+## Step 2: Validate the connection string
+
+Verify that the Pod receives the correct connection string, username, and password from ConfigMaps and Secrets:
 
 ```bash
 kubectl get secret db-credentials -o yaml
 # Decode the base64 value
-echo "YmFzZTY0c3RyaW5n" | base64 --decode
+echo "<base64string>" | base64 --decode
 ```
-Verify the IP address, port, and credentials match the database configuration.
+Verify the IP address, port, and credentials match the target database instance.
 
-## Step 3: Network Diagnostics from the Pod
-Exec into the pod (or use an ephemeral debug container) to test the connection exactly as the application experiences it.
+---
+
+## Step 3: Network diagnostics from the pod
+
+Exec into the pod (or an ephemeral debug container) to test connectivity directly from the Pod network namespace:
 
 ```bash
 kubectl exec -it <pod-name> -- /bin/sh
 ```
 
-**1. Test DNS Resolution:**
+**1. Test DNS resolution:**
 ```bash
 nslookup <database-hostname>
 ```
-If this fails, ensure the Kubernetes CoreDNS is functioning, or verify the Cloud DNS configuration if using a private GCP DNS zone.
+If this fails, check CoreDNS pods in `kube-system`, or verify Cloud DNS private zone bindings.
 
-**2. Test Port Connectivity:**
-Use `nc` (netcat), `telnet`, or `curl` to check if the port is reachable.
+**2. Test port connectivity:**
 ```bash
 # Example for PostgreSQL (5432) or MySQL (3306)
 nc -zv <database-ip> 5432
 ```
 If the connection times out:
-- Check GCP VPC Firewall Rules (does the rule allow ingress from the GKE Pod CIDR?).
-- If using a Public IP for Cloud SQL, check the "Authorized Networks" tab in Cloud SQL.
-- If using Private Services Access (VPC Peering), ensure the GKE Pod ranges are correctly exported/imported.
+- Check GCP VPC Firewall Rules (verify ingress is permitted from the GKE Pod CIDR).
+- If using public IP on Cloud SQL, verify the GKE egress NAT IP is listed in "Authorized Networks".
+- If using Private Services Access (VPC Peering), verify that custom routes and Pod ranges are exported and imported across the peering connection.
 
-## Step 4: Authentication & Cloud SQL Auth Proxy (If Applicable)
-If connecting to Cloud SQL, the recommended method is using the **Cloud SQL Auth Proxy** as a sidecar container.
+---
 
-1. **Check Proxy Logs:**
-   If the proxy is failing, the app will get "Connection Refused" when trying to hit `127.0.0.1`.
+## Step 4: Authentication and Cloud SQL Auth Proxy
+
+When connecting to Cloud SQL, the standard setup runs the **Cloud SQL Auth Proxy** as a sidecar container:
+
+1. **Check proxy logs:**
+   If the proxy fails to authenticate or connect, the application receives `Connection Refused` when connecting to `127.0.0.1`:
    ```bash
    kubectl logs <pod-name> -c cloud-sql-proxy
    ```
 2. **Workload Identity:**
-   The proxy needs IAM permissions (`roles/cloudsql.client`). Verify Workload Identity is configured correctly:
+   The proxy requires the `roles/cloudsql.client` IAM role:
    - Does the Kubernetes Service Account (KSA) have the `iam.gke.io/gcp-service-account` annotation?
    - Does the GCP Service Account (GSA) have the `roles/iam.workloadIdentityUser` binding granting access to the KSA?
-   - Can you impersonate the GSA from the pod?
 
-## Step 5: Network Policies
-If your cluster uses Kubernetes Network Policies, ensure there isn't an egress rule blocking traffic from your application namespace to the database IP range.
+---
+
+## Step 5: Network policies
+
+Check if any Kubernetes NetworkPolicies in the namespace block egress to external IP ranges:
 
 ```bash
 kubectl get networkpolicies -n <namespace>
 ```
+
+---
+
+[← Troubleshooting ImagePullBackOff](./0003-debugging-imagepullbackoff.md) | [Debugging overview](./index.md)

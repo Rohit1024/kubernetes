@@ -1,42 +1,42 @@
-# 🐳 Docker Complete Cheatsheet
+# Docker complete cheatsheet
 
-> **Purpose:** Quick-reference for all Docker CLI commands, flags, and `grep` combos — built for interview prep and daily use.
+> **Purpose:** Reference guide for Docker CLI commands, flags, and grep patterns for operational troubleshooting and interviews.
 
 ---
 
-## Table of Contents
+## Table of contents
 
-1. [Global Flags (apply to any `docker` command)](#global-flags)
-2. [Container Lifecycle](#container-lifecycle)
-3. [Container Inspection & Monitoring](#container-inspection-monitoring)
-4. [Container Interaction](#container-interaction)
-5. [Image Commands](#image-commands)
-6. [Image Build & Dockerfile](#image-build-dockerfile)
-7. [Network Commands](#network-commands)
-8. [Volume Commands](#volume-commands)
+1. [Global flags (apply to any `docker` command)](#global-flags)
+2. [Container lifecycle](#container-lifecycle)
+3. [Container inspection and monitoring](#container-inspection-and-monitoring)
+4. [Container interaction](#container-interaction)
+5. [Image commands](#image-commands)
+6. [Image build and Dockerfile](#image-build-and-dockerfile)
+7. [Network commands](#network-commands)
+8. [Volume commands](#volume-commands)
 9. [Docker Compose](#docker-compose)
-10. [Docker System & Cleanup](#docker-system-cleanup)
-11. [Docker Registry & Login](#docker-registry-login)
-12. [Docker Context & Config](#docker-context-config)
-13. [Docker Swarm (Orchestration)](#docker-swarm-orchestration)
-14. [Docker Service (Swarm Services)](#docker-service-swarm-services)
-15. [Docker Stack (Swarm Stacks)](#docker-stack-swarm-stacks)
-16. [Docker Secret & Config (Swarm)](#docker-secret-config-swarm)
-17. [Docker Plugin](#docker-plugin)
-18. [Docker Checkpoint (Experimental)](#docker-checkpoint-experimental)
-19. [Docker Trust & Content Trust](#docker-trust-content-trust)
-20. [Docker Manifest (Multi-arch)](#docker-manifest-multi-arch)
-21. [Docker Buildx (Advanced Builds)](#docker-buildx-advanced-builds)
-22. [Docker Scout (Security)](#docker-scout-security)
-23. [Grep Combos with Docker](#grep-combos-with-docker)
-24. [One-Liners & Power Tricks](#one-liners-power-tricks)
-25. [Interview Quick-Fire Q&A](#interview-quick-fire-qa)
+10. [Docker system and cleanup](#docker-system-and-cleanup)
+11. [Docker registry and login](#docker-registry-and-login)
+12. [Docker context and config](#docker-context-and-config)
+13. [Docker Swarm orchestration](#docker-swarm-orchestration)
+14. [Docker service commands](#docker-service-commands)
+15. [Docker stack commands](#docker-stack-commands)
+16. [Docker secrets and configs](#docker-secrets-and-configs)
+17. [Docker plugin](#docker-plugin)
+18. [Docker checkpoint](#docker-checkpoint)
+19. [Docker trust and content trust](#docker-trust-and-content-trust)
+20. [Docker manifest](#docker-manifest)
+21. [Docker Buildx](#docker-buildx)
+22. [Docker Scout security](#docker-scout-security)
+23. [Grep combos with Docker](#grep-combos-with-docker)
+24. [One-liners and power tricks](#one-liners-and-power-tricks)
+25. [Interview quick-fire questions](#interview-quick-fire-questions)
 
 ---
 
-## Global Flags
+## Global flags
 
-These flags can be placed **before any subcommand** (e.g., `docker --debug ps`).
+These flags can be placed before any subcommand (for example, `docker --debug ps`).
 
 | Flag | Short | Description |
 |------|-------|-------------|
@@ -61,9 +61,9 @@ docker --context prod ps                   # Use a named context
 
 ---
 
-## Container Lifecycle
+## Container lifecycle
 
-### `docker run` — Create and start a container
+### `docker run`: Create and start a container
 
 ```bash
 docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
@@ -92,7 +92,7 @@ docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
 | `--cpu-shares` | `-c` | CPU shares (relative weight) |
 | `--gpus` | | GPU devices to add (`all` or device IDs) |
 | `--entrypoint` | | Override the default ENTRYPOINT |
-| `--link` | | Add link to another container (**legacy**, use networks) |
+| `--link` | | Add link to another container (legacy, use networks) |
 | `--add-host` | | Add custom host-to-IP mapping (`host:ip`) |
 | `--dns` | | Set custom DNS servers |
 | `--log-driver` | | Logging driver (e.g., `json-file`, `syslog`, `none`) |
@@ -105,13 +105,13 @@ docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
 | `--tmpfs` | | Mount a tmpfs directory |
 | `--pid` | | PID namespace to use |
 | `--ipc` | | IPC namespace to use |
-| `--init` | | Run an init inside the container (tini) |
+| `--init` | | Run an init process inside the container (tini) |
 | `--label` | `-l` | Set metadata label on the container |
 | `--platform` | | Set platform (`linux/amd64`, `linux/arm64`) |
 | `--pull` | | Pull image before running: `always`, `missing`, `never` |
 | `--sig-proxy` | | Proxy received signals to the process (default `true`) |
 | `--stop-signal` | | Signal to stop a container (default `SIGTERM`) |
-| `--stop-timeout` | | Timeout (seconds) to stop a container |
+| `--stop-timeout` | | Timeout in seconds to stop a container |
 | `--storage-opt` | | Storage driver options |
 | `--ulimit` | | Ulimit options (e.g., `nofile=1024:2048`) |
 | `--device` | | Add a host device to the container |
@@ -136,19 +136,18 @@ docker run -d --gpus all tensorflow/tensorflow:latest-gpu      # GPU access
 docker run --read-only --tmpfs /tmp --cap-drop ALL app         # Hardened container
 ```
 
-### `docker create` — Create a container without starting it
+### `docker create`: Create a container without starting it
 
 ```bash
 docker create [OPTIONS] IMAGE [COMMAND] [ARG...]
-# Same flags as `docker run`
 ```
 
-### `docker start` / `stop` / `restart` / `kill`
+### `docker start`, `stop`, `restart`, `kill`
 
-| Command | Key Flags | Description |
+| Command | Key flags | Description |
 |---------|-----------|-------------|
 | `docker start` | `-i` (interactive), `-a` (attach) | Start stopped container(s) |
-| `docker stop` | `-t` (timeout, default 10s) | Graceful stop (SIGTERM → SIGKILL) |
+| `docker stop` | `-t` (timeout, default 10s) | Graceful stop (SIGTERM then SIGKILL) |
 | `docker restart` | `-t` (timeout) | Stop then start |
 | `docker kill` | `-s` (signal, default SIGKILL) | Send signal to running container |
 
@@ -158,14 +157,14 @@ docker kill -s SIGUSR1 mycontainer
 docker restart mycontainer
 ```
 
-### `docker pause` / `unpause`
+### `docker pause` and `unpause`
 
 ```bash
 docker pause CONTAINER      # Freeze all processes (SIGSTOP via cgroups)
 docker unpause CONTAINER    # Resume
 ```
 
-### `docker rm` — Remove containers
+### `docker rm`: Remove containers
 
 | Flag | Description |
 |------|-------------|
@@ -175,8 +174,8 @@ docker unpause CONTAINER    # Resume
 
 ```bash
 docker rm mycontainer
-docker rm -f $(docker ps -aq)      # Force remove ALL containers
-docker rm -v mycontainer           # Also clean up anonymous volumes
+docker rm -f $(docker ps -aq)      # Force remove all containers
+docker rm -v mycontainer           # Clean up anonymous volumes
 ```
 
 ### `docker rename`
@@ -185,7 +184,7 @@ docker rm -v mycontainer           # Also clean up anonymous volumes
 docker rename OLD_NAME NEW_NAME
 ```
 
-### `docker update` — Update container configuration
+### `docker update`: Update container configuration
 
 | Flag | Description |
 |------|-------------|
@@ -209,9 +208,9 @@ docker wait CONTAINER     # Block until container stops, then print exit code
 
 ---
 
-## Container Inspection & Monitoring
+## Container inspection and monitoring
 
-### `docker ps` — List containers
+### `docker ps`: List containers
 
 | Flag | Short | Description |
 |------|-------|-------------|
@@ -220,7 +219,7 @@ docker wait CONTAINER     # Block until container stops, then print exit code
 | `--format` | | Pretty-print using Go template |
 | `--last` | `-n` | Show N last created containers |
 | `--latest` | `-l` | Show the latest created container |
-| `--no-trunc` | | Don't truncate output |
+| `--no-trunc` | | Do not truncate output |
 | `--quiet` | `-q` | Only display container IDs |
 | `--size` | `-s` | Display total file sizes |
 
@@ -234,11 +233,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 docker ps -s                                   # Show disk usage
 ```
 
-> [!TIP]
-> **Common filters for `docker ps -f`:**
-> `status` (created, restarting, running, paused, exited, dead), `name`, `id`, `label`, `ancestor` (image), `network`, `publish`/`expose` (port), `health`, `volume`, `before`/`since` (container).
-
-### `docker inspect` — Low-level info (JSON)
+### `docker inspect`: Low-level JSON inspection
 
 | Flag | Description |
 |------|-------------|
@@ -255,11 +250,11 @@ docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' mycontainer
 docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mycontainer
 ```
 
-### `docker logs` — Fetch container logs
+### `docker logs`: Fetch container logs
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--follow` | `-f` | Follow log output (like `tail -f`) |
+| `--follow` | `-f` | Follow log output |
 | `--tail` | `-n` | Number of lines from the end |
 | `--since` | | Show logs since timestamp (`2024-01-01T00:00:00`) or relative (`10m`) |
 | `--until` | | Show logs before timestamp |
@@ -275,20 +270,20 @@ docker logs -t mycontainer                 # With timestamps
 docker logs --since 2024-01-01 --until 2024-01-02 mycontainer
 ```
 
-### `docker top` — Running processes
+### `docker top`: Running processes
 
 ```bash
 docker top mycontainer
 docker top mycontainer -aux       # Pass ps flags
 ```
 
-### `docker stats` — Live resource usage
+### `docker stats`: Live resource usage
 
 | Flag | Description |
 |------|-------------|
 | `--all` / `-a` | Show all containers (not just running) |
-| `--no-stream` | Disable streaming (one snapshot) |
-| `--no-trunc` | Don't truncate output |
+| `--no-stream` | Disable streaming (single snapshot) |
+| `--no-trunc` | Do not truncate output |
 | `--format` | Go template format |
 
 ```bash
@@ -311,7 +306,7 @@ docker port mycontainer 80/tcp    # Specific port
 docker diff mycontainer    # Show filesystem changes (A=added, C=changed, D=deleted)
 ```
 
-### `docker events` — Real-time events from the daemon
+### `docker events`: Real-time daemon events
 
 | Flag | Description |
 |------|-------------|
@@ -329,9 +324,9 @@ docker events --since '2024-01-01'
 
 ---
 
-## Container Interaction
+## Container interaction
 
-### `docker exec` — Run command in running container
+### `docker exec`: Run command in running container
 
 | Flag | Short | Description |
 |------|-------|-------------|
@@ -353,7 +348,7 @@ docker exec -e MY_VAR=hello mycontainer env     # With env var
 docker exec -w /app mycontainer ls              # Set working dir
 ```
 
-### `docker attach` — Attach to running container's STDIO
+### `docker attach`: Attach to container STDIO
 
 | Flag | Description |
 |------|-------------|
@@ -367,22 +362,22 @@ docker attach mycontainer
 ```
 
 > [!WARNING]
-> `docker attach` connects to PID 1. If you type `exit`, the container **stops**. Use `exec` for a separate shell.
+> `docker attach` connects to PID 1. Typing `exit` stops the container. Use `exec` for a separate debugging shell.
 
-### `docker cp` — Copy files between container and host
+### `docker cp`: Copy files between container and host
 
 ```bash
-docker cp mycontainer:/app/log.txt ./log.txt      # Container → Host
-docker cp ./config.yml mycontainer:/app/config.yml # Host → Container
+docker cp mycontainer:/app/log.txt ./log.txt      # Container to Host
+docker cp ./config.yml mycontainer:/app/config.yml # Host to Container
 docker cp mycontainer:/app/data/ ./backup/         # Copy directory
 ```
 
 | Flag | Description |
 |------|-------------|
-| `-a`, `--archive` | Archive mode (copy all uid/gid information) |
+| `-a`, `--archive` | Archive mode (preserve uid/gid metadata) |
 | `-L`, `--follow-link` | Follow symlinks in source |
 
-### `docker export` / `docker import`
+### `docker export` and `docker import`
 
 ```bash
 docker export mycontainer > container.tar       # Export filesystem as tar
@@ -393,22 +388,19 @@ docker import container.tar myimage:v1          # Same
 docker import --change "ENV DEBUG=true" container.tar myimage:v1
 ```
 
-> [!NOTE]
-> `export`/`import` works on **containers** (flattened filesystem). For **images** with layers, use `save`/`load`.
-
 ---
 
-## Image Commands
+## Image commands
 
-### `docker images` / `docker image ls`
+### `docker images` and `docker image ls`
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--all` | `-a` | Show all images (including intermediates) |
+| `--all` | `-a` | Show all images (including intermediate layers) |
 | `--digests` | | Show digests |
-| `--filter` | `-f` | Filter (`dangling=true`, `reference=nginx`, `before=image`, `since=image`, `label=key=val`) |
+| `--filter` | `-f` | Filter (`dangling=true`, `reference=nginx`, `label=key=val`) |
 | `--format` | | Go template |
-| `--no-trunc` | | Don't truncate output |
+| `--no-trunc` | | Do not truncate output |
 | `--quiet` | `-q` | Only show image IDs |
 
 ```bash
@@ -457,7 +449,7 @@ docker tag myapp:latest myregistry.io/myapp:v1.0
 docker tag abc123 myapp:production        # Tag by image ID
 ```
 
-### `docker rmi` — Remove images
+### `docker rmi`: Remove images
 
 | Flag | Description |
 |------|-------------|
@@ -466,15 +458,15 @@ docker tag abc123 myapp:production        # Tag by image ID
 
 ```bash
 docker rmi nginx:latest
-docker rmi -f $(docker images -q)          # Remove ALL images
+docker rmi -f $(docker images -q)          # Remove all images
 docker rmi $(docker images -f "dangling=true" -q)   # Remove dangling
 ```
 
-### `docker history` — Image layer history
+### `docker history`: Image layer inspection
 
 | Flag | Description |
 |------|-------------|
-| `--no-trunc` | Don't truncate output |
+| `--no-trunc` | Do not truncate output |
 | `--format` | Go template |
 | `-q`, `--quiet` | Only show image IDs |
 | `-H`, `--human` | Human-readable sizes (default `true`) |
@@ -485,36 +477,32 @@ docker history --no-trunc nginx
 docker history --format "table {{.CreatedBy}}\t{{.Size}}" nginx
 ```
 
-### `docker save` / `docker load`
+### `docker save` and `docker load`
 
 ```bash
-docker save -o images.tar nginx:latest redis:latest   # Save image(s) to tar
-docker save nginx:latest | gzip > nginx.tar.gz        # Compressed
+docker save -o images.tar nginx:latest redis:latest   # Save images to tar
+docker save nginx:latest | gzip > nginx.tar.gz        # Compressed archive
 
 docker load -i images.tar                              # Load from tar
 docker load < nginx.tar.gz                             # From stdin
 ```
 
-> [!IMPORTANT]
-> `save`/`load` preserves **layers and metadata**. Use for offline image transfer.  
-> `export`/`import` flattens to a single layer. Use for container filesystem snapshots.
-
 ---
 
-## Image Build & Dockerfile
+## Image build and Dockerfile
 
 ### `docker build`
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--tag` | `-t` | Name and optionally tag (`name:tag`) |
+| `--tag` | `-t` | Name and tag (`name:tag`) |
 | `--file` | `-f` | Path to Dockerfile (default `./Dockerfile`) |
 | `--build-arg` | | Set build-time variable |
-| `--no-cache` | | Do not use cache when building |
+| `--no-cache` | | Do not use cache during build |
 | `--pull` | | Always pull a newer version of the base image |
 | `--target` | | Set the target build stage (multi-stage) |
 | `--platform` | | Set platform (`linux/amd64,linux/arm64`) |
-| `--progress` | | Set type of progress output (`auto`, `plain`, `tty`) |
+| `--progress` | | Progress output type (`auto`, `plain`, `tty`) |
 | `--secret` | | Expose a secret to the build |
 | `--ssh` | | SSH agent socket or keys |
 | `--cache-from` | | External cache source |
@@ -522,8 +510,7 @@ docker load < nginx.tar.gz                             # From stdin
 | `--output` / `-o` | | Output destination (`type=local,dest=./out`) |
 | `--network` | | Network mode for RUN instructions |
 | `--label` | | Set metadata label |
-| `--squash` | | Squash newly built layers into a single layer (**experimental**) |
-| `--compress` | | Compress build context using gzip |
+| `--compress` | | Compress build context with gzip |
 | `--rm` | | Remove intermediate containers (default `true`) |
 | `--force-rm` | | Always remove intermediate containers |
 | `--memory` / `-m` | | Memory limit for build |
@@ -542,16 +529,16 @@ docker build --platform linux/amd64,linux/arm64 -t myapp .
 docker build --secret id=mysecret,src=secret.txt -t myapp .
 ```
 
-### Dockerfile Instructions Reference
+### Dockerfile instructions reference
 
 | Instruction | Purpose | Example |
 |-------------|---------|---------|
 | `FROM` | Base image | `FROM node:20-alpine AS builder` |
 | `RUN` | Execute command during build | `RUN apt-get update && apt-get install -y curl` |
 | `CMD` | Default command (overridable) | `CMD ["node", "server.js"]` |
-| `ENTRYPOINT` | Main executable (not easily overridden) | `ENTRYPOINT ["python", "app.py"]` |
+| `ENTRYPOINT` | Main executable process | `ENTRYPOINT ["python", "app.py"]` |
 | `COPY` | Copy files from build context | `COPY --chown=node:node . /app` |
-| `ADD` | Copy + auto-extract tar + URL support | `ADD app.tar.gz /app` |
+| `ADD` | Copy, auto-extract tar, and fetch URLs | `ADD app.tar.gz /app` |
 | `WORKDIR` | Set working directory | `WORKDIR /app` |
 | `ENV` | Set environment variable | `ENV NODE_ENV=production` |
 | `ARG` | Build-time variable | `ARG VERSION=latest` |
@@ -564,24 +551,9 @@ docker build --secret id=mysecret,src=secret.txt -t myapp .
 | `STOPSIGNAL` | Signal to stop the container | `STOPSIGNAL SIGQUIT` |
 | `ONBUILD` | Trigger on downstream build | `ONBUILD COPY . /app` |
 
-> [!TIP]
-> **Multi-stage build pattern:**
-> ```dockerfile
-> FROM node:20 AS builder
-> WORKDIR /app
-> COPY package*.json ./
-> RUN npm ci
-> COPY . .
-> RUN npm run build
->
-> FROM node:20-alpine
-> COPY --from=builder /app/dist ./dist
-> CMD ["node", "dist/server.js"]
-> ```
-
 ---
 
-## Network Commands
+## Network commands
 
 ### `docker network` subcommands
 
@@ -620,24 +592,12 @@ docker network inspect mynet
 docker network connect mynet mycontainer
 docker network disconnect mynet mycontainer
 docker network rm mynet
-docker network prune                     # Remove ALL unused networks
-docker network prune --filter "until=24h"
+docker network prune
 ```
-
-### Network Drivers Summary
-
-| Driver | Scope | Use Case |
-|--------|-------|----------|
-| `bridge` | Single host | Default; isolated container-to-container communication |
-| `host` | Single host | Container shares host's network stack (no isolation) |
-| `none` | Single host | No networking |
-| `overlay` | Multi-host (Swarm) | Cross-host communication in Swarm |
-| `macvlan` | Single host | Assign MAC address; appear as physical device on network |
-| `ipvlan` | Single host | Similar to macvlan without unique MAC |
 
 ---
 
-## Volume Commands
+## Volume commands
 
 ### `docker volume` subcommands
 
@@ -649,44 +609,24 @@ docker network prune --filter "until=24h"
 | `docker volume rm` | Remove volume(s) |
 | `docker volume prune` | Remove all unused volumes |
 
-### `docker volume create` flags
+### Mount types comparison
 
-| Flag | Description |
-|------|-------------|
-| `--driver` / `-d` | Volume driver (default `local`) |
-| `--label` | Set metadata |
-| `--opt` / `-o` | Driver-specific options |
-| `--name` | Volume name |
-
-```bash
-docker volume create mydata
-docker volume create --driver local --opt type=nfs --opt o=addr=10.0.0.1,rw --opt device=:/export/data nfs_vol
-docker volume ls
-docker volume ls --filter "dangling=true"
-docker volume inspect mydata
-docker volume rm mydata
-docker volume prune                       # Remove ALL unused volumes
-docker volume prune --filter "label!=keep"
-```
-
-### Mount Types Comparison
-
-| Type | Syntax | Use Case |
+| Type | Syntax | Use case |
 |------|--------|----------|
 | **Volume** | `-v mydata:/app/data` or `--mount type=volume,src=mydata,dst=/app/data` | Persistent data managed by Docker |
-| **Bind** | `-v /host/path:/container/path` or `--mount type=bind,src=/host/path,dst=/container/path` | Share host files with container |
+| **Bind** | `-v /host/path:/container/path` or `--mount type=bind,src=/host/path,dst=/container/path` | Direct host filesystem access |
 | **tmpfs** | `--tmpfs /app/tmp` or `--mount type=tmpfs,dst=/app/tmp` | In-memory temporary storage |
 
 ---
 
 ## Docker Compose
 
-### Core Commands
+### Core commands
 
 | Command | Description |
 |---------|-------------|
 | `docker compose up` | Create and start containers |
-| `docker compose down` | Stop and remove containers, networks |
+| `docker compose down` | Stop and remove containers and networks |
 | `docker compose build` | Build or rebuild services |
 | `docker compose start` | Start existing containers |
 | `docker compose stop` | Stop running containers |
@@ -704,76 +644,28 @@ docker volume prune --filter "label!=keep"
 | `docker compose top` | Display running processes |
 | `docker compose images` | List images used by services |
 | `docker compose port` | Print public port for a port binding |
-| `docker compose pause` / `unpause` | Pause/Unpause services |
+| `docker compose pause` / `unpause` | Pause or unpause services |
 | `docker compose events` | Receive real-time events |
 | `docker compose cp` | Copy files between service containers and host |
 | `docker compose ls` | List running compose projects |
-| `docker compose watch` | Watch build context and rebuild/sync on changes |
-| `docker compose alpha` | Experimental commands |
-
-### `docker compose up` flags
-
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--detach` | `-d` | Run in background |
-| `--build` | | Build images before starting |
-| `--force-recreate` | | Recreate containers even if unchanged |
-| `--no-recreate` | | Don't recreate if already exists |
-| `--no-build` | | Don't build images |
-| `--no-start` | | Create containers but don't start |
-| `--remove-orphans` | | Remove containers for undefined services |
-| `--scale` | | Scale SERVICE to NUM instances |
-| `--timeout` | `-t` | Shutdown timeout |
-| `--wait` | | Wait for services to be healthy |
-| `--pull` | | Pull image before running: `always`, `missing`, `never` |
-| `--abort-on-container-exit` | | Stop all containers if any container stops |
-| `--no-deps` | | Don't start linked services |
-| `--no-log-prefix` | | Don't prefix log output with service name |
-| `--quiet-pull` | | Pull without printing progress |
-| `--timestamps` | | Show timestamps |
-
-### `docker compose down` flags
-
-| Flag | Description |
-|------|-------------|
-| `-v`, `--volumes` | Remove named volumes declared in `volumes` section |
-| `--rmi` | Remove images: `all` or `local` |
-| `--remove-orphans` | Remove orphaned containers |
-| `-t`, `--timeout` | Shutdown timeout |
-
-### Compose Global Flags (before subcommand)
-
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--file` | `-f` | Compose file path (repeatable) |
-| `--project-name` | `-p` | Project name |
-| `--project-directory` | | Alternate working directory |
-| `--profile` | | Activate a profile |
-| `--env-file` | | Env file path |
-| `--progress` | | Progress output type |
-| `--ansi` | | Control ANSI output |
-| `--no-ansi` | | Do not print ANSI control characters |
-| `--verbose` | | Show more output |
-| `--parallel` | | Max parallelism for engine calls |
+| `docker compose watch` | Watch build context and rebuild or sync on changes |
 
 ```bash
 docker compose up -d                                  # Start in background
 docker compose up -d --build                          # Rebuild & start
 docker compose up -d --scale web=3                    # Scale web to 3 replicas
-docker compose down -v                                # Stop + remove volumes
-docker compose down --rmi all                         # Stop + remove images
+docker compose down -v                                # Stop and remove volumes
+docker compose down --rmi all                         # Stop and remove images
 docker compose logs -f web                            # Follow web service logs
 docker compose exec web bash                          # Shell into web service
 docker compose run --rm web npm test                  # One-off command
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d  # Override files
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 docker compose config                                 # Validate compose file
-docker compose ps --format json                       # JSON output
-docker compose watch                                  # Dev mode with hot-reload
 ```
 
 ---
 
-## Docker System & Cleanup
+## Docker system and cleanup
 
 ### `docker system` subcommands
 
@@ -782,90 +674,32 @@ docker compose watch                                  # Dev mode with hot-reload
 | `docker system df` | Show Docker disk usage |
 | `docker system prune` | Remove unused data |
 | `docker system info` | Display system-wide information |
-| `docker system events` | Real-time events (alias for `docker events`) |
-
-### `docker system prune` flags
-
-| Flag | Description |
-|------|-------------|
-| `-a`, `--all` | Remove all unused images, not just dangling |
-| `-f`, `--force` | Do not prompt for confirmation |
-| `--volumes` | Also prune volumes |
-| `--filter` | Filter (e.g., `until=24h`, `label=temp`) |
+| `docker system events` | Real-time events |
 
 ```bash
 docker system df                         # Disk usage summary
-docker system df -v                      # Verbose (per-image/container/volume)
+docker system df -v                      # Verbose breakdown
 docker system prune                      # Remove dangling images, stopped containers, unused networks
-docker system prune -a --volumes -f      # Nuclear clean (everything unused, no prompt)
-docker system prune --filter "until=168h"  # Older than 1 week
-docker system info                       # Full daemon info
-```
-
-### Individual Prune Commands
-
-```bash
-docker container prune [-f] [--filter]   # Remove stopped containers
-docker image prune [-a] [-f] [--filter]  # Remove unused images
-docker network prune [-f] [--filter]     # Remove unused networks
-docker volume prune [-f] [--filter]      # Remove unused volumes
-docker builder prune [-a] [-f]           # Remove build cache
+docker system prune -a --volumes -f      # Remove all unused containers, images, and volumes
 ```
 
 ---
 
-## Docker Registry & Login
-
-### `docker login` / `docker logout`
-
-| Flag | Description |
-|------|-------------|
-| `-u`, `--username` | Username |
-| `-p`, `--password` | Password (insecure, prefer `--password-stdin`) |
-| `--password-stdin` | Read password from stdin |
+## Docker registry and login
 
 ```bash
-docker login                                              # Docker Hub (interactive)
-docker login -u myuser --password-stdin < password.txt    # Secure login
+docker login                                              # Interactive login to Docker Hub
+docker login -u myuser --password-stdin < password.txt    # Stdin login
 docker login myregistry.io                                # Custom registry
-docker logout
 docker logout myregistry.io
 ```
 
-### `docker search` — Search Docker Hub
-
-| Flag | Description |
-|------|-------------|
-| `--filter` / `-f` | Filter (`stars=50`, `is-official=true`, `is-automated=true`) |
-| `--format` | Go template |
-| `--limit` | Max number of results (default 25) |
-| `--no-trunc` | Don't truncate output |
-
-```bash
-docker search nginx
-docker search --filter "is-official=true" --filter "stars=100" nginx
-docker search --limit 5 --format "table {{.Name}}\t{{.StarCount}}\t{{.IsOfficial}}" redis
-```
-
 ---
 
-## Docker Context & Config
-
-### `docker context` subcommands
-
-| Command | Description |
-|---------|-------------|
-| `docker context create` | Create a new context |
-| `docker context ls` | List contexts |
-| `docker context inspect` | Inspect a context |
-| `docker context use` | Switch to a context |
-| `docker context rm` | Remove a context |
-| `docker context update` | Update a context |
-| `docker context export` / `import` | Export/import contexts |
+## Docker context and config
 
 ```bash
 docker context create remote --docker "host=ssh://user@remote-host"
-docker context create ecs myecs --from-env          # AWS ECS context
 docker context ls
 docker context use remote
 docker context inspect remote
@@ -874,96 +708,19 @@ docker context rm remote
 
 ---
 
-## Docker Swarm (Orchestration)
-
-### `docker swarm` subcommands
-
-| Command | Key Flags | Description |
-|---------|-----------|-------------|
-| `docker swarm init` | `--advertise-addr`, `--listen-addr`, `--force-new-cluster`, `--availability` | Initialize a Swarm |
-| `docker swarm join` | `--token` | Join as worker or manager |
-| `docker swarm leave` | `-f` (force) | Leave the Swarm |
-| `docker swarm update` | `--cert-expiry`, `--task-history-limit`, `--autolock` | Update Swarm settings |
-| `docker swarm join-token` | `-q` (quiet), `--rotate` | Manage join tokens |
-| `docker swarm ca` | `--rotate`, `--cert-expiry` | Manage root CA |
-| `docker swarm unlock` | | Unlock a locked manager |
-| `docker swarm unlock-key` | `-q`, `--rotate` | Manage unlock key |
+## Docker Swarm orchestration
 
 ```bash
 docker swarm init --advertise-addr 192.168.1.10
 docker swarm join --token SWMTKN-xxx 192.168.1.10:2377
 docker swarm join-token worker            # Print worker join command
 docker swarm join-token manager           # Print manager join command
-docker swarm join-token --rotate worker   # Rotate token
-docker swarm leave -f                     # Force leave (for managers)
-```
-
-### `docker node` subcommands
-
-| Command | Description |
-|---------|-------------|
-| `docker node ls` | List nodes in the Swarm |
-| `docker node inspect` | Inspect a node |
-| `docker node update` | Update node (role, availability, labels) |
-| `docker node promote` / `demote` | Change role |
-| `docker node rm` | Remove node from Swarm |
-| `docker node ps` | List tasks running on a node |
-
-```bash
-docker node ls
-docker node inspect self --pretty
-docker node update --availability drain worker1   # Drain node for maintenance
-docker node update --label-add zone=us-east worker1
-docker node promote worker1                       # Promote to manager
-docker node demote manager2                       # Demote to worker
-docker node rm worker1                            # Remove node
-docker node ps                                    # Tasks on current node
+docker swarm leave -f                     # Force leave
 ```
 
 ---
 
-## Docker Service (Swarm Services)
-
-### `docker service` subcommands
-
-| Command | Description |
-|---------|-------------|
-| `docker service create` | Create a new service |
-| `docker service ls` | List services |
-| `docker service inspect` | Inspect a service |
-| `docker service ps` | List tasks of a service |
-| `docker service logs` | Fetch service logs |
-| `docker service update` | Update a service |
-| `docker service scale` | Scale one or more services |
-| `docker service rm` | Remove service(s) |
-| `docker service rollback` | Rollback to previous spec |
-
-### `docker service create` key flags
-
-| Flag | Description |
-|------|-------------|
-| `--name` | Service name |
-| `--replicas` | Number of tasks/replicas |
-| `--mode` | `replicated` (default) or `global` |
-| `--publish` / `-p` | Publish port |
-| `--network` | Attach to network |
-| `--env` / `-e` | Set environment variable |
-| `--mount` | Attach mount |
-| `--secret` | Attach a secret |
-| `--config` | Attach a config |
-| `--constraint` | Placement constraint |
-| `--placement-pref` | Placement preference |
-| `--limit-cpu` / `--limit-memory` | Resource limits |
-| `--reserve-cpu` / `--reserve-memory` | Resource reservations |
-| `--update-parallelism` | Max simultaneous updates |
-| `--update-delay` | Delay between updates |
-| `--update-failure-action` | Action on update failure: `pause`, `continue`, `rollback` |
-| `--rollback-parallelism` | Max simultaneous rollbacks |
-| `--restart-condition` | `none`, `on-failure`, `any` |
-| `--restart-max-attempts` | Max restart attempts |
-| `--health-cmd` | Health check command |
-| `--with-registry-auth` | Send registry auth to Swarm agents |
-| `--endpoint-mode` | `vip` (default) or `dnsrr` |
+## Docker service commands
 
 ```bash
 docker service create --name web --replicas 3 -p 80:80 nginx
@@ -972,22 +729,13 @@ docker service ps web
 docker service logs -f web
 docker service scale web=5
 docker service update --image nginx:1.25 web
-docker service update --env-add NEW_VAR=val --env-rm OLD_VAR web
 docker service rollback web
 docker service rm web
 ```
 
 ---
 
-## Docker Stack (Swarm Stacks)
-
-| Command | Description |
-|---------|-------------|
-| `docker stack deploy` | Deploy or update a stack |
-| `docker stack ls` | List stacks |
-| `docker stack ps` | List tasks in a stack |
-| `docker stack services` | List services in a stack |
-| `docker stack rm` | Remove a stack |
+## Docker stack commands
 
 ```bash
 docker stack deploy -c docker-compose.yml mystack
@@ -999,60 +747,21 @@ docker stack rm mystack
 
 ---
 
-## Docker Secret & Config (Swarm)
-
-### Secrets
-
-| Command | Description |
-|---------|-------------|
-| `docker secret create` | Create from file or STDIN |
-| `docker secret ls` | List secrets |
-| `docker secret inspect` | Inspect (metadata only, not the value) |
-| `docker secret rm` | Remove a secret |
+## Docker secrets and configs
 
 ```bash
-echo "s3cr3t" | docker secret create db_password -
-docker secret create tls_cert ./cert.pem
+echo "db-secret-value" | docker secret create db_password -
 docker secret ls
-docker secret inspect db_password
 docker secret rm db_password
 
-# Use in service:
-docker service create --name web --secret db_password nginx
-# Secret available at /run/secrets/db_password inside the container
-```
-
-### Configs
-
-| Command | Description |
-|---------|-------------|
-| `docker config create` | Create a config |
-| `docker config ls` | List configs |
-| `docker config inspect` | Inspect (shows content!) |
-| `docker config rm` | Remove a config |
-
-```bash
 docker config create nginx_conf ./nginx.conf
 docker config ls
-docker config inspect nginx_conf
-docker service create --name web --config source=nginx_conf,target=/etc/nginx/nginx.conf nginx
+docker config rm nginx_conf
 ```
 
 ---
 
-## Docker Plugin
-
-| Command | Description |
-|---------|-------------|
-| `docker plugin install` | Install a plugin |
-| `docker plugin ls` | List plugins |
-| `docker plugin inspect` | Inspect a plugin |
-| `docker plugin enable` / `disable` | Enable/disable a plugin |
-| `docker plugin rm` | Remove a plugin |
-| `docker plugin create` | Create a plugin from a rootfs |
-| `docker plugin push` | Push plugin to registry |
-| `docker plugin set` | Change plugin settings |
-| `docker plugin upgrade` | Upgrade a plugin |
+## Docker plugin
 
 ```bash
 docker plugin install vieux/sshfs
@@ -1063,59 +772,27 @@ docker plugin rm vieux/sshfs
 
 ---
 
-## Docker Checkpoint (Experimental)
-
-| Command | Description |
-|---------|-------------|
-| `docker checkpoint create` | Create a checkpoint |
-| `docker checkpoint ls` | List checkpoints |
-| `docker checkpoint rm` | Delete a checkpoint |
+## Docker checkpoint
 
 ```bash
 docker checkpoint create mycontainer mycp1
-docker start --checkpoint mycp1 mycontainer   # Restore from checkpoint
+docker start --checkpoint mycp1 mycontainer
 ```
-
-> [!NOTE]
-> Requires `--experimental` daemon flag and CRIU installed.
 
 ---
 
-## Docker Trust & Content Trust
-
-### `docker trust` subcommands
-
-| Command | Description |
-|---------|-------------|
-| `docker trust inspect` | Inspect signature data |
-| `docker trust sign` | Sign an image |
-| `docker trust revoke` | Revoke trust for an image |
-| `docker trust key generate` | Generate a signing key |
-| `docker trust key load` | Load a private key |
-| `docker trust signer add` | Add a signer |
-| `docker trust signer remove` | Remove a signer |
+## Docker trust and content trust
 
 ```bash
-# Enable Docker Content Trust
 export DOCKER_CONTENT_TRUST=1
-
 docker trust inspect --pretty nginx:latest
 docker trust sign myrepo/myimage:v1
 docker trust revoke myrepo/myimage:v1
-docker trust key generate mykey
 ```
 
 ---
 
-## Docker Manifest (Multi-arch)
-
-| Command | Description |
-|---------|-------------|
-| `docker manifest create` | Create a manifest list |
-| `docker manifest inspect` | Inspect a manifest |
-| `docker manifest push` | Push a manifest list |
-| `docker manifest annotate` | Add platform info to a manifest entry |
-| `docker manifest rm` | Remove a local manifest list |
+## Docker manifest
 
 ```bash
 docker manifest create myrepo/app:latest \
@@ -1126,74 +803,26 @@ docker manifest annotate myrepo/app:latest myrepo/app:arm64 \
   --os linux --arch arm64
 
 docker manifest push myrepo/app:latest
-docker manifest inspect myrepo/app:latest
 ```
 
 ---
 
-## Docker Buildx (Advanced Builds)
-
-| Command | Description |
-|---------|-------------|
-| `docker buildx create` | Create a new builder instance |
-| `docker buildx use` | Switch the current builder |
-| `docker buildx ls` | List builder instances |
-| `docker buildx inspect` | Inspect a builder |
-| `docker buildx build` | Build with BuildKit |
-| `docker buildx bake` | Build from HCL/JSON/Compose file |
-| `docker buildx rm` | Remove a builder |
-| `docker buildx stop` | Stop a builder |
-| `docker buildx prune` | Remove build cache |
-| `docker buildx imagetools` | Inspect/create images in registry |
-| `docker buildx du` | Disk usage |
-
-### `docker buildx build` additional flags
-
-| Flag | Description |
-|------|-------------|
-| `--builder` | Override current builder |
-| `--load` | Shorthand for `--output=type=docker` (load into local daemon) |
-| `--push` | Shorthand for `--output=type=registry` |
-| `--platform` | Target platform(s) for multi-arch |
-| `--provenance` | Attach provenance attestation |
-| `--sbom` | Attach SBOM attestation |
-| `--attest` | Attestation parameters |
+## Docker Buildx
 
 ```bash
 docker buildx create --name mybuilder --use
 docker buildx inspect --bootstrap
 
-# Multi-platform build & push
+# Multi-platform build and push
 docker buildx build --platform linux/amd64,linux/arm64 -t myrepo/app:v1 --push .
 
-# Build and load into local daemon
+# Build and load locally
 docker buildx build --load -t myapp:test .
-
-# Build with provenance
-docker buildx build --provenance=true --sbom=true -t myapp:v1 --push .
-
-docker buildx ls
-docker buildx rm mybuilder
-docker buildx prune -a -f
 ```
 
 ---
 
-## Docker Scout (Security)
-
-| Command | Description |
-|---------|-------------|
-| `docker scout quickview` | Quick overview of image vulnerabilities |
-| `docker scout cves` | Display CVEs identified in an image |
-| `docker scout recommendations` | Display recommendations |
-| `docker scout compare` | Compare two images |
-| `docker scout sbom` | Generate SBOM for an image |
-| `docker scout attestation` | Manage attestations |
-| `docker scout enroll` | Enroll an organization |
-| `docker scout repo` | Manage repos |
-| `docker scout environment` | Manage environments |
-| `docker scout watch` | Watch repos for changes |
-| `docker scout cache` | Manage local cache |
+## Docker Scout security
 
 ```bash
 docker scout quickview nginx:latest
@@ -1201,217 +830,47 @@ docker scout cves nginx:latest
 docker scout cves --only-severity critical,high nginx:latest
 docker scout recommendations nginx:latest
 docker scout compare --to nginx:1.24 nginx:1.25
-docker scout sbom nginx:latest
 ```
 
 ---
 
-## Grep Combos with Docker
+## Grep combos with Docker
 
-### Container Grep Patterns
+### Container grep patterns
 
 ```bash
-# Filter running containers by name pattern
+# Filter running containers by name
 docker ps | grep "web"
 
 # Find containers using a specific image
 docker ps -a | grep "nginx"
 
-# Find containers with a specific status
+# Find exited containers
 docker ps -a | grep "Exited"
-docker ps -a | grep "Up"
 
-# Get only container IDs matching a pattern
+# Extract container IDs matching a pattern
 docker ps -a | grep "web" | awk '{print $1}'
 
-# Find containers by port
+# Find containers listening on a specific port
 docker ps | grep "8080"
-docker ps | grep "0.0.0.0:80"
-
-# Count running containers matching pattern
-docker ps | grep -c "web"
-
-# Find containers NOT matching pattern
-docker ps | grep -v "pause"
-
-# Case-insensitive search
-docker ps -a | grep -i "NGINX"
 ```
 
-### Image Grep Patterns
-
-```bash
-# Find images by name pattern
-docker images | grep "node"
-
-# Find images with specific tag
-docker images | grep "alpine"
-
-# Find large images (look for GB)
-docker images | grep "GB"
-
-# Find images without a tag (<none>)
-docker images | grep "<none>"
-
-# List image IDs matching pattern
-docker images | grep "myapp" | awk '{print $3}'
-
-# Find images created recently
-docker images | grep "minutes ago"
-docker images | grep "hours ago"
-
-# Count images matching pattern
-docker images | grep -c "python"
-```
-
-### Log Grep Patterns
+### Log grep patterns
 
 ```bash
 # Search for errors in container logs
 docker logs mycontainer 2>&1 | grep -i "error"
 
 # Search for specific HTTP status codes
-docker logs mycontainer 2>&1 | grep "HTTP/1.1\" 500"
 docker logs mycontainer 2>&1 | grep -E "HTTP/1\.[01]\" [45][0-9]{2}"
 
-# Count occurrences of a pattern
-docker logs mycontainer 2>&1 | grep -c "ERROR"
-
-# Show context around matches
-docker logs mycontainer 2>&1 | grep -A 3 -B 1 "Exception"
-
-# Grep with timestamps
-docker logs -t mycontainer 2>&1 | grep "error"
-
-# Follow logs with grep (real-time filtering)
+# Follow logs with unbuffered line filtering
 docker logs -f mycontainer 2>&1 | grep --line-buffered "error"
-
-# Search across a time range
-docker logs --since 1h mycontainer 2>&1 | grep "timeout"
-
-# Multiple patterns (OR)
-docker logs mycontainer 2>&1 | grep -E "error|warning|fatal"
-
-# Exclude patterns
-docker logs mycontainer 2>&1 | grep -v "healthcheck"
-
-# Extract IPs from logs
-docker logs mycontainer 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'
 ```
-
-### Inspect Grep Patterns
-
-```bash
-# Search environment variables
-docker inspect mycontainer | grep -A 1 "Env"
-
-# Find IP address
-docker inspect mycontainer | grep "IPAddress"
-
-# Find mounted volumes
-docker inspect mycontainer | grep -A 5 "Mounts"
-
-# Find port bindings
-docker inspect mycontainer | grep -A 5 "PortBindings"
-
-# Check restart policy
-docker inspect mycontainer | grep -A 3 "RestartPolicy"
-
-# Find image hash
-docker inspect mycontainer | grep "Image"
-
-# Check health status
-docker inspect mycontainer | grep -i "health"
-
-# Find network name
-docker inspect mycontainer | grep "NetworkMode"
-```
-
-### Network & Volume Grep Patterns
-
-```bash
-# Find specific network
-docker network ls | grep "bridge"
-
-# Find unused volumes
-docker volume ls | grep -v "VOLUME"
-
-# Find network by driver
-docker network ls | grep "overlay"
-
-# Check which containers are on a network
-docker network inspect mynet | grep "Name"
-```
-
-### Docker Compose + Grep
-
-```bash
-# Find services in a specific state
-docker compose ps | grep "running"
-docker compose ps | grep "exited"
-
-# Search compose logs for errors
-docker compose logs 2>&1 | grep -i "error"
-
-# Filter logs for specific service
-docker compose logs web 2>&1 | grep "404"
-
-# Follow all service logs filtered
-docker compose logs -f 2>&1 | grep --line-buffered "ERROR"
-```
-
-### Advanced Grep Patterns
-
-```bash
-# Regex: Find containers with port mappings
-docker ps | grep -E "0\.0\.0\.0:[0-9]+"
-
-# Perl-compatible regex (PCRE): Extract container names
-docker ps --format '{{.Names}}' | grep -P "web-\d+"
-
-# Invert match + count
-docker ps -a | grep -vc "Up"          # Count stopped containers
-
-# Recursive grep in container filesystem
-docker exec mycontainer grep -r "password" /app/config/
-
-# Grep docker-compose.yml for service dependencies
-grep -A 5 "depends_on" docker-compose.yml
-
-# Find Dockerfiles with specific base images
-grep -r "FROM.*python" . --include="Dockerfile*"
-
-# Find exposed ports in Dockerfiles
-grep -r "EXPOSE" . --include="Dockerfile*"
-
-# Check which containers are using a specific volume
-docker ps -a --filter volume=mydata --format '{{.Names}}'
-```
-
-### Grep Flag Quick Reference
-
-| Flag | Description | Example |
-|------|-------------|---------|
-| `-i` | Case-insensitive | `grep -i "error"` |
-| `-v` | Invert match (exclude) | `grep -v "healthcheck"` |
-| `-c` | Count matches | `grep -c "ERROR"` |
-| `-n` | Show line numbers | `grep -n "error" file` |
-| `-l` | Show only filenames | `grep -rl "FROM" .` |
-| `-r` | Recursive search | `grep -r "pattern" /dir` |
-| `-E` | Extended regex (ERE) | `grep -E "error\|warn"` |
-| `-P` | Perl-compatible regex | `grep -P "\d{3}"` |
-| `-o` | Show only matched part | `grep -oE '[0-9.]+'` |
-| `-A N` | N lines after match | `grep -A 3 "error"` |
-| `-B N` | N lines before match | `grep -B 2 "error"` |
-| `-C N` | N lines around match | `grep -C 5 "error"` |
-| `-w` | Match whole word | `grep -w "error"` |
-| `-x` | Match whole line | `grep -x "exact line"` |
-| `--color` | Highlight matches | `grep --color "pattern"` |
-| `--line-buffered` | Flush output per line (for pipes) | `docker logs -f c1 \| grep --line-buffered "err"` |
 
 ---
 
-## One-Liners & Power Tricks
+## One-liners and power tricks
 
 ```bash
 # Stop all running containers
@@ -1420,103 +879,36 @@ docker stop $(docker ps -q)
 # Remove all stopped containers
 docker rm $(docker ps -aq -f status=exited)
 
-# Remove all images
-docker rmi $(docker images -q)
-
 # Remove dangling images
 docker rmi $(docker images -f "dangling=true" -q)
 
-# Remove all unused (dangling + unreferenced) images
-docker image prune -a -f
-
-# Kill all running containers
-docker kill $(docker ps -q)
-
-# Get IP of a running container
+# Extract IP address of a running container
 docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' CONTAINER
 
-# Get container ID by name
-docker inspect -f '{{.Id}}' CONTAINER_NAME
-
-# Run and remove after exit
-docker run --rm -it alpine sh
-
-# Copy file from stopped container
-docker cp $(docker create --name tmp IMAGE):/path/to/file ./file && docker rm tmp
-
-# Inspect all env vars
-docker exec CONTAINER env
-
-# Watch resource usage
-watch docker stats --no-stream
-
-# Check image layers & size
-docker history --no-trunc IMAGE
-
-# Export all images to tar files
-docker images --format '{{.Repository}}:{{.Tag}}' | xargs -I {} sh -c 'docker save {} > $(echo {} | tr "/" "_" | tr ":" "_").tar'
-
-# Test a Dockerfile without building
+# Test a Dockerfile syntax without building
 docker build --check .
 
-# Run a container with host networking
-docker run --rm --network host curlimages/curl http://localhost:8080
-
-# Attach to all logs at once (compose)
-docker compose logs -f --tail=0
-
-# Find which process in container is using most memory
-docker exec CONTAINER ps aux --sort=-%mem | head
-
-# Quick web server from current directory
-docker run --rm -v $(pwd):/usr/share/nginx/html:ro -p 8080:80 nginx
-
-# Run a database for quick testing
+# Quick ephemeral test database
 docker run --rm -d -p 5432:5432 -e POSTGRES_PASSWORD=pass postgres:16-alpine
-docker run --rm -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=pass mysql:8
-docker run --rm -d -p 6379:6379 redis:alpine
-docker run --rm -d -p 27017:27017 mongo:7
 ```
 
 ---
 
-## Interview Quick-Fire Q&A
+## Interview quick-fire questions
 
 | # | Question | Answer |
 |---|----------|--------|
-| 1 | **`CMD` vs `ENTRYPOINT`?** | `CMD` = default args (easily overridden). `ENTRYPOINT` = main executable (use `--entrypoint` to override). Best practice: use together — `ENTRYPOINT ["python"]` + `CMD ["app.py"]` |
-| 2 | **`COPY` vs `ADD`?** | `COPY` = simple copy. `ADD` = copy + auto-extract tar + fetch URLs. **Prefer `COPY`** for clarity. |
-| 3 | **`docker stop` vs `docker kill`?** | `stop` sends SIGTERM (graceful, 10s default), then SIGKILL. `kill` sends SIGKILL immediately. |
-| 4 | **`docker run` vs `docker exec`?** | `run` = create **new** container. `exec` = run command in **existing** running container. |
-| 5 | **Dangling image?** | Image with no tag (`<none>:<none>`). Caused by rebuilds. Clean with `docker image prune`. |
-| 6 | **Named volume vs bind mount?** | Named volume = Docker-managed, portable, in `/var/lib/docker/volumes`. Bind mount = host path directly mounted. |
-| 7 | **`bridge` vs `host` network?** | `bridge` = isolated network with port mapping. `host` = shares host's network (no isolation, no port mapping needed). |
-| 8 | **Multi-stage build?** | Multiple `FROM` statements. Build in one stage, copy artifacts to a minimal final stage. Reduces image size. |
-| 9 | **`docker save` vs `docker export`?** | `save` = image with layers → `load`. `export` = container filesystem (flat) → `import`. |
-| 10 | **Restart policies?** | `no` (default), `always`, `unless-stopped` (not after manual stop), `on-failure[:max-retries]`. |
-| 11 | **Docker layer caching?** | Each Dockerfile instruction creates a layer. Unchanged layers are cached. **Order matters**: put rarely-changing instructions first. |
-| 12 | **`.dockerignore`?** | Like `.gitignore` for build context. Excludes files from `COPY`/`ADD`. Reduces build time and image size. |
-| 13 | **What is BuildKit?** | Next-gen build engine (default since Docker 23.0). Parallel builds, better caching, secret mounts, SSH forwarding. |
-| 14 | **Docker Compose vs Swarm vs K8s?** | Compose = single-host multi-container. Swarm = built-in Docker orchestration. K8s = industry-standard orchestration (more complex, more features). |
-| 15 | **Container vs VM?** | Container = shares host kernel, lightweight, fast. VM = full OS + hypervisor, heavier, stronger isolation. |
-| 16 | **Docker image layers?** | Read-only layers stacked. Each instruction = layer. Container adds a thin R/W layer on top (union filesystem). |
-| 17 | **Health checks?** | `HEALTHCHECK CMD curl -f http://localhost/ \|\| exit 1`. States: `starting`, `healthy`, `unhealthy`. Restart policies can act on health. |
-| 18 | **What's `--init`?** | Adds `tini` as PID 1. Properly reaps zombie processes and forwards signals. Use for apps that don't handle signals. |
-| 19 | **Overlay network?** | Multi-host networking in Swarm. Uses VXLAN. Containers on different hosts can communicate as if on same LAN. |
-| 20 | **Docker Content Trust?** | `DOCKER_CONTENT_TRUST=1`. Ensures images are signed and verified. Uses Notary for signing. |
+| 1 | **`CMD` vs `ENTRYPOINT`?** | `CMD` sets default parameters that are easily overridden. `ENTRYPOINT` defines the executable process. Standard pattern: `ENTRYPOINT ["python"]` + `CMD ["app.py"]`. |
+| 2 | **`COPY` vs `ADD`?** | `COPY` copies files from the build context. `ADD` also auto-extracts local tar files and fetches remote URLs. Use `COPY` by default. |
+| 3 | **`docker stop` vs `docker kill`?** | `stop` sends SIGTERM with a graceful timeout (default 10s), followed by SIGKILL. `kill` sends SIGKILL immediately. |
+| 4 | **`docker run` vs `docker exec`?** | `run` creates and starts a new container. `exec` executes a process inside an existing running container. |
+| 5 | **Dangling image?** | An unreferenced image layer with no repository or tag name (`<none>:<none>`). Clean with `docker image prune`. |
+| 6 | **Named volume vs bind mount?** | Named volumes are managed by Docker in `/var/lib/docker/volumes`. Bind mounts mount an arbitrary directory from the host filesystem. |
+| 7 | **`bridge` vs `host` network?** | `bridge` provides private networking with NAT port forwarding. `host` shares the host network namespace directly without isolation. |
+| 8 | **Multi-stage builds?** | Use multiple `FROM` stages to compile artifacts in a builder stage and copy only binaries to a lean runtime image. |
+| 9 | **`docker save` vs `docker export`?** | `save` writes image layers and metadata for `docker load`. `export` flattens a container filesystem for `docker import`. |
+| 10 | **Restart policies?** | `no` (default), `always`, `unless-stopped`, `on-failure[:max-retries]`. |
 
 ---
 
-> [!TIP]
-> **Pro tip for interviews:** When discussing Docker, mention security best practices:
-> - Run as non-root user (`USER`)
-> - Use minimal base images (`alpine`, `distroless`)
-> - Scan images for vulnerabilities (`docker scout`)
-> - Don't store secrets in images (use `--secret` at build, secrets/configs at runtime)
-> - Use `.dockerignore` to exclude sensitive files
-> - Set `--read-only` and drop capabilities (`--cap-drop ALL`)
-> - Pin image versions (avoid `latest` in production)
-
----
-
-*Last updated: August 2026 | Docker CLI v27+*
+[← Cheatsheets overview](./index.md) | [Kubernetes cheatsheet →](./kubernetes-cheatsheet.md)

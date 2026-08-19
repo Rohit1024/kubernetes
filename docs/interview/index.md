@@ -2,14 +2,21 @@
 icon: lucide/file-question
 ---
 
-# Kubernetes Interview Questions & Scenarios
+# Kubernetes interview scenarios and troubleshooting
 
-This section contains a collection of tricky, real-world Kubernetes troubleshooting scenarios that frequently appear in advanced engineering interviews (SRE, DevOps, Platform Engineering). 
+Production troubleshooting scenarios and architectural questions common in SRE, DevOps, and Platform Engineering interviews.
 
-These scenarios go beyond textbook definitions and test your deep understanding of Kubernetes architecture, Linux fundamentals, and systematic debugging methodologies.
+## Available scenarios
 
-## Available Scenarios
+* **[Tricky Pod restarts and silent crashes](./01-tricky-pod-restarts.md)**
+  Diagnose OOMKilled vs OOM-killer terminations, zombie process exhaustion under PID 1, and failing liveness probes under heavy load.
 
-* [Tricky Pod Restarts & Silent Crashes](./01-tricky-pod-restarts.md)
-* [Networking Blackholes & DNS Mysteries](./02-networking-blackholes.md)
-* [Scheduling & Storage Anomalies](./03-scheduling-storage.md)
+* **[Networking blackholes and DNS mysteries](./02-networking-blackholes.md)**
+  Investigate connection timeouts, conntrack table exhaustion, CoreDNS 5-second query delays with `ndots:5`, and asymmetric routing.
+
+* **[Scheduling and storage anomalies](./03-scheduling-storage.md)**
+  Resolve Pending Pod scheduling deadlocks, multi-attach storage errors with AWS EBS and GKE Persistent Disks, and PodDisruptionBudget deadlocks during cluster drains.
+
+---
+
+[← Home](../index.md)
