@@ -1,185 +1,229 @@
-# Lesson 0006: Networking & Routing: Ingress & GKE Load Balancing
+---
+icon: lucide/globe
+---
 
-## Understanding External Traffic Options
+# Lesson 0006: Ingress Controllers & Cloud Load Balancing on GKE
 
-How do we expose services to users outside the cluster? In Kubernetes, there are three primary service types/APIs to handle external ingress:
+## 🚀 Fast Interview Summary & Cheatsheet
 
-* **NodePort:**  Exposes the service on each Node's IP at a static port (typically between 30000-32767). It is quick but insecure (requires exposing node IPs directly) and lacks intelligent routing.
-* **LoadBalancer:**  Provisions an external Cloud Load Balancer (like Google Cloud Network Load Balancer) pointing to the nodes. The issue is that  *each*  LoadBalancer service gets its own IP and incurs significant monthly cost.
-* **Ingress:**  Acts as an intelligent API gateway. It runs as a single point of entry, handles SSL termination, performs host/path-based routing, and shares a single cloud load balancer IP among dozens of backend services.
+| Feature | Layer 4 (`Service: LoadBalancer`) | Layer 7 (`Ingress`) |
+| :--- | :--- | :--- |
+| **OSI Layer** | Transport Layer (TCP / UDP) | Application Layer (HTTP / HTTPS / gRPC) |
+| **Routing Logic** | Port / IP based only | Host-based (`api.domain.com`) & Path-based (`/v1/*`) |
+| **Cloud Cost** | 1 Cloud LB + 1 Public IP **per service** ($\$\$\$$) | **1 Shared Cloud LB IP** for dozens of backend services |
+| **TLS / SSL** | Passed through to backend pods | **Terminated at the Edge** with managed SSL certs |
+| **GKE Integration** | Cloud Network Load Balancer (Pass-through) | **Cloud HTTP(S) Load Balancer** with Cloud Armor & CDN |
 
-!!! note "Analogy: Services vs. Ingress"
-    Think of a `Service` as a specific office phone extension, and an `Ingress` as the main receptionist at the building front desk routing visitors based on their query or identity.
+---
 
-### GKE Ingress Traffic Flow
+## 1. Ingress Architecture & The Controller Model
+
+In Kubernetes, external routing is split into two distinct concepts:
+1. **Ingress Resource:** The declarative YAML manifest defining routing rules (hosts, paths, backends, TLS).
+2. **Ingress Controller:** The controller daemon (e.g. NGINX Ingress, Envoy, or Google Cloud HTTP(S) Load Balancer) that watches Ingress resources and programs the physical/cloud load balancer.
 
 ```mermaid
 graph TD
-    Client["External User"] -->|1. Request: myapp.example.com/api| LB["GCP HTTP/S Load Balancer"]
-    LB -->|2. Ingress Rules Check| Ingress["GKE Ingress Controller"]
-    LB -->|3. Route to NodePort/NEG| Svc["backend-service:8080"]
-    Svc -->|4. Load Balances| Pod1["backend-pod-1"]
-    Svc -->|or 4.| Pod2["backend-pod-2"]
+    User["External User: https://shop.com/api"] --> LB["Google Cloud HTTP(S) Load Balancer\n(Edge TLS Termination + Cloud Armor WAF)"]
+    
+    subgraph GKECluster ["GKE Cluster"]
+        IngressController["GKE Ingress Controller\n(Watches Ingress & configures GCP LB)"]
+        
+        subgraph NEGs ["Container-Native Load Balancing (NEGs)"]
+            Pod1["frontend-pod-1 (10.0.1.12)"]
+            Pod2["frontend-pod-2 (10.0.2.14)"]
+            Pod3["api-pod-1 (10.0.1.25)"]
+            Pod4["api-pod-2 (10.0.2.30)"]
+        end
+    end
+    
+    LB -->|Direct Path: /| Pod1 & Pod2
+    LB -->|Direct Path: /api| Pod3 & Pod4
 ```
 
-## Ingress Controller vs. Ingress Resource
+---
 
-A crucial point of confusion for beginners is the separation of specification and implementation:
+## 2. Container-Native Load Balancing (NEGs)
 
-* **Ingress Resource:**  A declarative YAML file where you define the routing rules (e.g., send traffic for `example.com/api` to `api-service`).
-* **Ingress Controller:**  The active component (daemon/controller) running in the cluster that watches for Ingress resources and actually configures the routing engine (e.g., Nginx, Envoy, or GCP Load Balancer).
+Historically, cloud load balancers routed traffic to **NodePorts on VM instances**, causing an inefficient **"double-hop"**:
 
-On  **Google Kubernetes Engine (GKE)** , GKE comes out-of-the-box with the  **GKE Ingress Controller** . When you apply an Ingress manifest, this controller interacts with Google Cloud APIs to provision a fully-managed **Cloud HTTP(S) Load Balancer**.
+```mermaid
+graph LR
+    subgraph OldWay ["1. Legacy Instance Group Routing (The Double Hop)"]
+        LB1[Cloud LB] -->|1. Hits NodePort| NodeA[Worker Node A]
+        NodeA -->|2. kube-proxy SNAT redirects packet| NodeB[Worker Node B]
+        NodeB --> PodX[Backend Pod]
+    end
 
-## Writing a GKE Ingress Manifest
+    subgraph ModernWay ["2. Container-Native Load Balancing (NEG - Direct Routing)"]
+        LB2[Cloud LB] -->|Direct 1-Hop to Pod IP via VPC| PodDirect[Backend Pod]
+    end
+```
 
-Here is a production-ready template for a path-based GKE Ingress configuration:
+### Why Network Endpoint Groups (NEGs) are Superior:
+* **Zero Double-Hops:** The Google Cloud Load Balancer routes packets directly to the Pod IP in the VPC network.
+* **Preserves Client Source IP:** Eliminates SNAT so backend logs see the real user IP address.
+* **True Pod-Level Health Checks:** The cloud load balancer performs health checks directly against individual Pods rather than whole worker nodes.
+
+To enable NEGs on a Service in GKE, annotate the Service:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}' # Enables Container-Native NEG!
+spec:
+  type: ClusterIP
+  selector:
+    app: api
+  ports:
+    - port: 80
+      targetPort: 8080
+```
+
+---
+
+## 3. Production GKE Ingress Manifest
+
+Here is a complete, production-ready GKE Ingress manifest featuring managed SSL certificates and path-based routing:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: main-ingress
+  name: production-ingress
   annotations:
-    # Use GKE External HTTP(S) Load Balancer
+    # Use GKE External Application Load Balancer
     kubernetes.io/ingress.class: "gce"
-    # GKE supports automatically provisioning Google-managed SSL Certificates
-    networking.gke.io/managed-certificates: "my-managed-ssl-cert"
+    # Attach Google-managed SSL certificate
+    networking.gke.io/managed-certificates: "shop-ssl-certificate"
+    # Attach HTTP-to-HTTPS redirect & TLS policies
+    networking.gke.io/v1beta1.FrontendConfig: "http-to-https-frontend-config"
 spec:
   rules:
-  - host: myapp.example.com
-    http:
-      paths:
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: backend-service
-            port:
-              number: 8080
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-service
-            port:
-              number: 80
+    - host: shop.example.com
+      http:
+        paths:
+          # Route 1: API Service
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 80
+          # Route 2: Default Web Frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
 ```
 
-!!! warning "GKE Backend Requirement"
-    For GKE's default GCE Ingress controller to route traffic successfully, the target backend Services must be configured as either type `NodePort` or utilize **Container-Native Load Balancing** (using Network Endpoint Groups / NEGs) via ClusterIP. If using standard ClusterIP without NEGs, GKE Ingress will fail to synchronize.
+---
 
-## Advanced GKE Customizations (Frontend & Backend Configs)
+## 4. GKE Enterprise CRDs: FrontendConfig & BackendConfig
 
-GKE provides Custom Resource Definitions (CRDs) to attach advanced cloud load balancer properties directly to your Kubernetes resources:
+GKE exposes native cloud features through dedicated CRDs:
 
-### 1. HTTP to HTTPS Redirection (FrontendConfig)
-
-To automatically redirect all HTTP traffic to HTTPS, define a `FrontendConfig` and link it via annotations in the Ingress resource.
-
+### A. `FrontendConfig` (HTTP to HTTPS Redirect)
 ```yaml
 apiVersion: networking.gke.io/v1beta1
 kind: FrontendConfig
 metadata:
-  name: secure-frontend-config
+  name: http-to-https-frontend-config
 spec:
   redirectToHttps:
     enabled: true
-    responseCodeName: MOVED_PERMANENTLY_DEFAULT
+    responseCodeName: MOVED_PERMANENTLY_DEFAULT # 301 Redirect
 ```
 
-Annotation to add to your Ingress:
-
-```yaml
-metadata:
-  annotations:
-    networking.gke.io/v1beta1.FrontendConfig: "secure-frontend-config"
-```
-
-### 2. Cloud Armor, CDN, & Custom Health Checks (BackendConfig)
-
-To configure Cloud Armor (WAF/DDoS protection), Cloud CDN caching, or customized load balancer health check paths, define a `BackendConfig` and link it in your backend  **Service**  annotation.
-
+### B. `BackendConfig` (Cloud Armor WAF & Cloud CDN)
 ```yaml
 apiVersion: cloud.google.com/v1
 kind: BackendConfig
 metadata:
   name: api-backend-config
 spec:
-  healthCheck:
-    checkIntervalSec: 15
-    timeoutSec: 5
-    port: 8080
-    requestPath: /healthz
   securityPolicy:
-    name: "my-cloud-armor-waf-policy"
+    name: "cloud-armor-ddos-protection" # Attaches Cloud Armor WAF rules
+  cdn:
+    enabled: true
+  timeoutSec: 60                      # Upstream backend timeout
 ```
-
-Link it inside your `Service` spec:
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service
-  annotations:
-    cloud.google.com/backend-config: '{"default": "api-backend-config"}'
-spec:
-  type: ClusterIP # Or NodePort
-  ports:
-  - port: 8080
-    targetPort: 8080
-```
-
-## Troubleshooting GKE Ingress
-
-Ingress components interact heavily with GCP cloud infrastructure, making troubleshooting slightly different than internal Kubernetes debugging:
-
-### 1. Deciphering "502 Bad Gateway"
-
-* **Causes:**  The GCP Load Balancer cannot reach the pods. This usually means the backend pods are failing their readiness probes, or the `BackendConfig` health check path (e.g. `/healthz`) is returning a non-200 response.
-* **Fix:**  Run `kubectl get pods` to verify container health, and check the path specified in your application's health endpoints.
-
-### 2. Checking Ingress Sync Events
-
-To see what the GKE Ingress controller is doing in the background (e.g., creating IP addresses, attaching certificates, configuring target pools):
-
-```bash
-kubectl describe ingress main-ingress
-```
-
-Look at the bottom of the output in the **Events** section. It will flag critical errors like `TranslateFailed` or `SyncFailed`.
-
-## Test Your Knowledge
-
-### 1. What is the fundamental difference between an Ingress Resource and an Ingress Controller?
-
-- [ ] **A.** The resource is the declarative routing configuration; the controller is the actual system driving GCP/reverse-proxy changes.
-- [ ] **B.** The resource handles internal communication, whereas the controller handles external traffic.
-- [ ] **C.** The resource runs on master nodes, while the controller runs on worker nodes.
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** A
-
-Correct! The Ingress resource defines the rules, and the Ingress controller is the actual active controller/daemon executing those rules in the cluster or infrastructure.
-</details>
-
-### 2. If you want to enable Google Cloud Armor WAF protections or customize Cloud CDN for a service routed via GKE Ingress, where do you configure these settings?
-
-- [ ] **A.** Inside the Ingress resource spec definition.
-- [ ] **B.** In a FrontendConfig CRD applied to the ingress host rules.
-- [ ] **C.** In a BackendConfig CRD associated with the target backend Service annotation.
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** C
-
-Correct! Customizations to individual services (like CDN, Cloud Armor, health check paths) are specified in a BackendConfig resource and referenced inside the target Service annotations.
-</details>
 
 ---
 
-[← Lesson 5: Stateless/Stateful App Configuration & Secrets](./0005-stateless-stateful-secrets-gcp.md) | [Lesson 7: Persistent Volumes, PVCs & StorageClasses →](./0007-pv-pvc-storageclasses.md)
+## 🎯 Interview Deep-Dives & Scenarios
+
+??? question "Interview Question: What is Container-Native Load Balancing (NEGs), and why does GKE use it?"
+    **Answer:**
+    - **Traditional NodePort Routing:** Cloud LB targets worker node VMs on high ports (`30000-32767`). `kube-proxy` on that node receives the packet and often forwards it across the network to a *different* node hosting the Pod (double-hop). This adds latency, wastes bandwidth, and obscures the client's source IP via SNAT.
+    - **Container-Native Routing (NEGs):** GKE assigns each Pod an alias IP from the VPC subnet. GKE creates a **Network Endpoint Group (NEG)** in Google Cloud containing the actual Pod IPs.
+    - **The Cloud LB routes traffic directly to the target Pod IP in a single hop**, preserving the true client source IP and enabling accurate pod-level health checks.
+
+??? question "Interview Scenario: Your GKE Ingress is returning `502 Bad Gateway`. How do you troubleshoot it?"
+    **Systematic Troubleshooting Checklist:**
+    1. **Check Backend Service NEGs:** Run `kubectl describe service <NAME>` and ensure `cloud.google.com/neg: {"ingress": true}` is present and healthy.
+    2. **Inspect GKE Ingress Events:** Run `kubectl describe ingress <INGRESS_NAME>`. Look for `Sync / Create` errors or health check configuration failures.
+    3. **Verify Health Check Endpoint:** GKE Load Balancers send health checks to `/` by default. If your API expects `/healthz` and returns `404` or `401 Unauthorized` on `/`, the GCP Load Balancer will mark the backend as **UNHEALTHY** and serve a `502 Server Error`.
+       - *Fix:* Configure a `BackendConfig` specifying `healthCheck.requestPath: /healthz`.
+    4. **Verify ManagedCertificate Status:** Run `kubectl get managedcertificate` and verify the status is `Active` rather than `Provisioning` or `FailedNotVisible`.
+
+---
+
+## ⚠️ Common Production Pitfalls & Interview Traps
+
+??? warning "Production Trap: Default Health Check Path Returns 404/401"
+    Google Cloud HTTP(S) Load Balancer expects an HTTP `200 OK` on `/` by default. If your backend is an API that requires authentication on `/` (returning `401`) or only responds to `/api/v1`, the GCP load balancer considers the pods dead and drops all ingress traffic. Always attach a `BackendConfig` to specify the exact unauthenticated health probe endpoint.
+
+??? warning "Production Trap: DNS Propagation Delays with Managed Certificates"
+    Google-managed SSL certificates require your public DNS A-record to point to the Ingress VIP *before* Google's CA can validate domain ownership via ACME HTTP challenges. If DNS is not pointed to the IP, the certificate will remain in `Provisioning` state for hours.
+
+---
+
+## 💻 Hands-on Verification & Diagnostic Toolkit
+
+```bash
+# 1. Check external Ingress IP and target rules
+kubectl get ingress production-ingress -o wide
+
+# 2. Inspect Ingress controller sync events and Google Cloud forwarding rules
+kubectl describe ingress production-ingress
+
+# 3. Check Google-managed SSL certificate provisioning status
+kubectl get managedcertificate
+
+# 4. View active Network Endpoint Groups in the namespace
+kubectl get svc -o custom-columns=NAME:.metadata.name,NEG:.metadata.annotations."cloud\.google\.com/neg"
+```
+
+---
+
+## Test Your Knowledge
+
+1. Why does Container-Native Load Balancing with Network Endpoint Groups (NEGs) eliminate the "double-hop" problem in GKE?
+   - [ ] A) The cloud load balancer routes traffic directly to individual Pod VPC IPs
+   - [ ] B) The kube-proxy daemon rewrites external domain headers in user space
+   
+   *Answer:* A) The cloud load balancer routes traffic directly to individual Pod VPC IPs - Correct! NEGs allow Google Cloud Load Balancing to route directly to Pod IPs, bypassing NodePorts and intermediate kube-proxy routing hops.
+
+2. In GKE, which custom resource is used to attach Google Cloud Armor DDoS security policies and custom backend timeout settings to a Service?
+   - [ ] A) The BackendConfig custom resource definition
+   - [ ] B) The FrontendConfig custom resource definition
+   
+   *Answer:* A) The BackendConfig custom resource definition - Correct! `BackendConfig` controls upstream backend parameters like Cloud Armor WAF policies, health check paths, timeouts, and Cloud CDN.
+
+---
+
+## Recommended Primary Resource
+- [GKE Ingress for HTTP(S) Load Balancing Guide](https://cloud.google.com/kubernetes-engine/docs/concepts/ingress)
+- [GKE Container-Native Load Balancing with NEGs](https://cloud.google.com/kubernetes-engine/docs/how-to/container-native-load-balancing)
+
+---
+**Setting up multi-domain routing or debugging Google-managed SSL certificates?** Ask in chat, and we'll inspect your Ingress together!
+
+[← Lesson 5: StatefulSets, ConfigMaps & Secrets](./0005-stateless-stateful-secrets-gcp.md) | [Lesson 7: Persistent Volumes & StorageClasses →](./0007-pv-pvc-storageclasses.md)

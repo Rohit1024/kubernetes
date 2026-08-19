@@ -1,223 +1,215 @@
-# Lesson 0005: Stateless vs. Stateful Workloads & Secrets Management
+---
+icon: lucide/database
+---
 
-## 1. Stateless vs. Stateful Workloads
+# Lesson 0005: Stateless vs. Stateful Workloads, ConfigMaps & Secrets
 
-### Stateless Services (Deployments)
+## 🚀 Fast Interview Summary & Cheatsheet
 
-Stateless applications do not store client session data or persistent state locally. Replicas are interchangeable.
-
-* **Identities:**  Dynamic names (e.g. `frontend-867cbd-abcde`). If a Pod dies, it is replaced by a completely new one with a new IP.
-* **Scaling:**  Pods can start and terminate in any order.
-* **Storage:**  Typically ephemeral (emptyDir) or remote (databases, object storage).
-
-### Stateful Services (StatefulSets)
-
-Stateful applications (databases like PostgreSQL, Redis, Kafka) require unique identities and dedicated persistent disk storage per replica.
-
-* **Identities:**  Stable, predictable names starting from index 0 (e.g. `mysql-0`, `mysql-1`). These identities persist across restarts.
-* **Scaling:**  Ordinal scaling. Pods are started from 0 to N-1, and deleted from N-1 down to 0 sequentially.
-* **Storage:**  Uses a `volumeClaimTemplates` block to automatically provision a separate Persistent Volume (PV) for *each* pod replica. `mysql-0` always mounts `pvc-mysql-0`.
-
-!!! warning "Crucial StatefulSet Gotchas"
-    * **Headless Service:** StatefulSets require a Headless Service (a service with `clusterIP: None`) to manage the network domain of individual pods directly for clustering (e.g. `mysql-0.mysql-service`).
-    * **Volume Retention:** Deleting a StatefulSet or scaling it down does *not* automatically delete the provisioned PVCs. This prevents accidental data loss. You must delete PVCs manually if no longer needed.
-
-### Manifest Comparison
-
-```yaml
-# StatefulSet Example
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: database
-spec:
-  serviceName: "database-headless" # Links to headless service
-  replicas: 3
-  selector:
-    matchLabels:
-      app: database
-  template:
-    metadata:
-      labels:
-        app: database
-    spec:
-      containers:
-      - name: mysql
-        image: mysql:8.0
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: db-credentials
-              key: root-password
-        volumeMounts:
-        - name: data-volume
-          mountPath: /var/lib/mysql
-  volumeClaimTemplates: # Automatically creates PVCs for each replica
-  - metadata:
-      name: data-volume
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 10Gi
-```
-
-## 2. Injecting & Consuming Secrets (K8s & CI/CD)
-
-CI/CD pipelines (e.g. GitHub Actions, GitLab CI) inject variables at deploy time. There are two primary methods for managing secrets in Kubernetes.
-
-### Approach A: Native Kubernetes Secrets
-
-A native K8s Secret stores data as base64-encoded strings. The CI/CD pipeline creates the Secret in the namespace before applying the deployments.
-
-#### 1. K8s Secret Manifest (Generated or Applied by CI/CD)
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: api-secrets
-type: Opaque
-data:
-  API_KEY: dGhpc2lzYXNlY3JldGtleQ== # base64 encoded value of "thisisasecretkey"
-```
-
-#### 2. Injecting into Deployment Containers
-
-```yaml
-spec:
-  containers:
-  - name: web-app
-    image: my-app:latest
-    env:
-    # Option 1: Map specific secret key to env variable
-    - name: THIRD_PARTY_API_KEY
-      valueFrom:
-        secretKeyRef:
-          name: api-secrets
-          key: API_KEY
-    # Option 2: Mount as secret files on filesystem
-    volumeMounts:
-    - name: secrets-volume
-      mountPath: "/etc/secrets"
-      readOnly: true
-  volumes:
-  - name: secrets-volume
-    secret:
-      secretName: api-secrets
-```
-
-## 3. Externalized Secrets: GCP Secret Manager Integration
-
-Storing secrets directly in Git (even base64 encoded) or manually syncing native secrets is a security risk. In production (GKE), the best practice is to load secrets from **GCP Secret Manager** dynamically.
-
-### The GKE Secrets Store CSI Driver Pattern
-
-The **Secrets Store CSI Driver** allows GKE to mount secrets stored in GCP Secret Manager directly as a volume inside the container, utilizing **Workload Identity** (mapping a K8s ServiceAccount to a GCP IAM Service Account).
-
-#### Step 1: Define the `SecretProviderClass`
-
-This resource instructs the CSI driver which secrets to pull from GCP Secret Manager.
-
-```yaml
-apiVersion: secrets-store.csi.x-k8s.io/v1
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: gcp-secrets-provider
-spec:
-  provider: gcedriver
-  parameters:
-    secrets: |
-      - resourceName: "projects/my-gcp-project/secrets/database-password/versions/latest"
-        fileName: "db-password.txt"
-```
-
-#### Step 2: Mount CSI Secret Volume in Deployment
-
-Mount the SecretProviderClass as a volume. The CSI driver fetches the secret at Pod startup and mounts it to the specified path.
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: payment-service
-spec:
-  template:
-    spec:
-      serviceAccountName: workload-identity-sa # Bound to GCP IAM role with Secret Manager Access
-      containers:
-      - name: app
-        image: payment-app:v1
-        volumeMounts:
-        - name: secrets-store-inline
-          mountPath: "/mnt/secrets"
-          readOnly: true
-      volumes:
-      - name: secrets-store-inline
-        csi:
-          driver: secrets-store.csi.k8s.io
-          readOnly: true
-          volumeAttributes:
-            secretProviderClass: "gcp-secrets-provider"
-```
-
-!!! note "Workload Identity is Key"
-    Ensure the Kubernetes ServiceAccount is annotated with your GCP IAM Service Account:
-    `iam.gke.io/gcp-service-account: <gcp-sa-name>@<project-id>.iam.gserviceaccount.com`
-
-### GKE Secret Store CSI Driver Workflow
-
-```mermaid
-graph TD
-    subgraph Google Cloud Platform
-        SM[("GCP Secret Manager")]
-        GSA["GCP IAM Service Account"]
-        SM -.->|Granted access| GSA
-    end
-    subgraph GKE Cluster Node
-        subgraph Pod ["App Pod"]
-            SA["K8s ServiceAccount"]
-            SA -.->|Workload Identity Annotation| GSA
-            App["Container: Payment App"]
-            App -->|Reads file mount| MountPath["/mnt/secrets/db-password.txt"]
-        end
-        CSI["Secrets Store CSI Driver"]
-        CSI -->|Mounts secret as volume| MountPath
-        CSI -->|Fetches using Workload Identity credentials| SM
-    end
-```
-
-## Test Your Knowledge
-
-### 1. When a StatefulSet with 3 replicas is scaled down to 0, what happens to the associated PersistentVolumeClaims (PVCs)?
-
-- [ ] **A.** They are automatically deleted to save cloud storage costs.
-- [ ] **B.** They are retained (kept) in the cluster to prevent accidental data loss.
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-Correct! By default, PVCs created by StatefulSets are NOT deleted when the statefulset is deleted or scaled down, safeguarding critical storage state.
-</details>
-
-### 2. Which driver/plugin enables GKE to fetch secrets directly from GCP Secret Manager and mount them as volumes?
-
-- [ ] **A.** The Secrets Store CSI Driver
-- [ ] **B.** The CoreDNS Resolving Agent
-- [ ] **C.** The Horizontal Pod Autoscaler (HPA)
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** A
-
-Correct! The Secrets Store CSI Driver (specifically with the Google Cloud provider plugin) pulls secrets from GCP Secret Manager and mounts them into your Pods securely.
-</details>
+| Characteristic | Stateless (`Deployment`) | Stateful (`StatefulSet`) |
+| :--- | :--- | :--- |
+| **Pod Identity** | Random hash (e.g. `web-78bfd8b67f-9x2jk`) | Deterministic ordinal (e.g. `redis-0`, `redis-1`, `redis-2`) |
+| **Storage Binding** | Shared volume or ephemeral disk | Dedicated PV per replica via **`volumeClaimTemplates`** |
+| **Startup / Teardown** | Concurrent / Random | Sequential (0 $\to$ N-1 on start; N-1 $\to$ 0 on stop) |
+| **Network Identity** | Shared Service ClusterIP | Dedicated DNS via **Headless Service** (`redis-0.redis-svc`) |
+| **Scaling Down PVCs** | N/A | **PVCs are NEVER deleted automatically** (Data protection) |
 
 ---
 
-[← Lesson 4: Service-to-Service Communication & DNS](./0004-service-communication.md) | [Lesson 6: Ingress & GKE Load Balancing →](./0006-ingress-gke-load-balancing.md)
+## 1. Deployments vs. StatefulSets Architecture
+
+```mermaid
+graph TD
+    subgraph DeploymentArch ["Stateless Deployment (Interchangeable)"]
+        D1["Pod: web-abc12"]
+        D2["Pod: web-xyz89"]
+        D3["Pod: web-pqr45"]
+        D1 & D2 & D3 --> Svc["Shared ClusterIP Service"]
+    end
+
+    subgraph StatefulSetArch ["StatefulSet (Dedicated Identities & Storage)"]
+        S0["Pod: db-0"] --> PVC0[("PVC: data-db-0")]
+        S1["Pod: db-1"] --> PVC1[("PVC: data-db-1")]
+        S2["Pod: db-2"] --> PVC2[("PVC: data-db-2")]
+        
+        Headless["Headless Service (clusterIP: None)"]
+        S0 -.->|DNS: db-0.db-svc| Headless
+        S1 -.->|DNS: db-1.db-svc| Headless
+        S2 -.->|DNS: db-2.db-svc| Headless
+    end
+```
+
+### Key StatefulSet Primitives:
+1. **Deterministic Ordinal Index:** If `db-1` crashes, the replacement Pod is guaranteed to be named `db-1` and scheduled with the exact same hostname and storage attachment.
+2. **`volumeClaimTemplates`:** Unlike Deployments where all replicas share the same PVC definition, a StatefulSet dynamically synthesizes an isolated `PersistentVolumeClaim` for each replica: `<claim-name>-<statefulset-name>-<index>`.
+3. **Headless Service Association:** Required by the `serviceName` field in the StatefulSet spec to generate predictable DNS A-records for every individual Pod.
+
+---
+
+## 2. ConfigMaps & Secrets Management
+
+Kubernetes decouples configuration and sensitive credentials from container image builds using **ConfigMaps** (plain configuration) and **Secrets** (confidential tokens, passwords, TLS certificates).
+
+```mermaid
+graph LR
+    subgraph Storage ["Configuration Sources"]
+        CM["ConfigMap\n(Application Configs)"]
+        Sec["Secret\n(Pass/Tokens/Certs)"]
+    end
+
+    subgraph Consumption ["Pod Consumption Methods"]
+        Env["Method 1: Environment Variables\n(Injected at Pod Startup)"]
+        Vol["Method 2: Volume Mounts\n(Projected Files in /etc/config)"]
+    end
+
+    CM --> Env
+    CM --> Vol
+    Sec --> Env
+    Sec --> Vol
+    Vol --> LiveUpdate["Auto-refreshes on disk without Pod restart!"]
+    Env --> Static["Static; Requires Pod restart to pick up changes!"]
+```
+
+### Consuming Secrets in a Pod Manifest
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-service
+spec:
+  containers:
+    - name: api
+      image: my-org/api:v1.2.0
+      # 1. Injected as Environment Variables
+      env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: password
+      # 2. Injected as Volume Mounts (Live Reloading)
+      volumeMounts:
+        - name: config-dir
+          mountPath: /etc/app/config
+          readOnly: true
+  volumes:
+    - name: config-dir
+      configMap:
+        name: app-config
+```
+
+---
+
+## 3. Production Secrets: External Secrets Operator (ESO) & GCP Secret Manager
+
+In enterprise GitOps, **base64-encoded Kubernetes Secrets must never be stored in Git**.
+
+The **External Secrets Operator (ESO)** bridges Kubernetes with external secret managers (GCP Secret Manager, AWS Secrets Manager, HashiCorp Vault):
+
+```mermaid
+graph LR
+    GCP["GCP Secret Manager\n(Encrypted Cloud Store)"] -->|1. Sync via Workload Identity| ESO["External Secrets Operator\n(Runs in Cluster)"]
+    ESO -->|2. Creates / Updates| K8sSecret["Native K8s Secret\n(In-Memory / Projected)"]
+    K8sSecret -->|3. Mounted by| AppPod["Application Pod"]
+```
+
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: gcp-db-credentials
+spec:
+  refreshInterval: 1h                 # Polling interval from GCP
+  secretStoreRef:
+    name: gcp-secret-store
+    kind: ClusterSecretStore
+  target:
+    name: app-db-secret               # Name of K8s Secret generated automatically
+  data:
+    - secretKey: DB_PASSWORD
+      remoteRef:
+        key: production-db-password   # Secret name in GCP Secret Manager
+```
+
+---
+
+## 🎯 Interview Deep-Dives & Scenarios
+
+??? question "Interview Question: Why do StatefulSets require a Headless Service?"
+    **Answer:**
+    - A standard Service provides a single virtual ClusterIP that randomly load-balances requests across all replicas.
+    - Stateful applications (e.g., MySQL Leader-Follower, Kafka Brokers, Elasticsearch) require clients to target a **specific replica directly** (e.g., writing to the Leader on `mysql-0` while reading from Followers on `mysql-1` and `mysql-2`).
+    - By associating a Headless Service (`clusterIP: None`), CoreDNS creates direct A-records for each ordinal:
+      `<pod-name>.<service-name>.<namespace>.svc.cluster.local` (e.g. `mysql-0.mysql-svc.prod.svc.cluster.local`).
+
+??? question "Interview Scenario: If you update a Secret/ConfigMap, why does a Volume Mount update but an Environment Variable does not?"
+    **The Mechanism:**
+    - **Environment Variables:** Evaluated and set by the OS kernel when the container process starts (`fork/exec`). There is no mechanism in POSIX systems to alter an active process’s environment without restarting the container.
+    - **Mounted Volumes:** `kubelet` regularly watches for ConfigMap/Secret changes and updates the projected files on the host disk using atomic symlinks.
+    - **Interview Pro-Tip:** Applications watching file modifications (e.g. using `inotify` or Spring Cloud Watcher) can reload configurations on the fly with **zero downtime and zero Pod restarts**!
+
+??? question "Interview Question: Is a standard Kubernetes Secret encrypted by default?"
+    **Answer:**
+    - **No.** By default, native Kubernetes Secrets are merely **base64-encoded strings** stored as plaintext in `etcd`. Anyone with read access to the namespace or `etcd` disk can decode them trivially (`echo <BASE64> | base64 -d`).
+    - **Production Hardening Requirements:**
+      1. Enable **Encryption at Rest** in `kube-apiserver` using KMS (Cloud KMS, AWS KMS, HashiCorp Vault).
+      2. Enforce strict **RBAC policies** preventing unauthorized Secret reads.
+      3. Use tools like **External Secrets Operator (ESO)** or **Sealed Secrets** to prevent secrets from being checked into Git repositories.
+
+---
+
+## ⚠️ Common Production Pitfalls & Interview Traps
+
+??? warning "Production Trap: Accidental Storage Deletion vs StatefulSet Retention"
+    When you scale down a StatefulSet from 3 to 1 replica or delete the StatefulSet, **Kubernetes intentionally DOES NOT delete the PVCs (`data-db-1`, `data-db-2`)**.
+    - **Why:** To prevent catastrophic accidental data loss.
+    - **Gotcha:** If you re-scale the StatefulSet back to 3 replicas later, it automatically re-attaches to the existing historical PVCs. If you wanted fresh disks, you must manually delete the historical PVCs!
+
+??? warning "Production Trap: `subPath` Volume Mounts Break Live Updates"
+    If you mount a single key from a ConfigMap using `subPath` (e.g. `mountPath: /etc/app.conf`, `subPath: app.conf`), **Kubernetes will NOT automatically update the file** when the ConfigMap changes. `subPath` mounts bypass symlink updates.
+
+---
+
+## 💻 Hands-on Verification & Diagnostic Toolkit
+
+```bash
+# 1. Decode all keys inside a Kubernetes Secret
+kubectl get secret db-secrets -o jsonpath='{.data}' | jq 'map_values(@base64d)'
+
+# 2. View individual StatefulSet Pod DNS resolutions
+kubectl exec -it <POD_NAME> -- nslookup db-0.db-headless.default.svc.cluster.local
+
+# 3. List all PVCs generated by StatefulSet volumeClaimTemplates
+kubectl get pvc -l app=database
+
+# 4. Trigger rolling restart of a StatefulSet to pick up updated Env Vars
+kubectl rollout restart statefulset/database
+```
+
+---
+
+## Test Your Knowledge
+
+1. When scaling down a StatefulSet from 5 replicas to 2, what happens to the PersistentVolumeClaims (PVCs) attached to replicas 3 and 4?
+   - [ ] A) The PVCs are preserved intact on the cluster to prevent accidental data loss
+   - [ ] B) The PVCs and their underlying cloud disks are immediately deleted permanently
+   
+   *Answer:* A) The PVCs are preserved intact on the cluster to prevent accidental data loss - Correct! Kubernetes never automatically deletes PVCs created by StatefulSets during scale-down operations.
+
+2. Why are ConfigMaps mounted as volumes preferred over environment variables for dynamic applications?
+   - [ ] A) Mounted volume files automatically sync live updates without requiring Pod restarts
+   - [ ] B) Mounted volumes consume significantly less node memory than environment variables
+   
+   *Answer:* A) Mounted volume files automatically sync live updates without requiring Pod restarts - Correct! `kubelet` updates mounted volume files dynamically, allowing applications to hot-reload configuration changes.
+
+---
+
+## Recommended Primary Resource
+- [Kubernetes StatefulSets Concept Guide](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
+- [External Secrets Operator Documentation](https://external-secrets.io/latest/)
+
+---
+**Architecting a high-availability database cluster or managing cloud secrets?** Ask in chat, and we'll configure your SecretStore!
+
+[← Lesson 4: Service Communication & DNS](./0004-service-communication.md) | [Lesson 6: Ingress & GKE Load Balancing →](./0006-ingress-gke-load-balancing.md)

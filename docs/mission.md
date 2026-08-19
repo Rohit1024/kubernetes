@@ -8,5 +8,6 @@ Welcome to the Kubernetes Learning Mission. This portal contains all the resourc
 
 * **[Go to Home Page](index.md)**
 * **[Start the Lessons](lessons/index.md)**
+* **[Interactive Manifest Generator](generator/index.md)**
 * **[Check the kubectl Cheatsheet](cheatsheet/index.md)**
 * **[View References](references/index.md)**

@@ -49,6 +49,7 @@ nav = [
   { "Lessons" = [
      "lessons/index.md"
   ]},
+  { "Manifest Generator" = "generator/index.md" },
   { "Debugging" = [
      "debugging/index.md"
   ]},

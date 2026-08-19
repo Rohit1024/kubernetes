@@ -1,261 +1,213 @@
-# Lesson 0003: Advanced Deployments, Node Scheduling & Autoscaling
+---
+icon: lucide/calendar-clock
+---
 
-## 1. Only Deploy on Certain Nodes (Node Scheduling)
+# Lesson 0003: Advanced Node Scheduling, Deployment Strategies & Autoscaling
 
-In production clusters, you often need to control which physical or virtual nodes your Pods land on. For example, database Pods should run on nodes with SSDs, or ML workloads need nodes with GPUs.
+## 🚀 Fast Interview Summary & Cheatsheet
 
-### A. `nodeSelector` (Simplest Match)
-
-A simple key-value matching mechanism. The node must have the exact label matching the selector.
-
-```yaml
-spec:
-  containers:
-  - name: nginx
-    image: nginx
-  nodeSelector:
-    disktype: ssd # Node must have label "disktype=ssd"
-```
-
-### B. Node Affinity (Flexible & Powerful)
-
-Affinity expands on `nodeSelector` by supporting logic operators (e.g., `In`, `NotIn`, `Exists`) and hard/soft constraints:
-
-* **Hard Limit (Required):**  `requiredDuringSchedulingIgnoredDuringExecution` - Pod won't schedule if rules aren't met.
-* **Soft Preference (Preferred):**  `preferredDuringSchedulingIgnoredDuringExecution` - Scheduler tries its best, but will fall back to other nodes if needed.
-
-```yaml
-spec:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: topology.kubernetes.io/zone
-            operator: In
-            values:
-            - us-central1-a
-            - us-central1-b
-```
-
-### C. Pod Affinity & Anti-Affinity (Co-location or Separation)
-
-Allows scheduling Pods relative to other Pods that are already running on a node. The classic use case is  **Anti-Affinity**  to ensure that replicas of the same service do not run on the same node, protecting against node failures.
-
-```yaml
-spec:
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchExpressions:
-          - key: app
-            operator: In
-            values:
-            - web-frontend
-        topologyKey: "kubernetes.io/hostname" # Ensures no two "web-frontend" pods share the same host
-```
-
-### D. Taints and Tolerations (Repelling Pods)
-
-While Affinity attracts Pods to nodes,  **Taints**  allow a node to repel a set of Pods.
-
-* You place a  **Taint**  on a Node: `kubectl taint nodes node1 gpu=true:NoSchedule`
-* Only Pods that have a matching  **Toleration**  can schedule there:
-
-```yaml
-spec:
-  tolerations:
-  - key: "gpu"
-    operator: "Equal"
-    value: "true"
-    effect: "NoSchedule"
-```
-
-## 2. Deployment Strategies
-
-Updating applications without breaking production requires different release patterns.
-
-### A. RollingUpdate (Default, Zero Downtime)
-
-Kubernetes updates Pods incrementally. You control the speed using two variables under `strategy.rollingUpdate`:
-
-* `maxSurge`: How many extra Pods can be created above the desired replica count (e.g., `25%` or `1`).
-* `maxUnavailable`: How many Pods can be down during the update process (e.g., `25%` or `0`).
-
-```yaml
-spec:
-  replicas: 4
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0 # Zero downtime guarantee: keep at least 4 pods alive
-```
-
-#### Rolling Update Lifecycle Diagram
-
-```mermaid
-sequenceDiagram
-    participant K8s as GKE Control Plane
-    participant V1 as Pod V1 Replicas
-    participant V2 as Pod V2 Replicas
-    K8s->>V2: 1. Create Pod V2-1
-    Note over V2: Container starting & passing readiness checks
-    V2-->>K8s: Pod V2-1 Ready
-    K8s->>V1: 2. Terminate Pod V1-1
-    Note over V1: SIGTERM & graceful shutdown
-    K8s->>V2: 3. Create Pod V2-2
-    V2-->>K8s: Pod V2-2 Ready
-    K8s->>V1: 4. Terminate Pod V1-2
-    Note over K8s: Rolling Update Completed with Zero Downtime!
-```
-
-### B. Recreate (Downtime)
-
-All existing Pods are killed before new ones are started. Useful if your application cannot run two different versions concurrently (e.g., database schema incompatibility).
-
-```yaml
-spec:
-  strategy:
-    type: Recreate
-```
-
-### C. Blue-Green & Canary (External Orchestration)
-
-* **Blue-Green:**  Deploy version 2 (Green) alongside version 1 (Blue). Once Green is ready and verified, edit the Kubernetes `Service` selector to switch traffic instantly to Green.
-* **Canary:**  Deploy version 2 to a tiny subset of pods (e.g., 1 out of 10) and route a fraction of traffic to it. Monitor error rates before scaling version 2 to 100%.
-
-## 3. Autoscaling
-
-Kubernetes scales workloads at three distinct levels:
-
-### A. Horizontal Pod Autoscaler (HPA)
-
-Scales the  **number of Pods**  up or down based on metrics like CPU usage, memory usage, or custom metrics.
-
-!!! important "Requirements for HPA"
-    To use HPA, your Pods must have resource `requests` defined, and the cluster must have the Metrics Server installed.
-
-```yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: php-apache-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: php-apache
-  minReplicas: 1
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 50
-```
-
-### B. Vertical Pod Autoscaler (VPA)
-
-Adjusts the  **CPU and memory resource limits/requests**  of existing containers automatically. Great for database and stateful workloads where scaling out horizontally is difficult.
-
-### C. Cluster Autoscaler (CA)
-
-Scales the **number of Nodes** in the cluster. If HPA schedules too many Pods and the existing nodes run out of memory/CPU, Pods will remain in a `Pending` state. Cluster Autoscaler notices this and provisions new VM instances automatically.
-
-## Test Your Knowledge
-
-### 1. Which scheduling mechanism is used to completely repel pods from running on specific nodes unless explicitly allowed?
-
-- [ ] **A.** Node Affinity (Hard Constraint)
-- [ ] **B.** Taints and Tolerations
-- [ ] **C.** podAntiAffinity
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-Correct! Taints are applied to nodes to repel pods, and Tolerations allow pods to schedule on tainted nodes. Affinity is used to attract pods.
-</details>
-
-### 2. If you want zero downtime during a deployment update, what is the safest setting for 'maxUnavailable'?
-
-- [ ] **A.** maxUnavailable: 0
-- [ ] **B.** maxUnavailable: 100%
-- [ ] **C.** maxUnavailable: 1
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** A
-
-Correct! Setting maxUnavailable: 0 ensures that Kubernetes does not terminate any active pods before the new replacement pods are running and ready.
-</details>
-
-## Interactive Hands-on Practice
-
-Let's deploy a self-healing application with strict Anti-Affinity and custom Rolling Update parameters.
-
-**Step 1:**  Save the following manifest as `production-deployment.yaml` in your workspace:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: resilient-web
-spec:
-  replicas: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: web-app
-  template:
-    metadata:
-      labels:
-        app: web-app
-    spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - web-app
-              topologyKey: "kubernetes.io/hostname"
-      containers:
-      - name: nginx
-        image: nginx:1.25.1
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 200m
-            memory: 256Mi
-        ports:
-        - containerPort: 80
-```
-
-**Step 2:**  Apply the file: `kubectl apply -f production-deployment.yaml`
-
-**Step 3:**  Trigger a rolling update by updating the container image: 
-
-`kubectl set image deployment/resilient-web nginx=nginx:1.25.2`
-
-**Step 4:**  Monitor the update: `kubectl rollout status deployment/resilient-web`
+| Mechanism | Purpose | Hard / Soft | Key Parameters |
+| :--- | :--- | :--- | :--- |
+| **`nodeSelector`** | Simple key-value label matching | Hard only | `spec.nodeSelector` |
+| **Node Affinity** | Advanced node placement rules | Hard & Soft | `requiredDuringScheduling...` (Hard) / `preferredDuringScheduling...` (Soft) |
+| **Pod Anti-Affinity** | Prevent co-locating Pods on same host/zone | Hard & Soft | `topologyKey: kubernetes.io/hostname` or `topology.kubernetes.io/zone` |
+| **Topology Spread** | Evenly spread replicas across failure domains | Hard & Soft | `maxSkew: 1`, `topologyKey`, `whenUnsatisfiable: DoNotSchedule` |
+| **Taints & Tolerations** | Nodes repel Pods unless tolerated | Hard & Soft | `NoSchedule`, `PreferNoSchedule`, **`NoExecute` (Evicts running Pods!)** |
+| **RollingUpdate** | Zero-downtime version replacement | Tunable | `maxSurge: 25%`, `maxUnavailable: 0` (Zero dropped requests) |
+| **Recreate** | Kills all old pods before starting new ones | Hard cutover | Downtime during rollout; avoids dual-version database collisions |
 
 ---
 
-[← Lesson 2: Pod Anatomy & Configuration](./0002-pod-anatomy.md) | [Lesson 4: Service-to-Service Communication & DNS →](./0004-service-communication.md)
+## 1. Node Placement & Advanced Scheduling
+
+Kubernetes provides multiple mechanisms to direct Pods to specific worker nodes (e.g. SSD nodes, GPU nodes, specific availability zones):
+
+```mermaid
+graph TD
+    Scheduler["kube-scheduler"] --> Phase1["1. Filtering (Predicates)\nEliminates nodes violating Hard rules"]
+    Phase1 --> Phase2["2. Scoring (Priorities)\nScores remaining nodes based on Soft rules & Spread"]
+    Phase2 --> Node["Selected Optimal Node"]
+```
+
+### A. Node Affinity vs. Pod Anti-Affinity
+- **Node Affinity (Node-to-Pod):** Rules based on the labels of the *Node* (e.g., `disktype=ssd`, `cloud.google.com/gke-nodepool=gpu-pool`).
+- **Pod Anti-Affinity (Pod-to-Pod):** Rules based on the labels of *other Pods* already running on that host or zone. Essential for high availability so multiple replicas of your frontend do not share a single failing server.
+
+```yaml
+spec:
+  affinity:
+    # 1. Hard Rule: Must land in us-central1-a or us-central1-b
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values: ["us-central1-a", "us-central1-b"]
+    # 2. Hard Rule: No two replicas on the same physical host
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: payment-api
+          topologyKey: "kubernetes.io/hostname"
+```
+
+---
+
+### B. Topology Spread Constraints (The Modern Standard)
+
+While Pod Anti-Affinity is binary (yes/no), **Topology Spread Constraints** allow you to balance Pods evenly across failure domains (Zones, Racks, Nodes):
+
+```yaml
+spec:
+  topologySpreadConstraints:
+    - maxSkew: 1                      # Max difference in pod count between zones
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule # Hard enforcement
+      labelSelector:
+        matchLabels:
+          app: web-server
+```
+
+---
+
+### C. Taints and Tolerations (Repelling Pods)
+
+While Affinity **attracts** Pods to nodes, **Taints** allow a node to **repel** Pods unless the Pod has a matching **Toleration**.
+
+```mermaid
+graph LR
+    PodNoTol["Pod without Toleration"] -->|Rejected| TaintedNode["Node (Tainted: dedicated=gpu:NoSchedule)"]
+    PodWithTol["Pod with matching Toleration"] -->|Allowed| TaintedNode
+```
+
+#### The 3 Taint Effects:
+1. **`NoSchedule`:** New Pods without matching tolerations will **not** be scheduled on this node. Existing running pods are not affected.
+2. **`PreferNoSchedule`:** Soft rule; the scheduler tries to avoid the node, but will place pods there if no other nodes are available.
+3. **`NoExecute`:** **Evicts running Pods immediately** if they do not tolerate the taint (used during node maintenance or when a node becomes unhealthy).
+
+---
+
+## 2. Deployment Update Strategies
+
+```mermaid
+graph TD
+    subgraph RollingUpdateStrategy ["RollingUpdate (Zero Downtime)"]
+        OldV1["Pod v1 (Terminating)"]
+        NewV2["Pod v2 (Starting / Ready)"]
+    end
+
+    subgraph RecreateStrategy ["Recreate (Hard Cutover)"]
+        Step1["1. Terminate All v1 Pods"] --> Step2["Downtime Window"] --> Step3["2. Create All v2 Pods"]
+    end
+```
+
+### A. `RollingUpdate` Configuration
+- **`maxSurge`:** How many extra Pods can be created above `replicas` during update (e.g. `25%`).
+- **`maxUnavailable`:** How many Pods can be unavailable during update (e.g. `0` or `25%`).
+
+```yaml
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%                  # Allow 25% extra pods during rollout
+      maxUnavailable: 0              # Guarantee 100% capacity remains active!
+```
+
+---
+
+## 3. The Kubernetes Autoscaling Ecosystem
+
+```mermaid
+graph TD
+    Workload["Application Workload"]
+    HPA["HPA / KEDA\n(Horizontal Pod Autoscaler)\nAdds/Removes Pods"] --> Workload
+    VPA["VPA\n(Vertical Pod Autoscaler)\nAdjusts CPU/Mem Requests"] --> Workload
+    CA["Cluster Autoscaler / Karpenter\nAdds/Removes Worker Nodes"] --> Nodes["Worker Node Pool"]
+```
+
+1. **Horizontal Pod Autoscaler (HPA / KEDA):** Scales the number of Pod replicas based on CPU, memory, or external queue/cron metrics.
+2. **Vertical Pod Autoscaler (VPA):** Automatically resizes container CPU and memory requests/limits based on historical usage.
+3. **Cluster Autoscaler & Karpenter:** Provisions new physical/virtual cloud nodes when Pods cannot schedule due to insufficient cluster capacity (`Pending`).
+
+---
+
+## 🎯 Interview Deep-Dives & Scenarios
+
+??? question "Interview Question: What is the difference between `NoSchedule` and `NoExecute` taints?"
+    **Answer:**
+    - **`NoSchedule`:** Only affects **future** scheduling decisions. Pods currently running on the node remain untouched even if they lack a toleration.
+    - **`NoExecute`:** Affects both **future** scheduling AND **currently running** Pods. If a running Pod lacks a matching toleration, `kubelet` immediately evicts the Pod from the node.
+    - **`tolerationSeconds` with NoExecute:** You can specify `tolerationSeconds: 300` on a Pod. If a node becomes `Unreachable` (tainted with `node.kubernetes.io/unreachable:NoExecute`), the Pod is granted a 5-minute grace period before eviction, preventing unnecessary rescheduling during brief network blips.
+
+??? question "Interview Scenario: Can you run HPA and VPA together on the same Deployment?"
+    **The Classic Interview Trap:**
+    - **Rule:** **No, you cannot run standard HPA and VPA together on the same resource metrics (CPU/Memory).**
+    - **Why:** They will enter an **infinte reconciliation conflict**. When traffic spikes, VPA will try to increase CPU requests (restarting the pod), while HPA will try to scale out replica counts.
+    - **The Exception:** You **can** combine them if HPA scales on **custom/external metrics** (e.g. KEDA queue depth, Prometheus RPS) while VPA manages container CPU and Memory limits.
+
+??? question "Interview Scenario: How do you achieve true zero-downtime rollouts with zero dropped packets?"
+    **Answer:**
+    1. Set `strategy.rollingUpdate.maxUnavailable: 0` so no active replicas are terminated before new ones are ready.
+    2. Set a strict **`readinessProbe`** on the container so Kubernetes does not route traffic until the app is fully initialized.
+    3. Configure a **`preStop` hook** (`sleep 10`) and proper `terminationGracePeriodSeconds` to allow in-flight connections to drain before the container receives `SIGKILL`.
+
+---
+
+## ⚠️ Common Production Pitfalls & Interview Traps
+
+??? warning "Production Trap: Using `maxUnavailable: 100%`"
+    If you set `maxUnavailable: 100%` in a `RollingUpdate`, Kubernetes will terminate all existing Pods simultaneously before launching new ones, turning your zero-downtime rollout into a complete service outage.
+
+??? warning "Production Trap: Missing Zone Topology Spread in Cloud Deployments"
+    Without `topologySpreadConstraints` or zone anti-affinity, the scheduler might place all replicas of your mission-critical service into a single cloud availability zone (e.g., `us-central1-a`). If that zone experiences an outage, your entire service goes offline despite having 10 replicas.
+
+---
+
+## 💻 Hands-on Verification & Diagnostic Toolkit
+
+```bash
+# 1. Check pod distribution across nodes and zones
+kubectl get pods -o wide --sort-by='.spec.nodeName'
+
+# 2. Monitor rollout status in real-time
+kubectl rollout status deployment/web-app
+
+# 3. View deployment rollout history and revision annotations
+kubectl rollout history deployment/web-app
+
+# 4. Instant rollback to previous revision
+kubectl rollout undo deployment/web-app --to-revision=2
+
+# 5. Inspect node taints
+kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{": "}{.spec.taints}{"\n"}{end}'
+```
+
+---
+
+## Test Your Knowledge
+
+1. If you taint a worker node with `maintenance=true:NoExecute`, what happens to Pods currently running on that node that lack a matching toleration?
+   - [ ] A) They are evicted and terminated immediately by the kubelet
+   - [ ] B) They continue running until their existing processes complete
+   
+   *Answer:* A) They are evicted and terminated immediately by the kubelet - Correct! Unlike `NoSchedule`, the `NoExecute` effect actively evicts non-tolerating Pods currently running on the node.
+
+2. To guarantee that a `RollingUpdate` never drops below 100% required server capacity during deployment, which configuration is mandatory?
+   - [ ] A) Set maxUnavailable to 0 in the rolling update strategy block
+   - [ ] B) Set maxSurge to 0 in the rolling update strategy block
+   
+   *Answer:* A) Set maxUnavailable to 0 in the rolling update strategy block - Correct! Setting `maxUnavailable: 0` ensures new pods are fully created and passing readiness checks before any old pods are terminated.
+
+---
+
+## Recommended Primary Resource
+- [Kubernetes Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
+- [Kubernetes Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/)
+
+---
+**Simulating a multi-zone scheduling failure or designing a rollout strategy?** Ask in chat, and we'll review your manifest!
+
+[← Lesson 2: Pod Anatomy & Configuration](./0002-pod-anatomy.md) | [Lesson 4: Service Communication & DNS →](./0004-service-communication.md)

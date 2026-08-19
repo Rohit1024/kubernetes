@@ -100,6 +100,7 @@ Dynamic event-driven scaling, scale-to-zero workloads, timezone-aware cron sched
 
 Explore diagnostic guides, interview preparation, and quick command references:
 
+- **:hammer_and_wrench: [Interactive Manifest Generator](generator/index.md)**: Visually customize and generate production-ready Kubernetes YAML manifests (Deployments, StatefulSets, Gateway API, KEDA scalers, NetworkPolicies, PDBs) with one-click copy and presets.
 - **:beetle: [Debugging Workflows](debugging/index.md)**: Real-world diagnostic recipes for `CrashLoopBackOff`, `ImagePullBackOff`, CoreDNS lookup failures, and GKE database connectivity issues.
 - **:question: [Interview Questions](interview/index.md)**: Challenging real-world troubleshooting scenarios covering tricky Pod restarts, silent networking blackholes, and multi-zone storage scheduling.
 - **:zap: [Cheatsheets](cheatsheet/index.md)**: Quick syntax references for `kubectl`, Docker CLI, Argo CD, Flux CLI, and KEDA autoscaling.

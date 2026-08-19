@@ -1,191 +1,212 @@
-# Lesson 0008: Advanced Networking: Kubernetes Gateway API & GKE GatewayClass
+---
+icon: lucide/git-fork
+---
 
-## What is the Gateway API?
+# Lesson 0008: Next-Gen Networking: Kubernetes & GKE Gateway API
 
-The **Gateway API** (`gateway.networking.k8s.io`) is the next-generation Kubernetes routing standard, designed to replace the aging `Ingress` API. While Ingress packed all configuration (load balancers, routing rules, SSL, hostnames) into a single monolithic manifest, Gateway API breaks these elements apart to align with distinct organizational roles.
+## 🚀 Fast Interview Summary & Cheatsheet
 
-### Why Ingress fell short:
-
-* **Lack of role separation:**  In Ingress, the same manifest was edited by platform teams (defining SSL/IPs) and app developers (defining routing paths), creating governance challenges.
-* **Heavy reliance on Annotations:**  Advanced functions (like URL rewrites, redirects, header manipulation, and canary weighting) were not standardized. Each controller (Nginx, GKE, Traefik) used its own ad-hoc annotations, making configurations highly vendor-locked.
-* **Extensibility:**  Ingress was hard to scale for protocols other than HTTP/HTTPS (like gRPC, TCP, or UDP).
-
-## The Role-Oriented Resources
-
-The Gateway API introduces a modular schema split across three distinct resources:
-
-* **GatewayClass (Infrastructure):**  Defines the type of load balancer controller that implements the Gateway API (e.g., GKE External HTTP(S) Load Balancer). Managed by **Cloud/Platform Admins**.
-* **Gateway (Cluster Operator):**  Instantiates the load balancer. Defines IP configurations, listeners (ports like 80/443), and TLS certificates. Managed by **Cluster/Platform Operators**.
-* **HTTPRoute / GRPCRoute (App Developer):**  Binds to a Gateway to define routing rules (paths, query parameters, hostnames, redirects) and backend destinations. Managed by **App Developers**.
-
-!!! note "Analogy: Gateway API Components"
-    Think of a `GatewayClass` as a network router brand (e.g. Cisco), the `Gateway` as the physical router box plugged into the wall with ports open, and the `HTTPRoute` as the software routing rules deciding which packet goes to which device.
-
-### Gateway API Architecture
-
-```mermaid
-graph TD
-    subgraph Infra ["Infrastructure (Platform Provider)"]
-        GC["GatewayClass: gke-l7-gxlb"]
-    end
-    subgraph Ops ["Routing & Listeners (Cluster Operator)"]
-        GW["Gateway: external-http-gateway"] -->|Implements| GC
-    end
-    subgraph Dev ["App Rules (Application Developer)"]
-        Route["HTTPRoute: store-route"] -->|Attaches to port 80| GW
-        Route -->|Routes to| Svc1["store-v1-service"]
-        Route -->|Routes to| Svc2["store-v2-service"]
-    end
-```
-
-## GKE GatewayClasses
-
-On GKE, the Gateway API controller is built-in. GKE provides several pre-installed `GatewayClass` resources that automatically provision Google Cloud Load Balancers:
-
-GatewayClass Name
-Type of GCP Load Balancer Created
-
-`gke-l7-gxlb`
-Global External Application Load Balancer (HTTP/S)
-
-`gke-l7-rilb`
-Regional Internal Application Load Balancer (HTTP/S)
-
-`gke-l7-gxlb-mc`
-Multi-Cluster Global External Application Load Balancer
-
-## Hands-on Gateway API Manifests
-
-### 1. The Gateway (Operator Config)
-
-This resource instructs GKE to provision a Global External L7 Application Load Balancer listening on port 80:
-
-```yaml
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: external-http-gateway
-spec:
-  gatewayClassName: gke-l7-gxlb # Matches the GKE Global External class
-  listeners:
-  - name: http
-    protocol: HTTP
-    port: 80
-    allowedRoutes:
-      namespaces:
-        from: All # Allows routes from any namespace to attach to this Gateway
-```
-
-### 2. The HTTPRoute (Developer Config)
-
-An application developer can now deploy a route mapping hostnames and paths to Services. Notice the native support for traffic splitting (Canary routing) without annotations:
-
-```yaml
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: store-route
-spec:
-  parentRefs:
-  - name: external-http-gateway # Attaches this route to the Gateway above
-    sectionName: http
-  hostnames:
-  - "store.example.com"
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /items
-    backendRefs:
-    # Canary split: 90% traffic to stable, 10% to new version
-    - name: store-v1-service
-      port: 8080
-      weight: 90
-    - name: store-v2-service
-      port: 8080
-      weight: 10
-```
-
-### 3. Direct URL Redirects & Rewrites (Native Features)
-
-Unlike Ingress, redirects are native to the spec. Here is how to write a simple HTTP to HTTPS redirect route:
-
-```yaml
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: ssl-redirect-route
-spec:
-  parentRefs:
-  - name: external-http-gateway
-  rules:
-  - filters:
-    - type: RequestRedirect
-      requestRedirect:
-        scheme: https
-        statusCode: 301
-```
-
-## Attaching GKE Policies (Advanced)
-
-Similar to Ingress's `BackendConfig`, GKE Gateway API uses Policy resources to configure advanced load-balancing properties:
-
-* **GCPGatewayPolicy:**  Configures security settings like SSL Policies or Client TLS settings on the Gateway listener.
-* **GCPBackendPolicy:**  Configures backend features like Session Affinity, Cloud Armor WAF policies, or Cloud CDN on target Services.
-
-## Troubleshooting Gateway API
-
-Gateway API uses a rich `Status` object to report operational health:
-
-### 1. Check Gateway Provisioning
-
-```bash
-kubectl describe gateway external-http-gateway
-```
-
-Check the `Status.Conditions` block. You want to see:
-
-* `Accepted: True` (The GKE controller read and validated the Gateway definition).
-* `Programmed: True` (The actual Google Cloud Load Balancer was successfully created in GCP and assigned an IP).
-
-### 2. Check HTTPRoute Attachment
-
-```bash
-kubectl describe httproute store-route
-```
-
-Check the `ParentRefs` status block. If the Gateway rejected the route (e.g. namespace routing restrictions or invalid service targets), the errors will display in the route's conditions.
-
-## Test Your Knowledge
-
-### 1. Which Gateway API resource represents the physical cloud load balancer instance (with its IP address and ports) in the cluster?
-
-- [ ] **A.** GatewayClass
-- [ ] **B.** Gateway
-- [ ] **C.** HTTPRoute
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-Correct! The Gateway resource represents the specific configuration mapping to the instantiated cloud load balancer itself.
-</details>
-
-### 2. Which GKE GatewayClass name should you choose to provision a managed INTERNAL L7 load balancer inside your VPC?
-
-- [ ] **A.** gke-l7-gxlb
-- [ ] **B.** gke-l7-rilb
-- [ ] **C.** gke-l4-ilb
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-Correct! gke-l7-rilb represents GKE L7 Regional Internal Load Balancing.
-</details>
+| Resource | Persona / Role | Scope | Key Configuration |
+| :--- | :--- | :--- | :--- |
+| **`GatewayClass`** | Infrastructure Provider | Cluster-wide | Defines the underlying controller implementation (e.g. `gke-l7-gxlb`). |
+| **`Gateway`** | Platform / Cluster Ops | Namespace-scoped | Defines VIPs, listening ports (`80/443`), TLS certificates, and allowed namespaces. |
+| **`HTTPRoute`** | Application Developer | Namespace-scoped | Defines path/header rules, canary weights, URL rewrites, and target backend Services. |
+| **`ReferenceGrant`** | Target Service Owner | Namespace-scoped | Explicitly authorizes cross-namespace route attachments for strict multi-tenancy. |
 
 ---
 
-[← Lesson 7: Persistent Volumes, PVCs & StorageClasses](./0007-pv-pvc-storageclasses.md) | [Lesson 9: Pod Lifecycle, Resource Allocation, and Health Probes →](./0009-resources-probes-graceful-shutdown.md)
+## 1. Why Gateway API Replaces Ingress
+
+The standard **Ingress API** was designed in the early days of Kubernetes as a monolithic manifest. In production enterprise environments, Ingress created three major bottlenecks:
+
+```mermaid
+graph LR
+    subgraph IngressFlaws ["Legacy Ingress API Flaws"]
+        F1["1. Monolithic Role Confusion (Admins & Devs edit same YAML)"]
+        F2["2. Annotation Spaghetti (Vendor-locked custom annotations for rewrites/canaries)"]
+        F3["3. Single Namespace Bound (Cannot attach cross-namespace routes natively)"]
+    end
+
+    subgraph GatewaySolutions ["Gateway API Architecture Solutions"]
+        S1["1. Role-Oriented Separation (GatewayClass vs Gateway vs HTTPRoute)"]
+        S2["2. Native Feature Spec (Standardized Canary weights, Header matching, Rewrites)"]
+        S3["3. Cross-Namespace Sharing (1 Shared Cloud Gateway for multiple teams)"]
+    end
+
+    IngressFlaws -.->|Solved By| GatewaySolutions
+```
+
+---
+
+## 2. Role-Oriented Resource Hierarchy
+
+```mermaid
+graph TD
+    subgraph PlatformTeam ["Platform / Cloud Infrastructure (Cluster-Wide)"]
+        GC["GatewayClass: gke-l7-gxlb\n(GKE Global External HTTPS LB)"]
+    end
+
+    subgraph OpsTeam ["Cluster / Network Operators (infra namespace)"]
+        GW["Gateway: shared-gateway\n(IP: 34.120.45.10 | Listeners: 80, 443 | TLS Certs)"] --> GC
+    end
+
+    subgraph AppTeam1 ["Team Payments (payments namespace)"]
+        Route1["HTTPRoute: payments-route\n(Path: /payments/*)"] -->|Attaches to| GW
+        Route1 --> Svc1["payments-service"]
+    end
+
+    subgraph AppTeam2 ["Team Analytics (analytics namespace)"]
+        Route2["HTTPRoute: analytics-route\n(Path: /analytics/*)"] -->|Attaches to| GW
+        Route2 --> Svc2["analytics-service"]
+    end
+```
+
+---
+
+## 3. Advanced Traffic Management: Canary Splitting & Header Matching
+
+One of the biggest strengths of the Gateway API is native **Canary Weighting** and **Header Routing** without needing a Service Mesh like Istio.
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: payment-canary-route
+  namespace: payments
+spec:
+  parentRefs:
+    - name: shared-gateway
+      namespace: infra
+      sectionName: https-listener
+  hostnames:
+    - "api.mycompany.com"
+  rules:
+    # Rule 1: Beta testers with custom header route 100% to v2
+    - matches:
+        - headers:
+            - name: "X-Beta-Tester"
+              value: "true"
+      backendRefs:
+        - name: payment-service-v2
+          port: 8080
+
+    # Rule 2: Production traffic split: 90% to v1, 10% to v2
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/checkout
+      backendRefs:
+        - name: payment-service-v1
+          port: 8080
+          weight: 90                   # 90% of traffic
+        - name: payment-service-v2
+          port: 8080
+          weight: 10                   # 10% Canary traffic
+```
+
+---
+
+## 4. Cross-Namespace Security: `ReferenceGrant`
+
+In a multi-tenant cluster, Team A should not be able to route traffic to Team B’s private backend services without permission.
+
+If an `HTTPRoute` in the `marketing` namespace points to a Service in the `payments` namespace, the connection is **blocked by default** until the Payments team explicitly deploys a **`ReferenceGrant`**:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-marketing-to-payments
+  namespace: payments                 # Deployed by Payments team
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: marketing            # Grants permission specifically to marketing
+  to:
+    - group: ""
+      kind: Service
+      name: payment-service
+```
+
+---
+
+## 🎯 Interview Deep-Dives & Scenarios
+
+??? question "Interview Question: How does the Gateway API solve the 'Annotation Sprawl' problem of the Ingress API?"
+    **Answer:**
+    - Under the Ingress API, advanced features were never codified in the core specification.
+    - To perform a simple URL rewrite or canary split, engineers had to use vendor-specific annotations:
+      - NGINX: `nginx.ingress.kubernetes.io/rewrite-target: /`
+      - GKE: `networking.gke.io/v1beta1.FrontendConfig`
+      - Traefik: `traefik.ingress.kubernetes.io/router.middlewares`
+    - This caused severe vendor lock-in and made migrating between cloud providers painful.
+    - **Gateway API standardizes these features directly into core YAML fields** (`rules.filters.type: URLRewrite`, `rules.backendRefs[].weight`, `rules.matches[].headers`), making routing manifests fully portable across GKE, AWS, Azure, Envoy, and Istio.
+
+??? question "Interview Scenario: How do you configure a shared Gateway that allows developer teams to attach routes from their own namespaces?"
+    **Answer:**
+    In the `Gateway` manifest, configure `listeners.allowedRoutes.namespaces`:
+    ```yaml
+    listeners:
+      - name: https
+        protocol: HTTPS
+        port: 443
+        allowedRoutes:
+          namespaces:
+            from: Selector
+            selector:
+              matchLabels:
+                tenant: enabled       # Any namespace with label tenant=enabled can attach routes!
+    ```
+
+---
+
+## ⚠️ Common Production Pitfalls & Interview Traps
+
+??? warning "Production Trap: `RouteReasonNotAllowed` Status"
+    If an application developer deploys an `HTTPRoute` referencing a shared Gateway, but the Gateway’s `allowedRoutes` rejects the developer's namespace, the route will deploy successfully but remain **inactive** with condition `Accepted: False` (`Reason: RouteReasonNotAllowed`). Always check `kubectl describe httproute <NAME>`.
+
+---
+
+## 💻 Hands-on Verification & Diagnostic Toolkit
+
+```bash
+# 1. Check Gateway status and assigned External IP
+kubectl get gateway -A
+
+# 2. Inspect all HTTPRoutes and their parent Gateway bindings
+kubectl get httproutes -A
+
+# 3. Check detailed route conditions and validation errors
+kubectl describe httproute payment-canary-route -n payments
+
+# 4. View available GatewayClasses supported on the cluster
+kubectl get gatewayclasses
+```
+
+---
+
+## Test Your Knowledge
+
+1. Which Gateway API resource is managed by application developers to define path matches and canary traffic weights?
+   - [ ] A) The HTTPRoute custom resource definition
+   - [ ] B) The GatewayClass custom resource definition
+   
+   *Answer:* A) The HTTPRoute custom resource definition - Correct! `HTTPRoute` defines routing rules, path matching, and canary weights for application developers.
+
+2. In a multi-tenant cluster, what custom resource must a backend service owner create to authorize cross-namespace traffic from a separate team's HTTPRoute?
+   - [ ] A) The ReferenceGrant custom resource definition
+   - [ ] B) The IngressClass custom resource definition
+   
+   *Answer:* A) The ReferenceGrant custom resource definition - Correct! `ReferenceGrant` provides explicit, namespace-level authorization for cross-namespace Gateway API routing.
+
+---
+
+## Recommended Primary Resource
+- [Kubernetes Gateway API Concepts](https://gateway-api.sigs.k8s.io/concepts/)
+- [GKE Gateway Controller Documentation](https://cloud.google.com/kubernetes-engine/docs/concepts/gateway-api)
+
+---
+**Migrating from legacy Ingress to the Gateway API?** Ask in chat, and we'll convert your Ingress rules into clean HTTPRoutes!
+
+[← Lesson 7: Persistent Volumes & StorageClasses](./0007-pv-pvc-storageclasses.md) | [Lesson 9: Resources, Probes & Graceful Shutdown →](./0009-resources-probes-graceful-shutdown.md)

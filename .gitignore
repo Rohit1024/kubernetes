@@ -9,4 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
+# Zensical build output
 site/
+
+# OS artifacts
+.DS_Store
+*.DS_Store
+
+.cache

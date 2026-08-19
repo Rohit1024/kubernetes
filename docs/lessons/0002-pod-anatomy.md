@@ -2,167 +2,197 @@
 icon: lucide/box
 ---
 
-# Lesson 0002: Pod Anatomy & Configuration
+# Lesson 0002: Pod Anatomy, Multi-Container Patterns & Lifecycle
 
-The fundamental unit of execution in Kubernetes is the **Pod**. In this lesson, we will explore Pod architecture, why Kubernetes uses Pods instead of bare containers, how multi-container Pods share resources, and the lifecycles of Pod workloads.
+## 🚀 Fast Interview Summary & Cheatsheet
+
+| Concept | Architectural Reality | Interview Must-Know |
+| :--- | :--- | :--- |
+| **Pod** | Smallest deployable unit in Kubernetes | Wraps 1+ containers on the **same worker node** sharing IPC, Network, and Storage. |
+| **Pause Container** | Hidden container created first in every Pod | Holds the network namespace (`netns`) and IP so app containers can restart without losing connectivity. |
+| **Inter-Container Comms** | Shared Network Namespace | Containers talk over **`localhost`** on distinct ports. Shared files via `emptyDir` volumes. |
+| **Native Sidecars** | `initContainers` with `restartPolicy: Always` | Introduced in K8s 1.28+. Starts before app containers and runs throughout the entire Pod lifecycle. |
+| **CrashLoopBackOff** | Container keeps crashing after start | Exponential backoff delay: 10s $\to$ 20s $\to$ 40s $\to$ 80s $\to$ 160s $\to$ **300s (max 5 min)**. |
+| **Exit Code 137** | Process killed by OS ($128 + 9$ SIGKILL) | **OOMKilled:** Container exceeded memory limits or node experienced kernel Out-Of-Memory. |
+| **Exit Code 143** | Graceful termination ($128 + 15$ SIGTERM) | Normal Kubernetes shutdown during rollout or node drain. |
 
 ---
 
-## 1. What is a Pod?
+## 1. What is a Pod & The Pause Container
 
-A **Pod** is the smallest deployable computing unit you can create and manage in Kubernetes. 
-
-Unlike standard container engines (like Docker) where you run individual containers directly, Kubernetes wraps one or more containers into a single abstraction called a Pod.
-
-### Why not run containers directly?
-Containers are isolated environments. However, in real-world applications, processes often need to work closely together. A Pod provides a way to group tightly coupled containers and run them on the same host, sharing network and storage boundaries.
+A **Pod** represents a single instance of a running process in your cluster. It encapsulates application containers, storage resources, a unique network IP, and runtime options.
 
 ```mermaid
 graph TD
-    subgraph Pod ["Pod Namespace (Shared IP: 10.244.0.15)"]
-        subgraph SharedNet ["Network Namespace (localhost)"]
-            Port80["Port 80 (App)"]
-            Port8080["Port 8080 (Sidecar)"]
+    subgraph Pod ["Pod Namespace (Node Host: worker-1 | IP: 10.244.1.45)"]
+        Pause["infra / Pause Container\n(Holds Network Namespace & IP)"]
+        
+        subgraph SharedNet ["Shared Network Namespace"]
+            AppPort["App Container (Port 80)"]
+            SidecarPort["Log Sidecar (Port 9090)"]
         end
-        subgraph SharedVol ["Storage Volume (Shared /var/log)"]
-            VolMount["/var/log"]
+        
+        subgraph SharedStorage ["Shared Volume (emptyDir)"]
+            Vol["/var/log/app"]
         end
-        AppContainer["Container 1: Web App"] --> Port80
-        AppContainer --> VolMount
-        SidecarContainer["Container 2: Log Agent"] --> Port8080
-        SidecarContainer --> VolMount
+        
+        Pause --- SharedNet
+        AppPort -->|Writes Logs| Vol
+        SidecarPort -->|Reads Logs| Vol
+        AppPort <-->|localhost:9090| SidecarPort
     end
 ```
 
----
-
-## 2. Resource Sharing inside a Pod
-
-All containers inside a Pod are guaranteed to run on the **same physical or virtual worker node**. They share:
-
-### A. Network Namespace
-Containers in a Pod share the same network IP address and port space. 
-
-* They can communicate with each other using **`localhost`** (e.g. the app container talks to a sidecar container on `localhost:8080`).
-* Containers must not bind to the same port, or they will collide.
-* External traffic hits the Pod IP first, which is then mapped to the correct container port.
-
-### B. Storage Volumes
-You can define one or more storage volumes at the Pod level, which can then be mounted into any of the containers inside the Pod. This allows containers to share files easily.
+### The Role of the "Pause Container" (`infra` container)
+When `kubelet` creates a Pod on a worker node:
+1. It first launches a tiny, dormant container called the **Pause container** (`k8s.gcr.io/pause`).
+2. The Pause container creates and owns the Linux **network namespace**, IPC namespace, and UTS namespace for the Pod.
+3. When your actual application and sidecar containers start, they join the namespaces owned by the Pause container.
+4. **Why this matters for interviews:** If your application container crashes or restarts, the Pod’s IP address and network sockets do **not** die—the Pause container keeps them open!
 
 ---
 
-## 3. The Multi-Container Pod (Sidecar Pattern)
+## 2. Multi-Container Design Patterns
 
-While most Pods contain a single container, running multiple containers is a common design pattern. The helper container is often called a **Sidecar**.
+While most Pods run a single container, Kubernetes supports multi-container patterns:
 
-### Common Use Cases:
-1. **Log Forwarders:** A helper container reads logs written by the main application to a shared volume and ships them to a central system (e.g. Elasticsearch or Cloud Logging).
-2. **Proxies/Adapters:** A sidecar intercepts incoming traffic, performs authentication/security checks, and routes it to the main container.
-3. **Config Watchers:** A sidecar detects configurations changes in a remote repository and signals the main application to reload.
+```mermaid
+graph LR
+    subgraph SidecarPattern ["1. Sidecar Pattern"]
+        App1["Main Web App"] --- Sidecar["Log Forwarder / Fluentbit"]
+    end
 
----
+    subgraph AmbassadorPattern ["2. Ambassador Pattern"]
+        App2["Main App"] --> Proxy["Local Proxy (localhost:6379)"] --> RemoteDB[("Remote Redis Cluster")]
+    end
 
-## 4. Pod Lifecycle States
-
-As a Pod runs, its health is categorized into several phases:
-
-| Phase | Description |
-| :--- | :--- |
-| **Pending** | The Pod manifest has been accepted by the cluster, but the scheduler is finding a node, or the container images are downloading. |
-| **Running** | The Pod has been bound to a node, and all containers have been created. At least one container is currently starting or running. |
-| **Succeeded** | All containers in the Pod have terminated successfully (exit code 0) and will not be restarted (common for Jobs). |
-| **Failed** | All containers have terminated, and at least one container has terminated in failure (non-zero exit code). |
-| **Unknown** | The state cannot be obtained, typically due to a communication failure between the control plane and the node's kubelet. |
-
----
-
-## Hands-on Exercise: Deploy a Multi-Container Pod
-
-Let's deploy a Pod that demonstrates storage sharing between a main web server container (Nginx) and a sidecar container that writes content.
-
-**Step 1:** Save the following manifest to `multi-container-pod.yaml`:
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: shared-volume-demo
-  labels:
-    app: multi-container
-spec:
-  # Define the shared volume at the Pod level
-  volumes:
-  - name: shared-data
-    emptyDir: {} # Temporary empty directory sharing the node's disk
-
-  containers:
-  # Container 1: The Main Web Server
-  - name: web-server
-    image: nginx:alpine
-    volumeMounts:
-    - name: shared-data
-      mountPath: /usr/share/nginx/html # Nginx reads static files here
-    ports:
-    - containerPort: 80
-
-  # Container 2: The Sidecar Writer
-  - name: content-writer
-    image: alpine
-    command: ["/bin/sh", "-c"]
-    args:
-    - |
-      while true; do
-        echo "Hello from the content-writer sidecar container! Time: $(date)" > /data/index.html;
-        sleep 10;
-      done
-    volumeMounts:
-    - name: shared-data
-      mountPath: /data # Mounts to write files
+    subgraph AdapterPattern ["3. Adapter Pattern"]
+        App3["Main App (Custom Metrics)"] --> Adapter["Metrics Adapter (Exposes /metrics for Prometheus)"]
+    end
 ```
 
-**Step 2:** Apply the Pod:
+1. **Sidecar Pattern:** Extends the main container’s functionality without modifying application code (e.g., shipping logs with Fluentbit, syncing secrets with Vault).
+2. **Ambassador Pattern:** A proxy container that hides network complexity from the main container (e.g., routing database calls to a sharded database).
+3. **Adapter Pattern:** Standardizes output or monitoring formats (e.g., translating proprietary application logs into standardized Prometheus formats).
+4. **Init Containers:** Specialized containers that run **to completion sequentially** *before* app containers start. Used for database migrations or waiting for dependencies.
+
+---
+
+## 3. Pod Phases, Container States & Conditions
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending: Pod Accepted by API Server
+    Pending --> Running: Scheduled + Images Pulled + Containers Started
+    Running --> Succeeded: Completed (Exit Code 0 - Jobs)
+    Running --> Failed: Crashed (Non-zero exit code / OOM)
+    Pending --> Failed: ImagePullBackOff / Unschedulable
+    Running --> Unknown: Node lost communication with Control Plane
+```
+
+### Pod Phases vs Container States
+- **Pod Phase:** High-level summary (`Pending`, `Running`, `Succeeded`, `Failed`, `Unknown`).
+- **Container States:** The exact low-level status of each individual container in the Pod:
+  - **`Waiting`:** Performing setup, pulling images (`ImagePullBackOff`, `ErrImagePull`), or in `CrashLoopBackOff`.
+  - **`Running`:** Executing without issues.
+  - **`Terminated`:** Process finished execution (`Completed`) or was killed (`OOMKilled`).
+
+### Pod Conditions (Readiness Gates)
+For a Pod to accept user traffic, its conditions must be `True`:
+1. `PodScheduled`: The Pod has been bound to a node.
+2. `Initialized`: All `initContainers` have completed successfully.
+3. `ContainersReady`: All containers in the Pod have passed their startup/readiness probes.
+4. `Ready`: The Pod is ready to receive traffic from Services.
+
+---
+
+## 🎯 Interview Deep-Dives & Scenarios
+
+??? question "Interview Scenario: How do Native Sidecars (K8s 1.28+) solve the legacy sidecar lifecycle problem?"
+    **The Legacy Problem:**
+    Prior to Kubernetes 1.28, sidecars were declared as standard containers in `spec.containers`. This caused two critical bugs:
+    1. **Startup Race Condition:** The main app container could start *before* the logging/proxy sidecar was ready, dropping initial requests.
+    2. **Job Termination Failure:** In batch `Jobs`, the main container would complete, but the sidecar kept running forever, preventing the `Job` from reaching `Succeeded` state.
+
+    **The Native Sidecar Solution:**
+    Declare sidecars inside `spec.initContainers` with `restartPolicy: Always`:
+    ```yaml
+    spec:
+      initContainers:
+        - name: vault-agent-sidecar
+          image: hashicorp/vault:1.15.0
+          restartPolicy: Always          # Indicates a Native Sidecar!
+    ```
+    - Kubelet starts this init container first and waits until it passes its startup probe.
+    - It continues running throughout the Pod’s life.
+    - When all main containers exit in a Job, `kubelet` automatically sends `SIGTERM` to the native sidecar to allow the Job to finish!
+
+??? question "Interview Question: What is the difference between Exit Code 137 and Exit Code 143?"
+    **Answer:**
+    - **Exit Code 137 ($128 + 9$):** The process received `SIGKILL` (Signal 9). It was forcibly terminated by the Linux kernel.
+      - **Most Common Cause:** **OOMKilled (Out Of Memory)**. The container exceeded its configured `resources.limits.memory`, or the host node ran out of memory.
+    - **Exit Code 143 ($128 + 15$):** The process received `SIGTERM` (Signal 15).
+      - **Most Common Cause:** **Graceful Termination**. Kubernetes signaled the container to stop during a rolling update, scaling down, or node drain.
+
+??? question "Interview Question: If one container in a multi-container Pod crashes, does the whole Pod restart?"
+    **Answer:**
+    - **No.** Containers within a Pod are managed individually by `kubelet`.
+    - If Container A crashes, `kubelet` restarts *only Container A* based on the Pod’s `spec.restartPolicy` (`Always`, `OnFailure`, `Never`).
+    - Container B continues running undisturbed, and the shared storage and network namespace remain intact.
+
+---
+
+## ⚠️ Common Production Pitfalls & Interview Traps
+
+??? warning "Production Trap: Port Collisions in Multi-Container Pods"
+    Because containers share the same network namespace (`localhost`), two containers **cannot listen on the same port**.
+    - If Container A binds to port `8080` and Container B also tries to bind to `8080`, Container B will crash with `bind: address already in use`.
+
+??? warning "Production Trap: Assuming `emptyDir` Volumes Persist Across Pod Restarts"
+    - An `emptyDir` volume persists when a container inside the Pod crashes and restarts.
+    - However, if the **Pod itself is deleted or rescheduled to another node**, the data inside `emptyDir` is **permanently deleted**.
+
+---
+
+## 💻 Hands-on Verification & Diagnostic Toolkit
+
 ```bash
-kubectl apply -f multi-container-pod.yaml
-```
+# 1. Inspect container states and termination reasons (OOMKilled, CrashLoop)
+kubectl get pod <POD_NAME> -o jsonpath='{range .status.containerStatuses[*]}{.name}{": "}{.state}{"\n"}{end}'
 
-**Step 3:** Access the web page served by Nginx to verify it reads the sidecar's written files:
-```bash
-# Port-forward the Pod port to your local machine
-kubectl port-forward shared-volume-demo 8080:80
+# 2. View logs of a previously crashed container instance
+kubectl logs <POD_NAME> -c <CONTAINER_NAME> --previous
+
+# 3. Check exact exit codes and last termination state
+kubectl get pod <POD_NAME> -o jsonpath='{.status.containerStatuses[*].lastState.terminated}'
+
+# 4. Stream logs from all containers in a multi-container Pod simultaneously
+kubectl logs <POD_NAME> --all-containers=true -f
 ```
-Open your browser and navigate to [http://localhost:8080](http://localhost:8080) to see the message.
 
 ---
 
 ## Test Your Knowledge
 
-### 1. How do two containers running in the same Pod communicate with each other?
-- [ ] **A.** By sending requests to the cluster's API Server.
-- [ ] **B.** Using the Node's public IP address.
-- [ ] **C.** Via localhost, using different ports.
+1. Why does the Pause container initialize first when a Pod is scheduled on a worker node?
+   - [ ] A) It establishes and holds the shared network and IPC namespaces for all containers
+   - [ ] B) It downloads and compiles the container source code before the main app launches
+   
+   *Answer:* A) It establishes and holds the shared network and IPC namespaces for all containers - Correct! The pause container owns the network namespace so that application containers can crash and restart without losing their assigned Pod IP address.
 
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** C
-
-**Explanation:** Containers in the same Pod share the network namespace and can communicate directly over `localhost` using separate port numbers.
-</details>
-
-### 2. If a worker node loses power and shuts down, what happens to the status of the Pods running on it?
-- [ ] **A.** They transition to the Failed state.
-- [ ] **B.** They transition to the Unknown state.
-- [ ] **C.** They automatically migrate to another node instantly.
-
-<details>
-<summary><b>Answer & Explanation</b></summary>
-
-**Correct Answer:** B
-
-**Explanation:** If the kubelet on the node stops communicating with the control plane, the Pods' phase transitions to `Unknown`. The controllers will reschedule new instances on healthy nodes after a timeout.
-</details>
+2. A container in your Pod terminates with Exit Code 137. What is the root cause?
+   - [ ] A) The container was killed by the kernel because it exceeded its memory limit (OOMKilled)
+   - [ ] B) The container finished processing its batch tasks successfully and exited cleanly
+   
+   *Answer:* A) The container was killed by the kernel because it exceeded its memory limit (OOMKilled) - Correct! Exit code 137 represents $128 + 9$ (SIGKILL), which Kubernetes triggers when memory limits are breached.
 
 ---
+
+## Recommended Primary Resource
+- [Kubernetes Pod Lifecycle & Container States](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
+- [Kubernetes Native Sidecar Containers (KEP-753)](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/)
+
+---
+**Troubleshooting an OOMKilled or CrashLoopBackOff container?** Ask in the chat, and we'll analyze the termination logs together!
 
 [← Lesson 1: Intro to Kubernetes](./0001-what-is-kubernetes-and-prerequisites.md) | [Lesson 3: Node Scheduling & Deployments →](./0003-node-scheduling-deployment-strategies-autoscaling.md)
